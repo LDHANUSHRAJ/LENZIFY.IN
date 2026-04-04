@@ -7,6 +7,18 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
+      {
+        protocol: "https",
+        hostname: "static.lenskart.com",
+      },
+      {
+        protocol: "https",
+        hostname: "static1.lenskart.com",
+      },
+      {
+        protocol: "https",
+        hostname: "static5.lenskart.com",
+      },
     ],
   },
 };
