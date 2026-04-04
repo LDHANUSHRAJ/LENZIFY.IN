@@ -1,241 +1,98 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-import ParticleBackground from "@/components/three/ParticleBackground";
-import FloatingFrame from "@/components/three/FloatingFrame";
-import GlowButton from "@/components/ui/GlowButton";
-import Magnetic from "@/components/ui/Magnetic";
-import { products } from "@/data/products";
-import { ArrowUpRight, ArrowRight, MousePointer2, ChevronRight } from "lucide-react";
-
-gsap.registerPlugin(ScrollTrigger);
+import { ArrowRight } from "lucide-react";
 
 export default function Home() {
-  const containerRef = useRef(null);
-  const textSectionsRef = useRef<HTMLDivElement[]>([]);
-
-  useGSAP(() => {
-    // Scroll-driven text animations for the massive words
-    textSectionsRef.current.forEach((section) => {
-      if (!section) return;
-
-      const word = section.querySelector("h2");
-      const bg = section.querySelector(".parallax-bg");
-
-      gsap.fromTo(word,
-        { opacity: 0, scale: 0.8, y: 100 },
-        {
-          opacity: 1,
-          scale: 1,
-          y: 0,
-          duration: 1.5,
-          ease: "expo.out",
-          scrollTrigger: {
-            trigger: section,
-            start: "top 80%",
-            end: "bottom 20%",
-            toggleActions: "play none none reverse",
-          }
-        }
-      );
-
-      gsap.to(bg, {
-        yPercent: -40,
-        scale: 1.5,
-        ease: "none",
-        scrollTrigger: {
-          trigger: section,
-          scrub: true,
-        }
-      });
-    });
-
-    // Cinematic category transitions
-    const categories = gsap.utils.toArray(".category-section");
-    categories.forEach((cat: any, i) => {
-      const title = cat.querySelector("h3");
-      const images = cat.querySelectorAll(".floating-img");
-
-      gsap.to(title, {
-        yPercent: -50,
-        ease: "none",
-        scrollTrigger: {
-          trigger: cat,
-          scrub: 1,
-          start: "top bottom",
-          end: "bottom top",
-        }
-      });
-
-      images.forEach((img: any, idx: number) => {
-        gsap.to(img, {
-          yPercent: -20 * (idx + 1),
-          rotate: idx % 2 === 0 ? 5 : -5,
-          ease: "none",
-          scrollTrigger: {
-            trigger: cat,
-            scrub: 2,
-          }
-        });
-      });
-
-      ScrollTrigger.create({
-        trigger: cat,
-        start: "top center",
-        onEnter: () => gsap.to("body", { backgroundColor: i % 2 === 0 ? "#050505" : "#0B1C2D", duration: 1.5 }),
-        onEnterBack: () => gsap.to("body", { backgroundColor: i % 2 === 0 ? "#050505" : "#0B1C2D", duration: 1.5 }),
-      });
-    });
-  }, { scope: containerRef });
-
-  const addToTextRefs = (el: HTMLDivElement | null) => {
-    if (el && !textSectionsRef.current.includes(el)) {
-      textSectionsRef.current.push(el);
-    }
-  };
-
   return (
-    <div ref={containerRef} className="relative bg-[#0B1C2D] transition-colors duration-1000 selection:bg-brand-electric selection:text-white">
-      <ParticleBackground />
-
-      {/* Hero Section - Immersive 3D */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <FloatingFrame />
+    <div className="font-sans">
+      {/* Hero Section */}
+      <section className="relative h-screen flex items-center pt-20 overflow-hidden">
+        <div className="absolute inset-0 bg-brand-navy z-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-navy/90 to-transparent z-10" />
+          <Image
+            src="https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=2000&auto=format&fit=crop"
+            alt="Luxury Eyewear"
+            fill
+            className="object-cover opacity-80"
+            priority
+          />
         </div>
-
-        <div className="relative z-10 text-center px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <h1 className="text-[12vw] md:text-[10vw] font-black leading-[0.75] uppercase tracking-tighter text-white italic mb-10">
-              SEE VISION <br />
-              <span className="hero-text-stroke opacity-60">DIFFERENTLY</span>
-            </h1>
-            <p className="text-white/40 text-sm md:text-xl max-w-xl mx-auto font-black tracking-[0.4em] uppercase mb-16">
-              Engineering the Future of Optics
-            </p>
-
-            <div className="flex flex-col md:flex-row gap-10 justify-center items-center">
-              <Magnetic>
-                <Link href="/spectacles">
-                  <GlowButton className="text-xl px-16 py-8">
-                    Explore Collection
-                  </GlowButton>
-                </Link>
-              </Magnetic>
-              <div className="flex items-center gap-4 text-white/20 uppercase text-[10px] font-black tracking-[0.5em] animate-pulse">
-                <MousePointer2 size={16} />
-                Inertial Scroll to Immerse
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 p-2 glass-morphism rounded-full border-white/5">
-          <div className="w-1 h-12 bg-gradient-to-b from-brand-electric to-transparent rounded-full" />
-        </div>
-      </section>
-
-      {/* Massive Typography Sections */}
-      <div className="relative z-10 pointer-events-none">
-        {["PRECISION.", "STYLE.", "CLARITY."].map((text, i) => (
-          <section key={text} ref={addToTextRefs} className="h-screen flex items-center justify-center overflow-hidden">
-            <div className={`parallax-bg absolute inset-0 -z-10 opacity-20 blur-[150px] rounded-full scale-150 ${i === 1 ? 'bg-brand-highlight' : 'bg-brand-electric'}`} />
-            <h2 className="text-[25vw] font-extrabold italic uppercase leading-none text-white/5 cursor-default select-none tracking-tighter">
-              {text}
-            </h2>
-          </section>
-        ))}
-      </div>
-
-      {/* Category Transitions Section - Improved Depth */}
-      <section className="category-section relative min-h-screen py-60 px-12 overflow-hidden bg-transparent">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center z-0">
-          <h3 className="text-[20vw] font-black uppercase italic text-white/5 leading-none">SPECTACLES</h3>
-        </div>
-
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-40 relative z-10">
-          {products.filter(p => p.category === 'spectacles').slice(0, 2).map((p, i) => (
-            <div key={p.id} className={`floating-img relative aspect-square group ${i % 2 === 0 ? 'mt-20' : '-mt-20'}`}>
-              <Link href={`/product/${p.id}`}>
-                <div className="absolute inset-0 glass-card rounded-[40px] border-none flex flex-col justify-end p-12 overflow-hidden shadow-2xl">
-                  <div className="absolute -top-20 -right-20 w-40 h-40 bg-brand-electric/10 blur-3xl rounded-full group-hover:bg-brand-electric/30 smooth-transition" />
-                  <Image
-                    src={p.image}
-                    alt={p.name}
-                    fill
-                    className="object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 smooth-transition"
-                  />
-                  <div className="relative z-10">
-                    <span className="text-brand-electric text-[10px] font-black uppercase tracking-[0.5em]">{p.brand}</span>
-                    <h4 className="text-4xl font-black italic uppercase mt-2">{p.name}</h4>
-                  </div>
-                </div>
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="category-section relative min-h-screen py-60 px-12 overflow-hidden bg-[#050505]">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center z-0">
-          <h3 className="text-[20vw] font-black uppercase italic text-white/5 leading-none">LENSES</h3>
-        </div>
-
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-40 relative z-10">
-          {products.filter(p => !p.category || p.category === 'lenses').slice(0, 2).map((p, i) => (
-            <div key={p.id} className={`floating-img relative aspect-square group ${i % 2 !== 0 ? 'mt-20' : '-mt-20'}`}>
-              <Link href={`/product/${p.id}`}>
-                <div className="absolute inset-0 glass-card rounded-[40px] border-none flex flex-col justify-end p-12 overflow-hidden shadow-2xl">
-                  <div className="absolute -top-20 -right-20 w-40 h-40 bg-brand-highlight/10 blur-3xl rounded-full group-hover:bg-brand-highlight/30 smooth-transition" />
-                  <Image
-                    src={p.image}
-                    alt={p.name}
-                    fill
-                    className="object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 smooth-transition"
-                  />
-                  <div className="relative z-10">
-                    <span className="text-brand-highlight text-[10px] font-black uppercase tracking-[0.5em]">TECH SERIES</span>
-                    <h4 className="text-4xl font-black italic uppercase mt-2">{p.name}</h4>
-                  </div>
-                </div>
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Profile / Dashboard Quick Access */}
-      <section className="py-60 px-12 flex flex-col items-center justify-center text-center">
-        <h2 className="text-6xl md:text-[10vw] font-black uppercase italic tracking-tighter mb-20 leading-[0.8]">UNLIMITED <br /> VISION</h2>
-        <Magnetic>
-          <Link href="/profile">
-            <button className="group relative px-20 py-10 glass-morphism rounded-full overflow-hidden border-white/5 border">
-              <div className="absolute inset-0 bg-brand-electric/20 translate-y-full group-hover:translate-y-0 smooth-transition" />
-              <span className="relative z-10 text-3xl font-black uppercase italic flex items-center gap-6">
-                Enter Protocol <ArrowUpRight size={32} className="group-hover:translate-x-2 group-hover:-translate-y-2 smooth-transition" />
-              </span>
-            </button>
+        
+        <div className="relative z-20 max-w-7xl mx-auto px-6 w-full flex flex-col items-start">
+          <span className="text-brand-gold font-semibold uppercase tracking-[0.3em] mb-4 text-sm">
+            The Spring Collection
+          </span>
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-display text-white leading-[1.1] mb-8 max-w-3xl">
+            Elegance in <br /> Every Glance.
+          </h1>
+          <Link href="/spectacles" className="group flex items-center bg-white text-brand-navy px-8 py-4 text-sm font-semibold uppercase tracking-widest hover:bg-brand-gold hover:text-white transition-all">
+            Explore Collection
+            <ArrowRight size={16} className="ml-3 group-hover:translate-x-1 transition-transform" />
           </Link>
-        </Magnetic>
+        </div>
       </section>
 
-      {/* Kinetic Marquee */}
-      <div className="py-20 overflow-hidden border-y border-white/5 bg-black/20 backdrop-blur-sm">
-        <div className="kinetic-text text-[10vw] text-white/5 italic font-black">
-          PRECISION OPTICS &nbsp; LUXURY FRAMES &nbsp; NEURAL LENSES &nbsp; LENZIFY ELITE &nbsp;
-          PRECISION OPTICS &nbsp; LUXURY FRAMES &nbsp; NEURAL LENSES &nbsp; LENZIFY ELITE &nbsp;
+      {/* Categories */}
+      <section className="py-24 bg-brand-background">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-display text-brand-navy mb-4">Curated Categories</h2>
+            <p className="text-brand-text-muted">Discover our meticulously crafted optical frames and lenses.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { title: "Spectacles", image: "https://images.unsplash.com/photo-1591076482161-42ce6ebaa410?q=80&w=800&auto=format&fit=crop" },
+              { title: "Sunglasses", image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=800&auto=format&fit=crop" },
+              { title: "Premium Lenses", image: "https://images.unsplash.com/photo-1577900232427-18219b9166a0?q=80&w=800&auto=format&fit=crop" },
+            ].map((cat, i) => (
+              <div key={i} className="group relative aspect-[4/5] overflow-hidden cursor-pointer bg-white border border-brand-navy/5">
+                <Image src={cat.image} alt={cat.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90" />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/80 via-transparent to-transparent opacity-60" />
+                <div className="absolute bottom-8 left-8">
+                  <h3 className="text-2xl font-display text-white mb-2">{cat.title}</h3>
+                  <span className="text-brand-gold text-xs font-semibold uppercase tracking-widest flex items-center">
+                    Shop Now <ArrowRight size={14} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* Featured Collection */}
+      <section className="py-24 bg-white border-t border-brand-navy/5">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex justify-between items-end mb-16">
+            <div>
+              <h2 className="text-4xl font-display text-brand-navy mb-4">Featured Pieces</h2>
+              <p className="text-brand-text-muted">The zenith of optical craftsmanship.</p>
+            </div>
+            <Link href="/products" className="hidden md:flex text-brand-navy text-sm font-semibold uppercase tracking-widest items-center border-b border-brand-navy pb-1 hover:text-brand-gold hover:border-brand-gold transition-all">
+              View All <ArrowRight size={14} className="ml-2" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[1, 2, 3, 4].map((item) => (
+              <div key={item} className="group cursor-pointer">
+                <div className="relative aspect-square mb-6 bg-brand-background border border-brand-navy/5 overflow-hidden flex items-center justify-center p-8">
+                  <Image src="https://images.unsplash.com/photo-1572635196237-14b3f281503f?q=80&w=800&auto=format&fit=crop" alt="Glasses" width={400} height={400} className="object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500" />
+                  <div className="absolute top-4 left-4 bg-brand-navy text-white text-[10px] uppercase tracking-widest px-2 py-1">New</div>
+                </div>
+                <div>
+                  <h4 className="font-display text-xl text-brand-navy mb-2 group-hover:text-brand-gold transition-colors">Aurelius Frame</h4>
+                  <p className="text-brand-text-muted text-sm mb-3">Titanium & Acetate</p>
+                  <p className="font-medium text-brand-navy">₹12,499</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
