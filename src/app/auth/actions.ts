@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export async function login(formData: FormData) {
+export async function login(formData: FormData): Promise<void> {
   const supabase = createClient()
 
   const data = {
@@ -19,7 +19,7 @@ export async function login(formData: FormData) {
   })
 
   if (error) {
-    return { error: error.message }
+    redirect(`/auth/login?error=${encodeURIComponent(error.message)}`)
   }
 
   revalidatePath('/', 'layout')
@@ -31,7 +31,7 @@ export async function login(formData: FormData) {
   redirect(data.redirectTo)
 }
 
-export async function signup(formData: FormData) {
+export async function signup(formData: FormData): Promise<void> {
   const supabase = createClient()
   const data = {
     email: formData.get('email') as string,
@@ -51,14 +51,14 @@ export async function signup(formData: FormData) {
   })
 
   if (error) {
-    return { error: error.message }
+    redirect(`/auth/signup?error=${encodeURIComponent(error.message)}`)
   }
 
   revalidatePath('/', 'layout')
   redirect(data.redirectTo)
 }
 
-export async function adminLogin(formData: FormData) {
+export async function adminLogin(formData: FormData): Promise<void> {
   const supabase = createClient()
   
   const data = {
@@ -69,14 +69,13 @@ export async function adminLogin(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
-    return { error: error.message }
+    redirect(`/admin?error=${encodeURIComponent(error.message)}`)
   }
 
   // Strict check for admin credentials
   if (data.email !== 'lenzify.in@gmail.com') {
-    // If someone tries to log into admin with a non-admin account, sign them out and error
     await supabase.auth.signOut()
-    return { error: "Non-administrative identity detected. Access denied." }
+    redirect(`/admin?error=${encodeURIComponent('Non-administrative identity detected. Access denied.')}`)
   }
 
   revalidatePath('/', 'layout')

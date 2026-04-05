@@ -1,7 +1,14 @@
 import { adminLogin } from '../auth/actions'
 import { ArrowRight, ShieldAlert } from 'lucide-react'
 
-export default function AdminLoginPage() {
+interface Props {
+  searchParams: Promise<{ error?: string }>
+}
+
+export default async function AdminLoginPage({ searchParams }: Props) {
+  const params = await searchParams
+  const error = params?.error
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-brand-surface font-sans">
       <div className="w-full max-w-[400px] p-10 bg-white border border-brand-navy/10 rounded-sm shadow-2xl">
@@ -14,6 +21,12 @@ export default function AdminLoginPage() {
           <h1 className="text-2xl font-display font-bold uppercase tracking-widest text-brand-navy mb-2">Admin Portal</h1>
           <p className="text-brand-text-muted text-xs uppercase tracking-widest">Authorized Personnel Only</p>
         </div>
+
+        {error && (
+          <div className="mb-6 px-4 py-3 bg-red-50 border border-red-200 rounded text-red-700 text-xs font-semibold text-center">
+            {decodeURIComponent(error)}
+          </div>
+        )}
 
         <form className="space-y-6">
           <div className="space-y-2">
