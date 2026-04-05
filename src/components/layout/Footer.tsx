@@ -1,143 +1,113 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, Phone, MapPin, Instagram, Facebook, Twitter, ArrowUpRight, ShieldCheck, Truck, RotateCcw } from "lucide-react";
-import { motion } from "framer-motion";
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear();
+  const footerLinks = {
+    collections: [
+      { name: "The Heritage Series", href: "/products?collection=heritage" },
+      { name: "Modern Minimalist", href: "/products?collection=minimalist" },
+      { name: "Avant-Garde", href: "/products?collection=avant-garde" },
+      { name: "Virtual Fitting Room", href: "/try-at-home" },
+    ],
+    support: [
+      { name: "Shipping & Returns", href: "/shipping" },
+      { name: "Prescription Guide", href: "/prescription-guide" },
+      { name: "Frame Care", href: "/care" },
+      { name: "Find a Store", href: "/stores" },
+    ],
+    company: [
+      { name: "Our Story", href: "/about" },
+      { name: "Craftsmanship", href: "/craftsmanship" },
+      { name: "Sustainability", href: "/sustainability" },
+      { name: "Press", href: "/press" },
+    ]
+  };
 
   return (
-    <footer className="bg-brand-navy text-white pt-32 pb-12 selection:bg-brand-gold selection:text-white">
-      <div className="max-w-7xl mx-auto px-6">
-        
-        {/* Luxury Trust Marquee / Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-32 border-t border-b border-white/5 py-16">
-          <div className="flex flex-col items-center text-center group">
-            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6 group-hover:bg-brand-gold group-hover:text-brand-navy transition-all duration-500">
-               <ShieldCheck size={28} strokeWidth={1.5} />
-            </div>
-            <h4 className="text-[10px] font-black uppercase tracking-[0.4em] mb-3">Certified Authenticity</h4>
-            <p className="text-white/40 text-xs tracking-widest leading-relaxed max-w-[200px]">Every frame is a verified masterpiece of optical engineering.</p>
-          </div>
-          <div className="flex flex-col items-center text-center group">
-            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6 group-hover:bg-brand-gold group-hover:text-brand-navy transition-all duration-500">
-               <Truck size={28} strokeWidth={1.5} />
-            </div>
-            <h4 className="text-[10px] font-black uppercase tracking-[0.4em] mb-3">Global Logistics</h4>
-            <p className="text-white/40 text-xs tracking-widest leading-relaxed max-w-[200px]">Seamless insured delivery to Singapore, UAE, and beyond.</p>
-          </div>
-          <div className="flex flex-col items-center text-center group">
-            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6 group-hover:bg-brand-gold group-hover:text-brand-navy transition-all duration-500">
-               <RotateCcw size={28} strokeWidth={1.5} />
-            </div>
-            <h4 className="text-[10px] font-black uppercase tracking-[0.4em] mb-3">The Lensify Promise</h4>
-            <p className="text-white/40 text-xs tracking-widest leading-relaxed max-w-[200px]">Free lens replacements and a zero-risk 14-day curation period.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-16 mb-32">
-          
-          {/* Brand Essence */}
-          <div className="lg:col-span-2">
-            <Link href="/" className="font-display text-4xl font-bold tracking-[0.3em] uppercase mb-8 block group">
-               Lenzify<span className="text-brand-gold">.</span>
+    <footer className="bg-primary text-white pt-24 pb-12">
+      <div className="max-w-screen-2xl mx-auto px-8 md:px-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-24 mb-24">
+          <div className="space-y-8">
+            <Link href="/" className="text-3xl font-serif italic tracking-tighter">
+              LENZIFY
             </Link>
-            <p className="text-white/50 text-[11px] leading-[2] uppercase tracking-[0.2em] mb-12 max-w-sm">
-               Redefining optical luxury. Our atelier merges avant-garde design with precision engineering to create eyewear that transcends time.
+            <p className="text-sm text-outline tracking-wider leading-relaxed">
+              Redefining vision through the lens of high-fashion editorial. Excellence in every frame, engineered for the visionary.
             </p>
             <div className="flex gap-6">
-              {[Instagram, Facebook, Twitter].map((Icon, i) => (
-                <Link key={i} href="#" className="p-4 border border-white/5 hover:border-brand-gold hover:text-brand-gold transition-all duration-500 rounded-full group">
-                   <Icon size={18} strokeWidth={1.5} className="group-hover:scale-110" />
-                </Link>
-              ))}
+              <Link href="#" className="hover:text-secondary transition-colors">
+                <span className="material-symbols-outlined text-xl">public</span>
+              </Link>
+              <Link href="#" className="hover:text-secondary transition-colors">
+                <span className="material-symbols-outlined text-xl">share</span>
+              </Link>
+              <Link href="#" className="hover:text-secondary transition-colors">
+                <span className="material-symbols-outlined text-xl">photo_camera</span>
+              </Link>
             </div>
           </div>
 
-          {/* Collections */}
-          <div>
-            <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-gold mb-10">Collections</h4>
-            <ul className="space-y-6">
-              {['Eyeglasses', 'Sunglasses', 'Contact Lenses', 'Limited Editions'].map((item) => (
-                <li key={item}>
-                  <Link href={`/${item.toLowerCase().replace(' ', '-')}`} className="text-xs uppercase tracking-widest text-white/40 hover:text-white flex items-center gap-2 group transition-all">
-                    {item} <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100 -translate-y-1 group-hover:translate-x-1 transition-all" />
+          <div className="space-y-8">
+            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">The Collections</h4>
+            <ul className="space-y-4">
+              {footerLinks.collections.map((link) => (
+                <li key={link.name}>
+                  <Link href={link.href} className="text-sm text-outline hover:text-white transition-colors tracking-wide">
+                    {link.name}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Support */}
-          <div>
-            <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-gold mb-10">Protocols</h4>
-            <ul className="space-y-6">
-              {['Contact Us', 'Shipping Policy', 'Warranty', 'Store Locator'].map((item) => (
-                <li key={item}>
-                  <Link href={`/${item.toLowerCase().replace(' ', '-')}`} className="text-xs uppercase tracking-widest text-white/40 hover:text-white flex items-center gap-2 group transition-all">
-                    {item} <ArrowUpRight size={10} className="opacity-0 group-hover:opacity-100 -translate-y-1 group-hover:translate-x-1 transition-all" />
+          <div className="space-y-8">
+            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">Client Service</h4>
+            <ul className="space-y-4">
+              {footerLinks.support.map((link) => (
+                <li key={link.name}>
+                  <Link href={link.href} className="text-sm text-outline hover:text-white transition-colors tracking-wide">
+                    {link.name}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Contact Details - User Requested */}
-          <div className="lg:col-span-1">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-gold mb-10">Connect</h4>
-            <div className="space-y-8">
-               <div className="flex flex-col gap-2">
-                  <span className="text-[8px] uppercase tracking-widest text-white/20 font-bold">Inquiries</span>
-                  <a href="mailto:lenzify.in@gmail.com" className="text-xs uppercase tracking-widest hover:text-brand-gold transition-colors">
-                    lenzify.in@gmail.com
-                  </a>
-               </div>
-               <div className="flex flex-col gap-2">
-                  <span className="text-[8px] uppercase tracking-widest text-white/20 font-bold">Concierge</span>
-                  <a href="tel:+916361446768" className="text-xs uppercase tracking-widest hover:text-brand-gold transition-colors">
-                    +91 636144 6768
-                  </a>
-               </div>
-               <div className="flex flex-col gap-2">
-                  <span className="text-[8px] uppercase tracking-widest text-white/20 font-bold">Global Presence</span>
-                  <span className="text-xs uppercase tracking-widest text-white/60">
-                    Singapore | Dubai | Bangalore
-                  </span>
-               </div>
-            </div>
+          <div className="space-y-8">
+            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">Newsletter</h4>
+            <p className="text-sm text-outline tracking-wide">
+              Join the vision. Subscribe for exclusive releases and editorial insights.
+            </p>
+            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+              <div className="border-b border-outline/30 flex items-center py-2">
+                <input 
+                  type="email" 
+                  placeholder="EMAIL ADDRESS" 
+                  className="bg-transparent border-none focus:ring-0 text-[10px] uppercase font-bold tracking-widest w-full placeholder:text-outline/40"
+                />
+                <button type="submit" className="text-secondary hover:translate-x-1 transition-transform">
+                  <span className="material-symbols-outlined">arrow_forward</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
 
-        {/* Exclusive Newsletter */}
-        <div className="bg-white/5 p-12 lg:p-20 mb-32 flex flex-col lg:flex-row items-center justify-between gap-12 group hover:bg-white/[0.07] transition-all duration-[1.5s]">
-           <div className="max-w-md text-center lg:text-left">
-              <h3 className="text-3xl font-display uppercase tracking-widest mb-4">Privileged Insights</h3>
-              <p className="text-[10px] uppercase font-bold tracking-[0.3em] text-white/30">Join the inner circle. Exclusive collections and bespoke offers.</p>
-           </div>
-           <form className="w-full lg:w-auto flex flex-col sm:flex-row gap-4 flex-1 max-w-xl">
-              <input 
-                type="email" 
-                placeholder="EMAIL ARCHIVE" 
-                className="flex-1 bg-brand-navy border border-white/10 px-8 py-5 text-[10px] font-black uppercase tracking-widest outline-none focus:border-brand-gold transition-all placeholder:text-white/10"
-                required
-              />
-              <button 
-                type="submit" 
-                className="bg-brand-gold text-brand-navy px-12 py-5 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-white hover:scale-105 transition-all duration-500"
-              >
-                Inscribe
-              </button>
-           </form>
-        </div>
-        
-        {/* Legal & Bottom Bar */}
-        <div className="pt-12 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-8 text-[9px] font-black uppercase tracking-[0.4em] text-white/20">
-          <p>&copy; {currentYear} Lenzify Private Limited. All Assets Secured.</p>
-          <div className="flex gap-10">
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy Codex</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">Terms of Engagement</Link>
-            <Link href="/cookies" className="hover:text-white transition-colors">Cookie Ledger</Link>
+        <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-outline/60">
+            © 2026 LENZIFY STUDIO. ALL RIGHTS RESERVED.
+          </p>
+          <div className="flex gap-8">
+            <Link href="/privacy" className="text-[10px] font-bold uppercase tracking-[0.2em] text-outline/60 hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="text-[10px] font-bold uppercase tracking-[0.2em] text-outline/60 hover:text-white transition-colors">
+              Terms of Use
+            </Link>
+            <Link href="/cookies" className="text-[10px] font-bold uppercase tracking-[0.2em] text-outline/60 hover:text-white transition-colors">
+              Cookie Policy
+            </Link>
           </div>
         </div>
       </div>

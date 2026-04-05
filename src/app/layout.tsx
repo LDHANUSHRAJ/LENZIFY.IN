@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Cormorant_Garamond } from "next/font/google";
+import { Inter, Noto_Serif } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -7,17 +7,26 @@ import { Toaster } from "react-hot-toast";
 import SmoothScroll from "@/components/lenis/SmoothScroll";
 import { cn } from "@/lib/utils";
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
-const cormorant = Cormorant_Garamond({ 
-  weight: ['300', '400', '500', '600', '700'],
-  subsets: ['latin'],
-  style: ['normal', 'italic'],
-  variable: '--font-display'
+const inter = Inter({ 
+  subsets: ['latin'], 
+  variable: '--font-body' 
+});
+
+const interLabel = Inter({ 
+  subsets: ['latin'], 
+  variable: '--font-label' 
+});
+
+const notoSerif = Noto_Serif({ 
+  subsets: ['latin'], 
+  variable: '--font-headline',
+  weight: ['400', '700'],
+  style: ['normal', 'italic']
 });
 
 export const metadata: Metadata = {
-  title: "LENZIFY | Luxury Optical & Premium Eyewear",
-  description: "Experience the zenith of optical craftsmanship. Shop premium spectacles, sunglasses, and contact lenses.",
+  title: "LENZIFY | The Visionary Editorial",
+  description: "Excellence in every frame. Redefining vision through the lens of high-fashion editorial.",
 };
 
 export default function RootLayout({
@@ -26,14 +35,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn(inter.variable, cormorant.variable)}>
-      <body className="font-sans bg-brand-background text-brand-text-primary antialiased selection:bg-brand-gold selection:text-white">
+    <html lang="en" className={cn(inter.variable, interLabel.variable, notoSerif.variable)}>
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+      </head>
+      <body className="bg-surface text-on-surface font-body selection:bg-secondary-fixed selection:text-on-secondary-fixed antialiased">
         <Toaster position="bottom-right" toastOptions={{
           style: {
             background: '#ffffff',
-            color: '#0f0d3d',
-            border: '1px solid #e2e8f0',
-            borderRadius: '0px',
+            color: '#1c1b1b',
+            border: '1px solid rgba(0, 0, 0, 0.05)',
+            borderRadius: '8px',
+            fontSize: '12px',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em'
           }
         }} />
         <SmoothScroll>

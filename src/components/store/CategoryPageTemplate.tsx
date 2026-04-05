@@ -5,9 +5,10 @@ import ProductCard from "@/components/store/ProductCard";
 import { products, Product } from "@/data/products";
 import { ChevronDown, SlidersHorizontal, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface CategoryPageProps {
-    category: "spectacles" | "lenses" | "contact-lenses";
+    category: "spectacles" | "lenses" | "contact-lenses" | "sunglasses" | "accessories";
     title: string;
     description: string;
 }
@@ -39,76 +40,86 @@ export default function CategoryPageTemplate({ category, title, description }: C
         setFilteredProducts(result);
     }, [category, sortBy, searchQuery]);
 
+    const fadeInUp = {
+        initial: { opacity: 0, y: 20 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } as any
+    };
+
     return (
-        <div className="bg-brand-background min-h-screen pt-32 font-sans overflow-hidden">
+        <div className="bg-surface min-h-screen pt-32 pb-32">
             {/* Category Hero */}
-            <section className="max-w-7xl mx-auto px-6 mb-20">
-                <div className="relative p-12 md:p-20 bg-brand-navy overflow-hidden">
+            <section className="max-w-screen-2xl mx-auto px-8 md:px-12 mb-24">
+                <div className="relative p-12 md:p-24 bg-[#000000] overflow-hidden rounded-sm">
                     {/* Abstract background elements */}
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-brand-gold/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-gold/5 blur-2xl rounded-full -translate-x-1/3 translate-y-1/3" />
+                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/5 blur-[100px] rounded-full translate-x-1/4 -translate-y-1/4" />
                     
-                    <div className="relative z-10 max-w-2xl">
-                        <span className="text-brand-gold text-xs font-bold uppercase tracking-[0.4em] mb-4 block">
-                            Limited Edition Collection
-                        </span>
-                        <h1 className="text-5xl md:text-7xl font-display text-white leading-tight mb-6">
-                            {title}
-                        </h1>
-                        <p className="text-white/60 text-sm md:text-base leading-relaxed tracking-wide">
+                    <div className="relative z-10 max-w-3xl space-y-8">
+                        <div className="space-y-4">
+                            <span className="text-secondary text-[10px] font-bold uppercase tracking-[0.5em] block italic">
+                                Archival Collection
+                            </span>
+                            <h1 className="text-5xl md:text-8xl font-serif text-white italic leading-none tracking-tight">
+                                {title}
+                            </h1>
+                        </div>
+                        <p className="text-white/40 text-sm md:text-lg leading-relaxed max-w-xl font-medium italic">
                             {description}
                         </p>
+                        <div className="pt-4">
+                            <div className="h-px w-24 bg-secondary/30"></div>
+                        </div>
                     </div>
                 </div>
             </section>
 
             {/* Filter Bar */}
-            <section className="max-w-7xl mx-auto px-6 mb-12 border-b border-brand-navy/5 pb-8">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-center gap-4">
+            <section className="max-w-screen-2xl mx-auto px-8 md:px-12 mb-16">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 border-y border-outline/10 py-10">
+                    <div className="flex flex-wrap items-center gap-6">
                         <button 
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className="flex items-center gap-2 bg-brand-navy text-white px-5 py-3 text-xs font-bold uppercase tracking-widest hover:bg-brand-gold transition-colors"
+                            className="flex items-center gap-3 px-8 py-4 bg-primary text-white text-[10px] font-bold uppercase tracking-widest hover:opacity-80 transition-all"
                         >
                             <SlidersHorizontal size={14} />
-                            Filters
+                            Refine Access
                         </button>
                         
-                        <div className="relative group flex-1 md:w-64">
-                            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-navy/40" />
+                        <div className="relative w-full md:w-80">
+                            <Search size={14} className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface/30" />
                             <input 
                                 type="text" 
-                                placeholder="Search products..."
+                                placeholder="SEARCH ARCHIVE..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-brand-surface border border-brand-navy/10 pl-10 pr-4 py-3 text-xs outline-none focus:border-brand-gold transition-colors"
+                                className="w-full bg-surface-container border border-outline/10 pl-14 pr-6 py-4 text-[10px] font-bold tracking-widest outline-none focus:border-secondary transition-all uppercase placeholder:text-on-surface/20"
                             />
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
-                        <p className="text-[10px] text-brand-text-muted uppercase tracking-widest font-black">
-                            {filteredProducts.length} Results
+                    <div className="flex items-center gap-8 justify-between lg:justify-end">
+                        <p className="text-[10px] text-on-surface/40 uppercase tracking-widest font-bold italic">
+                            Showing {filteredProducts.length} entries
                         </p>
                         
-                        <div className="relative group">
+                        <div className="relative">
                             <select 
                                 onChange={(e) => setSortBy(e.target.value)}
-                                className="appearance-none bg-brand-surface border border-brand-navy/10 pl-5 pr-10 py-3 text-xs font-bold uppercase tracking-widest outline-none focus:border-brand-gold cursor-pointer"
+                                className="appearance-none bg-surface-container border border-outline/10 pl-8 pr-14 py-4 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-secondary cursor-pointer italic"
                             >
                                 <option value="featured">Sort: Featured</option>
                                 <option value="price-low">Price: Low to High</option>
                                 <option value="price-high">Price: High to Low</option>
                                 <option value="rating">Rating: High to Low</option>
                             </select>
-                            <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-brand-navy" />
+                            <ChevronDown size={14} className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface/40" />
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* Product Grid */}
-            <section className="max-w-7xl mx-auto px-6 pb-24">
+            <section className="max-w-screen-2xl mx-auto px-8 md:px-12">
                 <AnimatePresence mode="wait">
                     {filteredProducts.length > 0 ? (
                         <motion.div 
@@ -116,25 +127,26 @@ export default function CategoryPageTemplate({ category, title, description }: C
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16"
+                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-20"
                         >
-                            {filteredProducts.map((p) => (
-                                <ProductCard key={p.id} product={p} />
+                            {filteredProducts.map((p, i) => (
+                                <motion.div key={p.id} {...fadeInUp} transition={{ ...fadeInUp.transition, delay: (i % 4) * 0.1 }}>
+                                    <ProductCard product={p} />
+                                </motion.div>
                             ))}
                         </motion.div>
                     ) : (
                         <motion.div 
                             key="empty"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="py-40 text-center"
+                            {...fadeInUp}
+                            className="py-48 text-center space-y-6"
                         >
-                            <h3 className="font-display text-4xl text-brand-navy/20 mb-4 uppercase tracking-tighter">
+                            <h3 className="font-serif text-5xl text-on-surface/10 uppercase italic tracking-tighter">
                                 No Vision Found
                             </h3>
                             <button 
                                 onClick={() => {setSearchQuery(""); setSortBy("featured")}}
-                                className="text-brand-gold hover:text-brand-navy font-bold uppercase text-xs tracking-widest transition-colors underline"
+                                className="text-secondary hover:text-primary font-bold uppercase text-[10px] tracking-widest transition-colors underline underline-offset-8 decoration-secondary/30"
                             >
                                 Reset Search Parameters
                             </button>

@@ -1,192 +1,273 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState, useEffect } from "react";
 import Image from "next/image";
-import { Star, ShieldCheck, Truck, RotateCcw, Zap, ChevronRight, Ruler, Eye, Package, Info, CheckCircle2, X } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "react-hot-toast";
+import { products as allProducts } from "@/data/products";
+import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
+import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
-  const [lensFlowOpen, setLensFlowOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [selectedLensType, setSelectedLensType] = useState("");
+export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const product = allProducts.find(p => p.id === id);
+  
+  const [activeTab, setActiveTab] = useState<"craftsmanship" | "specs" | "heritage">("craftsmanship");
+  const [selectedColor, setSelectedColor] = useState("Midnight Black");
+  const [selectedLens, setSelectedLens] = useState("Premium Clear");
+  const [user, setUser] = useState<any>(null);
+  const supabase = createClient();
+  const router = useRouter();
+  
+  const addItem = useCartStore((state) => state.addItem);
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
 
-  const lensSteps = [
-    { id: "type", title: "Select Lens Type", options: ["Single Vision", "Bifocal", "Progressive", "Zero Power"] },
-    { id: "package", title: "Select Lens Package", options: ["Essential (Free)", "Gold (₹999)", "Platinum (₹1999)"] },
-    { id: "prescription", title: "Prescription Protocol", options: ["Manual Entry", "Upload File", "Call Me"] },
-  ];
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    checkUser();
+  }, [supabase.auth]);
+
+  const handleAddToCart = () => {
+    if (!user) {
+      router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    if (product) addItem(product);
+  };
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-8">
+        <h1 className="text-4xl font-serif italic text-primary mb-8 tracking-tighter">Archive Entry Not Found</h1>
+        <Link href="/products" className="bg-primary text-white px-10 py-4 rounded-lg font-bold text-[10px] uppercase tracking-widest">Return to Catalogue</Link>
+      </div>
+    );
+  }
+
+  const fadeInUp = {
+    initial: { opacity: 0, y: 20 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true },
+    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
+  };
 
   return (
-    <div className="bg-[#fcfcfc] pt-[120px] lg:pt-[180px] pb-32 px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row gap-20">
-          
-          {/* Vertical Media Stack - 1:1 Layout */}
-          <div className="w-full lg:w-1/2 flex gap-6">
-             <div className="hidden md:flex flex-col gap-4 w-24 flex-shrink-0">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="aspect-square bg-white border border-brand-navy/5 rounded-2xl p-4 overflow-hidden group cursor-pointer hover:border-brand-gold transition-all duration-500">
-                     <Image src="https://static1.lenskart.com/media/desktop/img/Apr21/Eyeglasses.png" alt="Thumb" width={100} height={100} className="object-contain group-hover:scale-110 transition-transform" />
-                  </div>
-                ))}
-             </div>
-             <div className="flex-1 aspect-[4/5] bg-white border border-brand-navy/5 rounded-[3rem] p-16 relative overflow-hidden group shadow-2xl">
-                <Image src="https://static1.lenskart.com/media/desktop/img/Apr21/Eyeglasses.png" alt="Product" fill className="object-contain p-12 group-hover:scale-105 transition-transform duration-[2s]" />
-                <div className="absolute top-10 left-10 flex flex-col gap-3">
-                   <div className="bg-brand-navy text-white px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.4em] shadow-xl italic cursor-default">Archive Entry</div>
-                </div>
-                <button className="absolute bottom-10 right-10 bg-white/80 backdrop-blur-xl p-6 rounded-full shadow-2xl hover:bg-brand-navy hover:text-white transition-all duration-500 group/zoom">
-                   <Eye size={24} className="group-hover/zoom:scale-110 transition-transform" />
-                </button>
-             </div>
-          </div>
+    <div className="bg-surface text-on-surface min-h-screen pt-24">
+      {/* Breadcrumbs */}
+      <nav className="max-w-screen-2xl mx-auto px-8 md:px-12 py-8">
+         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-on-surface/40">
+           <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+           <span className="material-symbols-outlined text-[10px]">chevron_right</span>
+           <Link href="/products" className="hover:text-primary transition-colors">Archive</Link>
+           <span className="material-symbols-outlined text-[10px]">chevron_right</span>
+           <span className="text-on-surface/80">{product.name}</span>
+         </div>
+      </nav>
 
-          {/* Product Intelligence Panel */}
-          <div className="w-full lg:w-1/2">
-             <div className="mb-12">
-                <div className="flex items-center gap-4 mb-6">
-                   <span className="text-brand-gold text-[10px] font-black uppercase tracking-[0.6em]">John Jacobs Portfolio</span>
-                   <div className="flex items-center gap-2 bg-brand-navy/5 px-3 py-1.5 rounded-full">
-                      <Star size={10} className="text-brand-gold fill-current" />
-                      <span className="text-[10px] font-black text-brand-navy">4.9 Authority</span>
-                   </div>
-                </div>
-                <h1 className="text-5xl lg:text-7xl font-black text-brand-navy mb-4 tracking-tighter uppercase leading-[0.85] italic">
-                   Aurelius <br /> <span className="text-brand-navy/20 not-italic">Prime X</span>
-                </h1>
-                <p className="text-brand-navy/40 text-[10px] font-black uppercase tracking-[0.4em] mb-10">Series 2026 • Italian Acetate • Medium Grid</p>
-                
-                <div className="flex items-end gap-10 border-b border-brand-navy/5 pb-12">
-                   <div className="flex flex-col">
-                      <span className="text-brand-navy/20 text-sm font-bold line-through mb-1 tracking-widest italic">₹18,000 VALUE</span>
-                      <span className="text-5xl font-black text-brand-navy tracking-tighter">₹12,499</span>
-                   </div>
-                   <div className="bg-brand-gold/10 text-brand-gold px-6 py-3 text-[10px] font-black uppercase tracking-widest italic rounded-sm mb-1">
-                      Buy 1 Get 1 Gold Protocol Applied
-                   </div>
-                </div>
-             </div>
-
-             {/* Functional Triggers */}
-             <div className="space-y-6 mb-16">
-                <button 
-                  onClick={() => setLensFlowOpen(true)}
-                  className="w-full bg-brand-navy text-white py-8 text-[11px] font-black uppercase tracking-[0.4em] shadow-[0_20px_50px_rgba(30,27,110,0.2)] hover:bg-brand-gold hover:text-brand-navy transition-all duration-500 flex items-center justify-center gap-6 group"
-                >
-                   Initiate Lens Selection <ChevronRight size={16} className="group-hover:translate-x-2 transition-transform" />
-                </button>
-                <div className="grid grid-cols-2 gap-4">
-                   <button className="border-2 border-brand-navy bg-white text-brand-navy py-6 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-brand-background transition-all group">
-                      Visual Sandbox <Eye size={12} className="inline ml-3 opacity-30 group-hover:opacity-100 transition-opacity" />
-                   </button>
-                   <button className="border-2 border-brand-navy/5 bg-brand-surface text-brand-navy py-6 text-[10px] font-black uppercase tracking-[0.3em] hover:border-brand-navy hover:text-brand-gold transition-all">
-                      Archive Fragment <CheckCircle2 size={12} className="inline ml-3 opacity-30" />
-                   </button>
-                </div>
-             </div>
-
-             {/* Technical DNA Matrices */}
-             <div className="grid grid-cols-3 gap-8 mb-16 border-y border-brand-navy/5 py-12">
-                <div className="flex flex-col gap-3 group cursor-help">
-                   <Ruler size={18} className="text-brand-navy/20 group-hover:text-brand-gold transition-colors" />
-                   <span className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Bridge Matrix</span>
-                   <span className="text-[11px] font-black text-brand-navy">18MM</span>
-                </div>
-                <div className="flex flex-col gap-3 group cursor-help">
-                   <Package size={18} className="text-brand-navy/20 group-hover:text-brand-gold transition-colors" />
-                   <span className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Gram Mass</span>
-                   <span className="text-[11px] font-black text-brand-navy">122 G</span>
-                </div>
-                <div className="flex flex-col gap-3 group cursor-help">
-                   <Info size={18} className="text-brand-navy/20 group-hover:text-brand-gold transition-colors" />
-                   <span className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Visual Type</span>
-                   <span className="text-[11px] font-black text-brand-navy">Full Rim</span>
-                </div>
-             </div>
-
-             {/* Logistics Trust Protocols */}
-             <div className="space-y-6">
-                <div className="flex items-center gap-6 group">
-                   <Truck size={18} className="text-brand-gold group-hover:scale-110 transition-transform" />
-                   <div>
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-navy mb-1">Insured Deployment</h4>
-                      <p className="text-[9px] text-brand-navy/40 font-bold uppercase tracking-widest italic">Delivered in 48-72 Cycles (Hours)</p>
-                   </div>
-                </div>
-                <div className="flex items-center gap-6 group">
-                   <ShieldCheck size={18} className="text-brand-gold group-hover:scale-110 transition-transform" />
-                   <div>
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-navy mb-1">Atomic Warranty</h4>
-                      <p className="text-[9px] text-brand-navy/40 font-bold uppercase tracking-widest italic">Zero-Cost Replacement Security</p>
-                   </div>
-                </div>
-             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Advanced Multi-Step "Select Lens" Flow Overlay */}
-      <AnimatePresence>
-        {lensFlowOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-brand-navy/98 backdrop-blur-2xl flex flex-col items-center justify-center p-6"
-          >
-            <button 
-              onClick={() => { setLensFlowOpen(false); setCurrentStep(1); }}
-              className="absolute top-12 right-12 text-white/40 hover:text-white transition-all transform hover:rotate-90"
+      <main className="max-w-screen-2xl mx-auto px-8 md:px-12 pb-32">
+        <div className="flex flex-col lg:flex-row gap-16 lg:gap-32 items-start">
+          {/* Left: Visualization */}
+          <div className="w-full lg:w-[55%] lg:sticky lg:top-32 space-y-8">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+              className="relative aspect-[4/5] bg-surface-container-low overflow-hidden group"
             >
-              <X size={48} strokeWidth={1} />
-            </button>
+              <Image 
+                src={product.image} 
+                alt={product.name} 
+                fill 
+                priority
+                className="object-contain p-12 mix-blend-multiply grayscale group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105" 
+              />
+              <div className="absolute top-8 left-8">
+                 <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-secondary italic">Editorial Visualization</p>
+              </div>
+            </motion.div>
+            
+            <div className="grid grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="aspect-square bg-surface-container/30 border border-outline/5 cursor-pointer hover:border-primary/20 transition-all p-4 grayscale hover:grayscale-0">
+                  <Image src={product.image} alt="Angle" width={100} height={100} className="object-contain w-full h-full mix-blend-multiply" />
+                </div>
+              ))}
+            </div>
+          </div>
 
-            <div className="w-full max-w-4xl">
-               <div className="flex justify-between items-center mb-20">
-                  <span className="text-brand-gold text-[10px] font-black uppercase tracking-[0.5em] italic">Step {currentStep} of {lensSteps.length}</span>
+          {/* Right: Info Components */}
+          <div className="w-full lg:w-[45%] space-y-12">
+            <motion.header {...fadeInUp} className="space-y-6">
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-[0.4em] text-secondary">{product.brand}</p>
+                <div className="flex justify-between items-start">
+                  <h1 className="text-5xl md:text-7xl font-serif italic tracking-tight text-primary leading-tight">
+                    {product.name}
+                  </h1>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-8 border-y border-outline/10 py-6">
+                 <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-on-surface/40">Member Price</p>
+                    <span className="text-4xl font-serif text-primary italic">₹{product.price}</span>
+                 </div>
+                 <div className="h-10 w-px bg-outline/10"></div>
+                 <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-on-surface/40">Protocol Rating</p>
+                    <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[16px] text-secondary fill-1">star</span>
+                        <span className="text-sm font-bold tracking-tighter text-on-surface/80">{product.rating}</span>
+                    </div>
+                 </div>
+              </div>
+            </motion.header>
+
+            {/* Configurator */}
+            <div className="space-y-10">
+               {/* Frame Color */}
+               <div className="space-y-4">
+                  <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+                     <span>Frame Finish</span>
+                     <span className="text-secondary italic">{selectedColor}</span>
+                  </div>
                   <div className="flex gap-4">
-                     {lensSteps.map((s, idx) => (
-                        <div key={idx} className={`h-1 w-20 transition-all duration-700 ${idx + 1 <= currentStep ? "bg-brand-gold" : "bg-white/10"}`} />
+                     {["Midnight Black", "Polished Gold", "Brushed Silver"].map(color => (
+                        <button 
+                           key={color}
+                           onClick={() => setSelectedColor(color)}
+                           className={cn(
+                             "w-10 h-10 border transition-all duration-300",
+                             selectedColor === color ? "border-primary p-1" : "border-outline/20 p-0 hover:border-primary/50"
+                           )}
+                        >
+                           <div className={cn(
+                              "w-full h-full",
+                              color === "Midnight Black" ? "bg-black" : color === "Polished Gold" ? "bg-[#775a19]" : "bg-[#c4c6cc]"
+                           )}></div>
+                        </button>
                      ))}
                   </div>
                </div>
 
-               <motion.div 
-                  key={currentStep}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="space-y-16"
-               >
-                  <h2 className="text-4xl lg:text-7xl font-black text-white italic uppercase tracking-tighter text-center">
-                     {lensSteps[currentStep-1].title}
-                  </h2>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                     {lensSteps[currentStep-1].options.map((option) => (
+               {/* Lens Selection */}
+               <div className="space-y-4">
+                  <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+                     <span>Lens Configuration</span>
+                     <span className="text-secondary italic">Selected</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                     {["Premium Clear", "Blue Defense", "Photochromic", "Sun Polarized"].map(lens => (
                         <button 
-                          key={option}
-                          onClick={() => {
-                             if (currentStep < lensSteps.length) {
-                                setCurrentStep(prev => prev + 1);
-                             } else {
-                                toast.success("PRESCRIPTION PROTOCOL RECEIVED", { style: { background: '#1e1b6e', color: '#fff', fontSize: '10px', fontBlack: '900' }});
-                                setLensFlowOpen(false);
-                                setCurrentStep(1);
-                             }
-                          }}
-                          className="flex flex-col items-center gap-10 p-12 border border-white/5 bg-white/5 hover:bg-brand-gold hover:border-brand-gold transition-all duration-500 group"
+                           key={lens}
+                           onClick={() => setSelectedLens(lens)}
+                           className={cn(
+                             "px-6 py-4 border text-[10px] uppercase font-bold tracking-widest text-left transition-all",
+                             selectedLens === lens ? "bg-primary text-white border-primary" : "border-outline/20 hover:border-primary/50 text-on-surface/60 hover:text-primary"
+                           )}
                         >
-                           <Zap size={32} className="text-brand-gold group-hover:text-brand-navy" strokeWidth={1.5} />
-                           <span className="text-[10px] font-black uppercase tracking-widest text-white group-hover:text-brand-navy transition-colors">{option}</span>
+                           {lens}
                         </button>
                      ))}
                   </div>
-               </motion.div>
+               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4 pt-4">
+              <button 
+                onClick={handleAddToCart}
+                className="flex-grow py-6 bg-primary text-white font-bold text-[10px] uppercase tracking-[0.3em] rounded-lg hover:opacity-80 transition-all duration-500 active:scale-95 flex items-center justify-center gap-4"
+              >
+                <span>Acquire Vision</span>
+                <span className="material-symbols-outlined text-sm">lock</span>
+              </button>
+              
+              <button 
+                onClick={() => {
+                   isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product);
+                }}
+                className={cn(
+                  "w-20 rounded-lg border flex items-center justify-center transition-all duration-500 active:scale-90",
+                  isInWishlist(product.id) ? "bg-secondary/10 border-secondary text-secondary" : "bg-transparent border-outline/20 text-on-surface/40 hover:text-secondary"
+                )}
+              >
+                <span className={cn("material-symbols-outlined text-2xl", isInWishlist(product.id) && "fill-1")}>favorite</span>
+              </button>
+            </div>
+
+            {/* Detailed Content */}
+            <div className="pt-12 space-y-8 border-t border-outline/10">
+               <div className="flex gap-12 border-b border-outline/10">
+                  {["craftsmanship", "specs", "heritage"].map((tab) => (
+                    <button 
+                      key={tab}
+                      onClick={() => setActiveTab(tab as any)}
+                      className={cn(
+                        "text-[10px] font-bold uppercase tracking-[0.3em] transition-all relative pb-6",
+                        activeTab === tab ? "text-primary" : "text-on-surface/40 hover:text-primary"
+                      )}
+                    >
+                      {tab}
+                      {activeTab === tab && <motion.div layoutId="tab-underline" className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-primary" />}
+                    </button>
+                  ))}
+               </div>
+
+               <div className="min-h-[160px] prose prose-sm text-on-surface/60 font-medium tracking-wide leading-relaxed italic">
+                  <AnimatePresence mode="wait">
+                    {activeTab === "craftsmanship" && (
+                      <motion.div key="craft" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+                        <p>Each frame is meticulously hand-sculpted in our Japanese atelier, undergoing a 32-step inspection protocol. Our artisans utilize cold-forged aerospace titanium and medical-grade acetate, ensuring a structural integrity that lasts a lifetime.</p>
+                        <p className="mt-4">Lenses are precision-ground with atomic-level accuracy, featuring our signature 7-layer anti-reflective coating.</p>
+                      </motion.div>
+                    )}
+                    {activeTab === "specs" && (
+                      <motion.div key="specs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="grid grid-cols-2 gap-y-6 gap-x-12 not-italic underline-offset-4">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40 mb-1">Architecture</p>
+                          <p className="text-primary font-bold">Cold-Forged Titanium</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40 mb-1">Optic Mass</p>
+                          <p className="text-primary font-bold">14.8g Ultra Light</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40 mb-1">Chassis</p>
+                          <p className="text-primary font-bold">54 [] 18 - 145</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40 mb-1">Fitting</p>
+                          <p className="text-primary font-bold">Global Ergonomic</p>
+                        </div>
+                      </motion.div>
+                    )}
+                    {activeTab === "heritage" && (
+                      <motion.div key="heritage" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+                        <p>Inspired by the architectural brutalism of the 1960s, this silhouette reimagines classic visionary aesthetics through a lens of modern minimalism. Designed to be more than eyewear—it is a statement of intellectual presence and sartorial excellence.</p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+               </div>
+            </div>
+
+            {/* Authenticity Badge */}
+            <div className="flex items-center gap-6 p-8 bg-surface-container-low border border-outline/5 rounded-xl">
+               <span className="material-symbols-outlined text-secondary text-3xl">verified</span>
+               <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Authenticity Protocol Guaranteed</p>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-on-surface/40">Secure Digital Ownership Certificate included with every archive piece.</p>
+               </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

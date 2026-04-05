@@ -7,21 +7,28 @@ import { createClient } from '@/lib/supabase/server'
 export async function login(formData: FormData) {
   const supabase = createClient()
 
-  // type-casting here for convenience
-  // in production, use zod to validate
   const data = {
     email: formData.get('email') as string,
     password: formData.get('password') as string,
+    redirectTo: (formData.get('redirectTo') as string) || '/',
   }
 
-  const { error } = await supabase.auth.signInWithPassword(data)
+  const { error } = await supabase.auth.signInWithPassword({
+    email: data.email,
+    password: data.password,
+  })
 
   if (error) {
     return { error: error.message }
   }
 
   revalidatePath('/', 'layout')
-  redirect('/profile')
+
+  if (data.email === 'lenzify.in@gmail.com') {
+    redirect('/admin/dashboard')
+  }
+
+  redirect(data.redirectTo)
 }
 
 export async function signup(formData: FormData) {
@@ -30,6 +37,7 @@ export async function signup(formData: FormData) {
     email: formData.get('email') as string,
     password: formData.get('password') as string,
     name: formData.get('name') as string,
+    redirectTo: (formData.get('redirectTo') as string) || '/',
   }
 
   const { error } = await supabase.auth.signUp({
@@ -47,7 +55,7 @@ export async function signup(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/profile')
+  redirect(data.redirectTo)
 }
 
 export async function adminLogin(formData: FormData) {
@@ -64,7 +72,13 @@ export async function adminLogin(formData: FormData) {
     return { error: error.message }
   }
 
-  // After authenticating, the middleware or layout should check the role.
+  // Strict check for admin credentials
+  if (data.email !== 'lenzify.in@gmail.com') {
+    // If someone tries to log into admin with a non-admin account, sign them out and error
+    await supabase.auth.signOut()
+    return { error: "Non-administrative identity detected. Access denied." }
+  }
+
   revalidatePath('/', 'layout')
   redirect('/admin/dashboard')
 }

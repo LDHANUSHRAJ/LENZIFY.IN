@@ -1,268 +1,261 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { ArrowRight, ChevronLeft, ChevronRight, Star, ShieldCheck, Truck, RotateCcw, Zap, Eye, MapPin } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
+import { useCartStore } from "@/store/cartStore";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [user, setUser] = useState<any>(null);
+  const supabase = createClient();
+  const router = useRouter();
+  const addItem = useCartStore((state) => state.addItem);
 
-  const heroSlides = [
-    {
-      title: "PAYDAY SALE",
-      subtitle: "Styles Starting @ ₹500",
-      description: "EXTENDED | Ends In 2 Days",
-      image: "https://static1.lenskart.com/media/desktop/img/Apr22/Banner-Web.jpg",
-      bg: "bg-[#e8f1f5]"
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    checkUser();
+  }, [supabase.auth]);
+
+  const handleProtectedAction = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return false;
+    }
+    return true;
+  };
+
+  const fadeInUp = {
+    initial: { opacity: 0, y: 20 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true },
+    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
+  };
+
+  const categories = [
+    { 
+      name: "The Heritage Series", 
+      subtitle: "Classic silhouettes, reimagined.", 
+      img: "/heritage_spectacles_editorial_1775377795216.png", 
+      href: "/products?collection=heritage",
+      size: "large"
     },
-    {
-      title: "FREE LENS REPLACEMENT",
-      subtitle: "Any Frame | Any Power",
-      description: "LIMITED TIME: 100% OFF LENSES",
-      image: "https://static1.lenskart.com/media/desktop/img/rebrand/HomeBanner.jpg",
-      bg: "bg-brand-navy"
+    { 
+      name: "Modern Minimalist", 
+      subtitle: "Stripping back to the essentials.", 
+      img: "/modern_minimalist_spectacles_editorial_1775379062591.png", 
+      href: "/products?collection=minimalist",
+      size: "small"
     },
-    {
-      title: "ITALIAN ARTISTRY",
-      subtitle: "The Zenith Collection",
-      description: "NEW ARRIVALS: STARTING @ ₹4,500",
-      image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=1600",
-      bg: "bg-[#f4f7f9]"
+    { 
+      name: "Avant-Garde", 
+      subtitle: "Daring frames for the visionary.", 
+      img: "/avant_garde_spectacles_editorial_1775377885089.png", 
+      href: "/products?collection=avant-garde",
+      size: "small"
     }
   ];
 
-  useEffect(() => {
-     const timer = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-     }, 5000);
-     return () => clearInterval(timer);
-  }, []);
-
-  const categories = [
-    { name: "Eyeglasses", img: "https://static1.lenskart.com/media/desktop/img/Apr21/Eyeglasses.png" },
-    { name: "Sunglasses", img: "https://static1.lenskart.com/media/desktop/img/Apr21/Sunglasses.png" },
-    { name: "Computer Glasses", img: "https://static1.lenskart.com/media/desktop/img/Apr21/ComputerGlasses.png" },
-    { name: "Contact Lenses", img: "https://static1.lenskart.com/media/desktop/img/Apr21/ContactLenses.png" },
-    { name: "Power Sunglasses", img: "https://static1.lenskart.com/media/desktop/img/Apr21/PowerSunglasses.png" },
-    { name: "Kids Glasses", img: "https://static1.lenskart.com/media/desktop/img/Apr21/KidsGlasses.png", badge: "NEW" },
-    { name: "Sale", img: "https://static1.lenskart.com/media/desktop/img/Apr21/Sale.png", badge: "60% OFF" },
-  ];
-
-  const shapes = [
-    { name: "Rectangle", img: "https://static.lenskart.com/media/desktop/img/sep21/rectangle.png" },
-    { name: "Cateye", img: "https://static.lenskart.com/media/desktop/img/sep21/cateye.png" },
-    { name: "Aviator", img: "https://static.lenskart.com/media/desktop/img/sep21/aviator.png" },
-    { name: "Geometric", img: "https://static.lenskart.com/media/desktop/img/sep21/geometric.png" },
-    { name: "Round", img: "https://static.lenskart.com/media/desktop/img/sep21/round.png" },
-    { name: "Clubmaster", img: "https://static.lenskart.com/media/desktop/img/sep21/clubmaster.png" },
-    { name: "Square", img: "https://static.lenskart.com/media/desktop/img/sep21/square.png" },
-  ];
-
   return (
-    <main className="bg-white pt-[50px] lg:pt-[105px]">
-      
-      {/* 1. Hero Multi-Banner Slider (Auto-playing) */}
-      <section className="relative h-[250px] lg:h-[450px] overflow-hidden">
-        <AnimatePresence mode="wait">
+    <div className="flex flex-col w-full bg-surface">
+      {/* Hero Section */}
+      <section className="relative min-h-[90vh] flex items-center pt-44 pb-20">
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <div className="absolute top-0 right-0 w-1/2 h-full bg-surface-container/30"></div>
+          <Image 
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAryKkyXIXhUlJ6LOOQ5MAratIAmRPCbNcTtgeeMAQglZiE5kqNu7vFY7pRf-Pe5vvWEAvyd6k9Ci6R6R0fcQJhLG9zhlkOFbC5tk27gztLljp0k3lazeS3yiVYyBq1r73e_VIQ8mzOuoaTKBcTtM3DsdHSDuglaoeAJ9YB0ihE9bIFlGrPs5pbS5Qtfr0t8Lvl_WXEWWvK2kuZNA8WenXBQlmtW6BgrV-2fo1DAZdrJOWAW-wKHuAqICnZYUbKc0ZAHvnN0oYa9jc" 
+            alt="Editorial Vision" 
+            fill
+            className="object-cover object-center scale-105"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/40 to-transparent"></div>
+        </div>
+
+        <div className="relative z-10 max-w-screen-2xl mx-auto px-8 md:px-12 w-full grid grid-cols-1 lg:grid-cols-12 gap-12">
           <motion.div 
-            key={currentSlide}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
-            className={`absolute inset-0 flex items-center justify-between px-6 lg:px-32 ${heroSlides[currentSlide].bg}`}
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:col-span-12 space-y-8"
           >
-             <div className="max-w-xl z-20">
-                <span className="text-brand-navy font-black text-sm lg:text-2xl tracking-tighter mb-1 block">{heroSlides[currentSlide].title}</span>
-                <p className="text-2xl lg:text-6xl font-black text-brand-navy mb-3 lg:mb-6 tracking-tighter uppercase italic leading-[0.9]">{heroSlides[currentSlide].subtitle}</p>
-                <div className="bg-brand-navy text-white px-3 py-1.5 lg:px-5 lg:py-2 text-[10px] lg:text-sm font-black inline-block mb-8 rounded-sm tracking-widest shadow-lg">
-                   {heroSlides[currentSlide].description}
+            <div className="space-y-4">
+              <motion.p 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="text-xs font-bold uppercase tracking-[0.4em] text-secondary"
+              >
+                Visionary Editorial
+              </motion.p>
+              <h1 className="text-7xl md:text-[10rem] font-serif tracking-tighter leading-[0.8] mb-8 text-primary">
+                Excellence<br/>
+                <span className="italic ml-8 md:ml-24">In Every</span><br/>
+                Frame.
+              </h1>
+            </div>
+            
+            <div className="flex flex-col md:flex-row items-start gap-12 pt-8">
+              <div className="max-w-md space-y-6">
+                <p className="text-sm md:text-base text-on-surface-variant font-medium leading-relaxed tracking-wide">
+                  Experience the future of vision. Engineering precision optics with high-fashion editorial aesthetics. Our lenses are crafted for those who see beyond the ordinary.
+                </p>
+                <div className="flex gap-4">
+                  <Link href="/products" className="px-10 py-5 bg-primary text-white font-bold rounded-lg hover:opacity-80 transition-all uppercase tracking-widest text-[10px]">
+                    Shop Collection
+                  </Link>
+                  <Link href="/try-at-home" className="px-10 py-5 border border-primary/20 bg-white/50 backdrop-blur-md text-primary font-bold rounded-lg hover:bg-white transition-all uppercase tracking-widest text-[10px]">
+                    Virtual Fitting
+                  </Link>
                 </div>
-                <div>
-                   <Link href="/products" className="bg-brand-navy text-white px-10 py-3 lg:px-14 lg:py-4 rounded-full font-black text-[10px] lg:text-xs uppercase tracking-[0.2em] hover:bg-brand-gold transition-all shadow-xl">Deploy View</Link>
-                </div>
-             </div>
-             <div className="relative w-1/2 h-full hidden md:block">
+              </div>
+              <div className="hidden lg:block pt-12">
+                <div className="w-1 px-8 py-24 border-r border-outline/20"></div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Curated Categories - Bento Grid */}
+      <section className="py-32 px-8 md:px-12">
+        <div className="max-w-screen-2xl mx-auto">
+          <div className="flex justify-between items-end mb-20">
+            <div className="space-y-4">
+              <p className="text-xs font-bold uppercase tracking-[0.4em] text-secondary">The Collection</p>
+              <h2 className="text-5xl font-serif tracking-tight">Curated Categories</h2>
+            </div>
+            <Link href="/products" className="text-[10px] font-bold uppercase tracking-widest border-b border-primary pb-2 hover:opacity-60 transition-opacity">
+              View All Catalogue
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {categories.map((cat, i) => (
+              <motion.div 
+                key={cat.name}
+                {...fadeInUp}
+                transition={{ ...fadeInUp.transition, delay: i * 0.1 }}
+                className={cn(
+                  "relative group overflow-hidden bg-surface-container-low rounded-xl",
+                  cat.size === "large" ? "md:col-span-2 lg:col-span-2 aspect-[21/9]" : "aspect-[3/4]"
+                )}
+              >
+                <Link href={cat.href} className="block w-full h-full">
+                  <Image 
+                    src={cat.img} 
+                    alt={cat.name} 
+                    fill 
+                    className="object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-1000 grayscale group-hover:grayscale-0" 
+                  />
+                  <div className="absolute inset-x-0 bottom-0 p-12 bg-gradient-to-t from-surface/80 via-surface/20 to-transparent">
+                    <h3 className="text-3xl font-serif italic mb-2">{cat.name}</h3>
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-on-surface/60">{cat.subtitle}</p>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* The Heritage Series - Asymmetric Layout */}
+      <section className="py-32 bg-primary text-white overflow-hidden">
+        <div className="max-w-screen-2xl mx-auto px-8 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-24 items-center">
+          <div className="lg:col-span-5 space-y-12">
+            <div className="space-y-6">
+              <p className="text-xs font-bold uppercase tracking-[0.4em] text-secondary">Editorial Focus</p>
+              <h2 className="text-6xl font-serif leading-[1.1] italic">
+                The Heritage<br/> Series.
+              </h2>
+              <p className="text-base text-outline leading-relaxed tracking-wide font-medium">
+                Our Heritage Series draws inspiration from archival silhouttes, meticulously engineered with modern aerospace titanium and precision-ground Japanese lenses. A testament to timeless craftsmanship.
+              </p>
+            </div>
+            <Link href="/products?collection=heritage" className="inline-block px-12 py-6 border border-white/20 rounded-lg hover:bg-white hover:text-primary transition-all text-[10px] font-bold uppercase tracking-widest">
+              Explore The Legacy
+            </Link>
+          </div>
+          <div className="lg:col-span-7 relative">
+            <motion.div 
+               whileInView={{ x: [0, -20, 0], y: [0, 10, 0] }}
+               transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+               className="relative z-10 aspect-video rounded-2xl overflow-hidden bg-surface-container-highest/10"
+            >
+              <Image 
+                src="/heritage_series_detail_shot_1775377923477.png" 
+                alt="Heritage Series" 
+                fill
+                className="object-contain p-12"
+              />
+            </motion.div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] border border-white/5 rounded-full pointer-events-none"></div>
+          </div>
+        </div>
+      </section>
+
+      {/* Modern Minimalist */}
+      <section className="py-48 px-8 md:px-12 text-center">
+        <div className="max-w-4xl mx-auto space-y-12">
+          <motion.div {...fadeInUp} className="space-y-6">
+            <p className="text-xs font-bold uppercase tracking-[0.4em] text-secondary">Craftsmanship</p>
+            <h2 className="text-6xl font-serif">Modern Minimalist</h2>
+            <p className="text-lg text-on-surface-variant font-medium max-w-2xl mx-auto leading-relaxed italic">
+              "True sophistication lies in the removal of the unnecessary."
+            </p>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+             <div className="aspect-[4/5] bg-surface-container-low rounded-xl overflow-hidden relative group">
                 <Image 
-                  src={heroSlides[currentSlide].image} 
-                  alt="Slide" 
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTALpYDue6PV1lQ2jHeFCeDpS_JSiS7Chdgn5ZHaPwG12qlD6sdCNS6sVK_JFyixeGD71yI9LVZo5U8b1bycfZXoVpH-rNbvq_FRasYNCmktGpWbzZFQaR-IQSimRMrsPhijyso7W8SQ7xlu9XblqJWvf0jq8F12AQ8JBWam372QqJzDU0d72bvC1wYI8mJANxlQY0FzQYllZ2usC_v1WouOJ3brD342lj_29B_Dv23wZr6O8sC6ii-GjzoIPtEgndVnMQgVv1_Ak" 
+                  alt="Minimalist A" 
                   fill 
-                  className="object-contain" 
-                  priority 
+                  className="object-cover grayscale group-hover:grayscale-0 transition-all duration-1000"
                 />
              </div>
-          </motion.div>
-        </AnimatePresence>
-        
-        {/* Carousel Controls */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-30">
-           {heroSlides.map((_, i) => (
-             <button key={i} onClick={() => setCurrentSlide(i)} className={`h-1 rounded-full transition-all border border-brand-navy/20 ${currentSlide === i ? "bg-brand-navy w-12" : "bg-brand-navy/10 w-6"}`} />
-           ))}
-        </div>
-      </section>
-
-      {/* 2. Top Categories (Lenskart Styled Exact) */}
-      <section className="py-12 px-6 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-             <h2 className="text-xl font-black text-brand-navy uppercase tracking-tighter italic">Top Categories</h2>
-             <Link href="/products" className="text-[10px] font-black uppercase text-brand-gold tracking-widest border-b border-brand-gold/20 pb-1">Browse All</Link>
-          </div>
-          <div className="flex lg:justify-between items-start gap-12 overflow-x-auto no-scrollbar py-6">
-             {categories.map((cat, i) => (
-               <Link href="/products" key={i} className="flex flex-col items-center gap-4 group min-w-[140px] text-center">
-                  <div className="relative w-24 h-24 lg:w-36 lg:h-36 bg-[#f8f9fa] rounded-full p-6 group-hover:shadow-[0_20px_40px_rgba(30,27,110,0.1)] transition-all flex items-center justify-center border border-brand-navy/5 group-hover:border-brand-navy/20 overflow-hidden">
-                     <Image src={cat.img} alt={cat.name} width={120} height={120} className="object-contain transform group-hover:scale-110 transition-transform duration-700" />
-                     {cat.badge && (
-                       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-[#0000ff] text-white text-[8px] font-black px-3 py-1 rounded-full whitespace-nowrap shadow-xl">
-                          {cat.badge}
-                       </div>
-                     )}
-                  </div>
-                  <span className="text-[11px] font-black uppercase tracking-widest text-brand-navy/60 group-hover:text-brand-navy transition-all duration-500">{cat.name}</span>
-               </Link>
-             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 3. FREE LENSE REPLACEMENT Banner (The "Crazy" Professional Version) */}
-      <section className="bg-brand-navy py-24 px-6 relative overflow-hidden group">
-         <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent z-10" />
-         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-16 relative z-20">
-            <div className="max-w-2xl">
-               <span className="text-brand-gold font-black text-[10px] uppercase tracking-[0.5em] mb-6 block opacity-60">Visual Empowerment</span>
-               <h2 className="text-5xl lg:text-[6.5rem] font-black text-white leading-[0.85] mb-8 italic tracking-tighter uppercase">
-                  Zero-Cost <br /> <span className="text-transparent border-b-4 border-brand-gold/30">Lens Matrix</span>
-               </h2>
-               <p className="text-white text-lg lg:text-xl font-bold tracking-widest opacity-40 uppercase mb-12">
-                  Any Frame | Any Power | Any Visionary
-               </p>
-               <button className="flex items-center gap-6 group/btn">
-                  <div className="w-16 h-16 rounded-full bg-brand-gold flex items-center justify-center group-hover/btn:bg-white transition-all duration-500">
-                     <Zap size={20} className="text-brand-navy animate-pulse" />
-                  </div>
-                  <span className="text-white text-[10px] font-black uppercase tracking-[0.3em]">Redeem Protocol</span>
-               </button>
-            </div>
-            <div className="relative w-full max-w-xl aspect-[16/10] group-hover:scale-105 transition-transform duration-[2s]">
-               <Image 
-                  src="https://static5.lenskart.com/media/desktop/img/rebrand/HomeBanner.jpg" 
-                  alt="Lenses" 
+             <div className="aspect-[4/5] bg-surface-container-low rounded-xl overflow-hidden relative group md:mt-24">
+                <Image 
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgn8Gq6_Z6ttFUH1I6nTz6lUWUI5CMy9afDvxjoDaFaPrvC8V6Tu5QNov5GxwINLv4Pjs8A8UXFfw542n3Hq_C4zzwJCzHCDj1RpixgVb9Vwk858bXowvgrXdCYovOc_S5DM6pa6RoFvBp2AzNQiBxhL__wXjzfetE2WEcteQ_qI81F3gpUYyTFvkI6fOZj4cZOiirWnzWTCs1YQycPi1QRGJmB9lgK3DtVPPCuJd7WkPSMQ1Ty_HLfSwTu8qKIuqqeAAE9Oe04LY" 
+                  alt="Minimalist B" 
                   fill 
-                  className="object-contain mix-blend-screen scale-125" 
-               />
-               <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-[120%] h-[120%] bg-brand-navy-light rounded-full blur-[150px] opacity-40 -translate-x-1/2" />
-               </div>
-            </div>
-         </div>
-         {/* Kinetic Particles (Placeholder visual layer) */}
-         <div className="absolute top-0 right-0 w-full h-full opacity-5 pointer-events-none overflow-hidden">
-             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-display text-[30vw] text-white italic font-black whitespace-nowrap">ZENITH VERTICAL</div>
-         </div>
-      </section>
-
-      {/* 4. Get the Perfect Shape Grid (1:1 UI) */}
-      <section className="py-32 px-6 bg-[#fcfcfc] border-b border-brand-navy/5">
-        <div className="max-w-7xl mx-auto text-center">
-           <span className="text-brand-navy/20 font-black text-[10px] uppercase tracking-[0.6em] mb-4 block">Morphology Selection</span>
-           <h2 className="text-3xl font-black text-brand-navy mb-20 italic uppercase tracking-tighter">Get the perfect shape <span className="text-brand-navy/40">—</span> Eyeglasses</h2>
-           <div className="flex flex-wrap justify-center gap-12 lg:gap-24">
-              {shapes.map((shape, i) => (
-                <div key={i} className="flex flex-col items-center gap-8 group cursor-pointer">
-                   <div className="relative w-24 h-24 lg:w-40 lg:h-40 bg-white rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.03)] group-hover:shadow-[0_40px_80px_rgba(30,27,110,0.12)] transition-all duration-[0.8s] flex items-center justify-center p-8 border border-brand-navy/5 group-hover:border-brand-navy/20 overflow-hidden">
-                      <div className="absolute inset-0 bg-brand-navy/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <Image src={shape.img} alt={shape.name} width={100} height={50} className="relative z-10 object-contain opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-[0.8s] group-hover:rotate-6" />
-                   </div>
-                   <span className="text-[10px] font-black uppercase text-brand-navy/40 tracking-[0.4em] group-hover:text-brand-navy group-hover:tracking-[0.6em] transition-all duration-700">{shape.name}</span>
-                </div>
-              ))}
-           </div>
+                  className="object-cover grayscale group-hover:grayscale-0 transition-all duration-1000"
+                />
+             </div>
+          </div>
         </div>
       </section>
 
-      {/* 5. Premium Eyewear MATRIX (Brand Grid Luxe) */}
-      <section className="py-32 px-6">
-        <div className="max-w-7xl mx-auto">
-           <div className="flex justify-between items-end mb-20 border-b border-brand-navy/5 pb-12">
-              <div>
-                 <h2 className="text-5xl font-black text-brand-navy uppercase tracking-tighter italic">Premium <span className="text-brand-navy/20 not-italic">Archive</span></h2>
-                 <p className="text-brand-navy/40 text-[10px] font-black uppercase tracking-[0.4em] mt-4">Global Curations • Seasonal Drops</p>
-              </div>
-              <Link href="/brand-portfolio" className="bg-brand-navy text-white px-8 py-3 text-[9px] font-black uppercase tracking-widest hover:bg-brand-gold transition-all">View All Labs</Link>
-           </div>
-           
-           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-              {[
-                { name: "MELLER", origin: "Made in Spain", span: "row-span-2 col-span-2", img: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=800" },
-                { name: "JOHN JACOBS", origin: "Made in India", img: "https://static1.lenskart.com/media/desktop/img/Apr22/JJ-Web.jpg" },
-                { name: "OWNDAYS", origin: "Made in Japan", img: "https://static1.lenskart.com/media/desktop/img/Apr22/Owndays-Web.jpg" },
-                { name: "VINCENT CHASE", origin: "Made in Italy", img: "https://static1.lenskart.com/media/desktop/img/Apr22/VC-Web.jpg" },
-                { name: "FOSSIL", origin: "U.S. Luxury", img: "https://static1.lenskart.com/media/desktop/img/Apr22/Fossil-Web.jpg" },
-              ].map((brand, i) => (
-                <div 
-                  key={i} 
-                  className={`group relative overflow-hidden rounded-[2.5rem] bg-[#f4f7f9] shadow-2xl ${brand.span || ""}`}
-                >
-                   <Image src={brand.img} alt={brand.name} fill className="object-cover group-hover:scale-110 transition-transform duration-[3s]" />
-                   <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/80 via-brand-navy/20 to-transparent opacity-60 group-hover:opacity-90 transition-opacity duration-[1s]" />
-                   <div className="absolute inset-0 border border-white/5 m-4 rounded-[2rem]" />
-                   
-                   <div className="absolute bottom-0 left-0 p-10 w-full z-20">
-                      <h3 className="text-2xl lg:text-4xl font-black text-white mb-2 tracking-tighter">{brand.name}</h3>
-                      <p className="text-[10px] font-black text-brand-gold uppercase tracking-[0.5em]">{brand.origin}</p>
-                      
-                      <button className="mt-8 flex items-center gap-4 text-white hover:text-brand-gold transition-colors">
-                         <span className="text-[9px] font-black uppercase tracking-widest">Inscribe</span>
-                         <ArrowRight size={14} className="group-hover:translate-x-2 transition-transform" />
-                      </button>
-                   </div>
-                </div>
-              ))}
-           </div>
-        </div>
+      {/* Virtual Fitting Room CTA */}
+      <section className="py-32 px-8">
+        <motion.div 
+          {...fadeInUp}
+          className="max-w-screen-2xl mx-auto bg-surface-container-high rounded-[2.5rem] overflow-hidden relative min-h-[500px] flex items-center p-12 md:p-24"
+        >
+          <div className="absolute inset-0 z-0">
+             <div className="absolute inset-0 bg-primary/5"></div>
+             <div className="absolute top-0 right-0 w-1/2 h-full border-l border-outline/10"></div>
+          </div>
+          <div className="relative z-10 max-w-2xl space-y-8">
+             <h2 className="text-5xl md:text-7xl font-serif tracking-tight text-primary">
+                Experience Vision.<br/>
+                <span className="italic">Virtually.</span>
+             </h2>
+             <p className="text-on-surface-variant font-medium tracking-wide">
+                Our AI-powered Virtual Fitting Room uses medical-grade spatial mapping to ensure your selected frames complement your facial structure perfectly.
+             </p>
+             <Link href="/try-at-home" className="inline-flex items-center gap-4 px-12 py-6 bg-primary text-white rounded-lg hover:opacity-80 transition-all text-[10px] font-bold uppercase tracking-widest">
+                Start Fitting <span className="material-symbols-outlined">center_focus_strong</span>
+             </Link>
+          </div>
+        </motion.div>
       </section>
-
-      {/* 6. #Trending section (Lifestyle Feed) */}
-      <section className="py-32 px-6 bg-brand-navy overflow-hidden">
-         <div className="max-w-7xl mx-auto flex flex-col items-center">
-            <h2 className="text-4xl lg:text-7xl font-black text-white mb-20 italic uppercase tracking-tighter text-center leading-[0.85]">
-               #Trending <br /> <span className="text-brand-gold">at Lenzify</span>
-            </h2>
-            <div className="flex gap-10 min-w-max animate-marquee">
-               {[
-                 "https://images.unsplash.com/photo-1572635196237-14b3f281503f?q=80&w=800",
-                 "https://images.unsplash.com/photo-1591076482161-42ce6ebaa410?q=80&w=800",
-                 "https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=800",
-                 "https://images.unsplash.com/photo-1493863641943-9b68991a8d07?q=80&w=800",
-                 "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=800",
-               ].map((img, i) => (
-                 <div key={i} className="relative w-[300px] lg:w-[450px] aspect-[4/5] rounded-[2rem] overflow-hidden group border border-white/5 hover:border-brand-gold/30 transition-all duration-700">
-                    <Image src={img} alt="Trending" fill className="object-cover group-hover:scale-110 transition-transform duration-[2s]" />
-                    <div className="absolute inset-0 bg-brand-navy/10 group-hover:bg-brand-navy/0 transition-all" />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm">
-                       <Eye size={40} className="text-white" />
-                    </div>
-                 </div>
-               ))}
-               {/* Duplicate for marquee continuity */}
-               {[
-                 "https://images.unsplash.com/photo-1572635196237-14b3f281503f?q=80&w=800",
-                 "https://images.unsplash.com/photo-1591076482161-42ce6ebaa410?q=80&w=800",
-                 "https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=800",
-               ].map((img, i) => (
-                 <div key={i} className="relative w-[300px] lg:w-[450px] aspect-[4/5] rounded-[2rem] overflow-hidden group">
-                    <Image src={img} alt="Trending" fill className="object-cover" />
-                 </div>
-               ))}
-            </div>
-         </div>
-      </section>
-
-    </main>
+    </div>
   );
 }

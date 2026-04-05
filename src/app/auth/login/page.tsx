@@ -1,52 +1,127 @@
-import Link from 'next/link'
-import { login } from '../actions'
-import { ArrowRight } from 'lucide-react'
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
+import { login } from "../actions";
+import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/";
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const result = await login(formData);
+
+    if (result?.error) {
+      setError(result.error);
+      setLoading(false);
+    }
+  };
+
+  const fadeInUp = {
+    initial: { opacity: 0, y: 30 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 1, ease: [0.22, 1, 0.36, 1] } as any
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-background font-sans">
-      <div className="w-full max-w-[400px] p-10 bg-brand-surface rounded-sm shadow-xl border border-brand-navy/5">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-display font-medium text-brand-navy mb-2 tracking-tight">Welcome Back</h1>
-          <p className="text-brand-text-muted text-sm">Sign in to your Lenzify account</p>
-        </div>
+    <div className="min-h-screen bg-surface flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Editorial Accents */}
+      <div className="absolute top-0 right-0 w-1/3 h-full bg-surface-container-low/50 -skew-x-12 transform origin-top translate-x-1/2"></div>
+      
+      <motion.div 
+        {...fadeInUp}
+        className="w-full max-w-[520px] z-10"
+      >
+        <div className="bg-white p-12 md:p-20 editorial-shadow rounded-sm border border-outline/10 space-y-12 relative overflow-hidden">
+           <div className="absolute top-0 left-0 w-full h-1.5 bg-primary"></div>
+           
+           <header className="space-y-6 text-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="inline-block px-5 py-2 mb-2 rounded-full border border-secondary/20 text-secondary text-[10px] font-bold tracking-[0.4em] uppercase italic"
+            >
+              Verified Access Protocol
+            </motion.div>
+            <h1 className="text-5xl md:text-6xl font-serif italic text-primary leading-tight tracking-tight">
+              Welcome <br/><span className="text-primary-container">Back</span>
+            </h1>
+            <p className="text-on-surface/40 font-medium tracking-wide italic text-sm">Re-initialize your visionary archive access.</p>
+          </header>
 
-        <form className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase text-brand-navy tracking-wider" htmlFor="email">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              placeholder="Enter your email"
-              className="w-full bg-white border border-brand-text-muted/30 rounded-none px-4 py-3 text-brand-text-primary placeholder-brand-text-muted/50 focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase text-brand-navy tracking-wider" htmlFor="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              placeholder="••••••••"
-              className="w-full bg-white border border-brand-text-muted/30 rounded-none px-4 py-3 text-brand-text-primary placeholder-brand-text-muted/50 focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all"
-            />
-          </div>
-
-          <div className="pt-4 flex flex-col gap-4">
-            <button formAction={login} className="w-full group relative flex items-center justify-center gap-2 bg-brand-navy text-brand-surface px-6 py-4 uppercase text-sm font-semibold tracking-wider hover:bg-brand-navy-light transition-colors">
-              <span>Sign In</span>
-              <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-            </button>
-            <div className="text-center mt-4">
-              <span className="text-brand-text-muted text-sm">Don&apos;t have an account? </span>
-              <Link href="/auth/signup" className="text-brand-gold text-sm font-medium hover:underline">Register</Link>
+          <form onSubmit={handleSubmit} className="space-y-10">
+            <input type="hidden" name="redirectTo" value={redirectTo} />
+            
+            <div className="space-y-3">
+              <div className="flex justify-between items-center px-1">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40">Email Identifier</label>
+              </div>
+              <input
+                name="email"
+                type="email"
+                required
+                placeholder="YOUR@IDENTITY.COM"
+                className="w-full bg-transparent border-b border-outline/20 py-4 text-sm text-primary font-bold tracking-widest focus:border-primary outline-none transition-all placeholder:text-on-surface/20"
+              />
             </div>
-          </div>
-        </form>
-      </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center px-1">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40">Security Matrix</label>
+                <Link href="#" className="text-[9px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors italic">Recovery</Link>
+              </div>
+              <input
+                name="password"
+                type="password"
+                required
+                placeholder="••••••••"
+                className="w-full bg-transparent border-b border-outline/20 py-4 text-sm text-primary font-bold tracking-widest focus:border-primary outline-none transition-all placeholder:text-on-surface/20"
+              />
+            </div>
+
+            {error && (
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-secondary text-[10px] font-bold text-center mt-4 uppercase tracking-[0.2em] italic bg-secondary/5 py-4 border border-secondary/10"
+              >
+                Verification Failed: {error}
+              </motion.p>
+            )}
+
+            <button
+              disabled={loading}
+              className={cn(
+                "w-full bg-primary text-white py-6 rounded-lg font-bold text-[10px] uppercase tracking-[0.4em] transition-all duration-500 hover:opacity-80 active:scale-[0.98] mt-4 relative overflow-hidden group",
+                loading && "opacity-70 cursor-not-allowed"
+              )}
+            >
+              <span className="relative z-10">{loading ? "SYNCHRONIZING..." : "AUTHORIZE ACCESS"}</span>
+              <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity" />
+            </button>
+          </form>
+
+          <footer className="text-center pt-8 border-t border-outline/10">
+            <p className="text-on-surface/40 text-[10px] font-bold uppercase tracking-widest">
+              New to the Archive?{" "}
+              <Link href={`/auth/signup?redirect=${encodeURIComponent(redirectTo)}`} className="text-secondary hover:text-primary transition-colors ml-2 underline underline-offset-4 decoration-secondary/30">
+                Register Identity
+              </Link>
+            </p>
+          </footer>
+        </div>
+      </motion.div>
     </div>
-  )
+  );
 }
