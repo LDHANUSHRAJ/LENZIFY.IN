@@ -48,7 +48,7 @@ export default function AdminDashboardOverview() {
             <motion.div
               key={stat.label}
               {...fadeInUp}
-              transition={{ ...fadeInUp.transition, delay: i * 0.1 }}
+              transition={{  } as any}
               className="bg-white border border-outline/10 p-10 group hover:border-primary transition-all duration-700 editorial-shadow hover:-translate-y-1"
             >
               <div className="flex justify-between items-start mb-8">

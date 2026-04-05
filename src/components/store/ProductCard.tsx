@@ -70,7 +70,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 1, ease: [] } as any}
       className="group flex flex-col bg-white border border-outline/5 overflow-hidden transition-all duration-700 hover:border-primary/20 editorial-shadow"
     >
       {/* Product Image Area */}

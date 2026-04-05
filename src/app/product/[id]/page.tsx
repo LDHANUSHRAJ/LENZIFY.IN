@@ -54,7 +54,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     initial: { opacity: 0, y: 20 },
     whileInView: { opacity: 1, y: 0 },
     viewport: { once: true },
-    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
+    transition: { duration: 0.8, ease: [] } as any
   };
 
   return (
@@ -77,7 +77,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 1, ease: [] } as any}
               className="relative aspect-[4/5] bg-surface-container-low overflow-hidden group"
             >
               <Image 

@@ -78,7 +78,7 @@ export default function CartPage() {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ delay: i * 0.1, duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                    transition={{ delay: i * 0.1, duration: 0.5, ease: [] } as any}
                     className="group relative p-8 rounded-[3rem] bg-slate-900/40 border border-white/5 flex flex-col sm:flex-row gap-10 hover:border-white/10 transition-all backdrop-blur-xl"
                   >
                     <div className="relative w-full sm:w-56 aspect-square rounded-[2rem] overflow-hidden bg-white/5 p-8 group-hover:bg-white/10 transition-colors">

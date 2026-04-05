@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const order = await razorpay.orders.create(options);
 
     // Optional: Store the draft order in Supabase
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {

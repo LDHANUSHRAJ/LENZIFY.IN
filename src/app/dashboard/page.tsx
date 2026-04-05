@@ -30,7 +30,7 @@ export default function DashboardPage() {
   const fadeInUp = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
+    transition: { duration: 0.8, ease: [] } as any
   };
 
   return (
@@ -79,7 +79,7 @@ export default function DashboardPage() {
               <motion.div 
                 key={stat.label}
                 {...fadeInUp}
-                transition={{ ...fadeInUp.transition, delay: i * 0.1 }}
+                transition={{  } as any}
                 className="bg-white p-8 border border-outline/10 space-y-4"
               >
                 <p className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest">{stat.label}</p>
@@ -103,7 +103,7 @@ export default function DashboardPage() {
                 <motion.div 
                   key={order.id}
                   {...fadeInUp}
-                  transition={{ ...fadeInUp.transition, delay: 0.2 + i * 0.1 }}
+                  transition={{  } as any}
                   className="group flex flex-col md:flex-row items-center gap-12 p-8 bg-white border border-outline/10 hover:border-primary/20 transition-all"
                 >
                   <div className="w-32 h-32 bg-surface-container-low p-4 flex-shrink-0 grayscale group-hover:grayscale-0 transition-all duration-1000 border border-outline/10">

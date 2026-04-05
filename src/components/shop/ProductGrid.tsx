@@ -215,7 +215,7 @@ export default function ProductGrid({ initialCategory }: ProductGridProps) {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.8, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.8, delay: i * 0.05, ease: [] } as any}
                 className="group flex flex-col h-full"
               >
                 <Link href={`/product/${product.id}`} className="block w-full h-full">

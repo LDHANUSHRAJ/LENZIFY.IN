@@ -28,7 +28,7 @@ export default function CategoryPage() {
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 1.2, ease: [] } as any}
                     className="flex flex-col md:flex-row justify-between items-end gap-10"
                 >
                     <div>
@@ -97,7 +97,7 @@ export default function CategoryPage() {
                                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
-                                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                                        transition={{ duration: 0.8, ease: [] } as any}
                                     >
                                         <ProductCard product={product} />
                                     </motion.div>

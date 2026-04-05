@@ -1,5 +1,7 @@
 "use client";
 
+import { Suspense } from "react";
+
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -10,6 +12,17 @@ import { cn } from "@/lib/utils";
 export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-surface text-primary font-bold italic tracking-widest text-[10px] uppercase">Initializing secure channel...</div>}>
+      <SignupForm fallbackError={error} initialLoading={loading} />
+    </Suspense>
+  )
+}
+
+function SignupForm({ fallbackError, initialLoading }: { fallbackError: string | null, initialLoading: boolean }) {
+  const [error, setError] = useState<string | null>(fallbackError);
+  const [loading, setLoading] = useState(initialLoading);
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Zap, Truck, ShieldCheck, Star, ArrowRight, Play, Eye, RotateCcw, HelpCircle, CheckCircle2 } from "lucide-react";
+import { Zap, Truck, ShieldCheck, Star, ArrowRight, Play, Eye, RotateCcw, HelpCircle, CheckCircle2, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function TryAtHome() {

@@ -130,7 +130,7 @@ export default function CategoryPageTemplate({ category, title, description }: C
                             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-20"
                         >
                             {filteredProducts.map((p, i) => (
-                                <motion.div key={p.id} {...fadeInUp} transition={{ ...fadeInUp.transition, delay: (i % 4) * 0.1 }}>
+                                <motion.div key={p.id} {...fadeInUp} transition={{  } as any}>
                                     <ProductCard product={p} />
                                 </motion.div>
                             ))}
