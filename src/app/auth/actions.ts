@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export async function login(formData: FormData): Promise<void> {
+export async function login(formData: FormData) {
   const supabase = createClient()
 
   const data = {
@@ -19,7 +19,7 @@ export async function login(formData: FormData): Promise<void> {
   })
 
   if (error) {
-    redirect(`/auth/login?error=${encodeURIComponent(error.message)}`)
+    return { error: error.message }
   }
 
   revalidatePath('/', 'layout')
@@ -31,7 +31,7 @@ export async function login(formData: FormData): Promise<void> {
   redirect(data.redirectTo)
 }
 
-export async function signup(formData: FormData): Promise<void> {
+export async function signup(formData: FormData) {
   const supabase = createClient()
   const data = {
     email: formData.get('email') as string,
@@ -51,7 +51,7 @@ export async function signup(formData: FormData): Promise<void> {
   })
 
   if (error) {
-    redirect(`/auth/signup?error=${encodeURIComponent(error.message)}`)
+    return { error: error.message }
   }
 
   revalidatePath('/', 'layout')
