@@ -24,7 +24,7 @@ export default async function AdminCouponsPage() {
                 <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary">New Key</h3>
              </div>
              
-             <form action={createCoupon} className="space-y-8">
+             <form action={async (formData) => { "use server"; await createCoupon(formData); }} className="space-y-8">
                 <div className="space-y-2 group">
                    <label className="text-[9px] font-bold uppercase tracking-widest text-white/50 italic">Coupon Alias</label>
                    <input required name="code" placeholder="WINTER20" className="w-full bg-white/5 border border-white/10 px-4 py-3 text-[11px] font-bold tracking-widest outline-none focus:border-secondary transition-all uppercase placeholder:text-white/20" />

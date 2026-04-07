@@ -44,7 +44,7 @@ export default async function EditCategoryPage({ params }: Props) {
         </div>
       </header>
 
-      <form action={updateCategory.bind(null, category.id)} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <form action={async (formData) => { "use server"; await updateCategory(category.id, formData); }} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
         <div className="lg:col-span-8 space-y-12">
           {/* General Information */}
           <section className="bg-white border border-brand-navy/5 p-8 lg:p-12 space-y-10 shadow-sm relative overflow-hidden">

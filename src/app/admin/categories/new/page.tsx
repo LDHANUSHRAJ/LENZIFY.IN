@@ -27,7 +27,7 @@ export default async function NewCategoryPage() {
         </div>
       </header>
 
-      <form action={createCategory} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <form action={async (formData) => { "use server"; await createCategory(formData); }} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
         <div className="lg:col-span-8 space-y-12">
           {/* General Information */}
           <section className="bg-white border border-brand-navy/5 p-8 lg:p-12 space-y-10 shadow-sm relative overflow-hidden">

@@ -60,7 +60,7 @@ export default async function EditProductPage({ params }: Props) {
         </div>
       </header>
 
-      <form action={updateProduct.bind(null, product.id)} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <form action={async (formData) => { "use server"; await updateProduct(product.id, formData); }} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
         {/* Left Column: Core Data */}
         <div className="lg:col-span-8 space-y-12">
           {/* General Information */}
