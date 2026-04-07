@@ -6,7 +6,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { placeOrder, getCart } from "@/lib/db/customer_actions";
+import { getCart } from "@/lib/db/customer_actions";
+import { placeOrder } from "@/lib/db/order_actions";
 import { cn } from "@/lib/utils";
 import { 
   Package, 

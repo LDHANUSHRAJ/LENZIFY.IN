@@ -14,7 +14,7 @@ import {
   Link as LinkIcon
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { updateHomepageSection } from "../actions";
+import { updateHomepageSection } from "@/app/admin/homepage/actions";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

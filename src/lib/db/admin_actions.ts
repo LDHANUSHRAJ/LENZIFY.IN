@@ -260,3 +260,15 @@ export async function getDashboardStats() {
     chartData
   };
 }
+
+/**
+ * 🔔 SYSTEM PROTOCOL NOTIFICATIONS
+ * Marks system alerts as acknowledged by admin.
+ */
+export async function markNotificationRead(id: number) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/notifications");
+  return { success: true };
+}
