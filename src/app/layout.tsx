@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Serif } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import { Toaster } from "react-hot-toast";
 import SmoothScroll from "@/components/lenis/SmoothScroll";
 import { cn } from "@/lib/utils";
+import ConditionalWrapper from "@/components/layout/ConditionalWrapper";
+import DynamicThemeProvider from "@/components/layout/DynamicThemeProvider";
 
 const inter = Inter({ 
   subsets: ['latin'], 
-  variable: '--font-body' 
+  variable: '--font-body',
+  weight: ['300', '400', '500', '600']
 });
 
 const interLabel = Inter({ 
   subsets: ['latin'], 
-  variable: '--font-label' 
+  variable: '--font-label',
+  weight: ['300', '400', '500', '600']
 });
 
 const notoSerif = Noto_Serif({ 
@@ -35,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn(inter.variable, interLabel.variable, notoSerif.variable)}>
+    <html lang="en" className={cn(inter.variable, interLabel.variable, notoSerif.variable)} suppressHydrationWarning>
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
@@ -52,13 +54,11 @@ export default function RootLayout({
             letterSpacing: '0.1em'
           }
         }} />
-        <SmoothScroll>
-          <Navbar />
-          <main className="min-h-screen">
-            {children}
-          </main>
-          <Footer />
-        </SmoothScroll>
+        <ConditionalWrapper>
+          <DynamicThemeProvider>
+             {children}
+          </DynamicThemeProvider>
+        </ConditionalWrapper>
       </body>
     </html>
   );

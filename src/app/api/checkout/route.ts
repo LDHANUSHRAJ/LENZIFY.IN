@@ -9,33 +9,15 @@ const razorpay = new Razorpay({
 
 export async function POST(req: Request) {
   try {
-    const { amount, currency = "INR", items, address } = await req.json();
+    const { amount, currency = "INR" } = await req.json();
 
     const options = {
-      amount: Math.round(amount * 100), // amount in the smallest currency unit
+      amount: Math.round(amount * 100),
       currency,
       receipt: `receipt_${Date.now()}`,
     };
 
     const order = await razorpay.orders.create(options);
-
-    // Optional: Store the draft order in Supabase
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (user) {
-      const { error } = await supabase.from('orders').insert({
-        user_id: user.id,
-        order_id: order.id,
-        amount: amount,
-        currency,
-        status: 'pending',
-        address,
-        items
-      });
-      if (error) console.error("Error creating draft order:", error);
-    }
-
     return NextResponse.json(order);
   } catch (error) {
     console.error("Order error:", error);

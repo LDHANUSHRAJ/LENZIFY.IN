@@ -9,6 +9,14 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
   const pathname = usePathname();
 
   useEffect(() => {
+    // Logic: Disable smooth-scroll for administrative paths
+    const isAdminPath = pathname?.startsWith("/admin") || pathname === "/secure-admin-login";
+    
+    if (isAdminPath) {
+      lenisRef.current = null;
+      return;
+    }
+
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -32,7 +40,7 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
     return () => {
       lenis.destroy();
     };
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     if (lenisRef.current) {

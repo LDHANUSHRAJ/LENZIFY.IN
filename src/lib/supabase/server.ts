@@ -1,5 +1,9 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import dns from 'dns'
+
+// FIX: Prevents UND_ERR_CONNECT_TIMEOUT on Windows Node 18+ when resolving outbound connections like Supabase API
+dns.setDefaultResultOrder('ipv4first')
 
 export async function createClient() {
   const cookieStore = await cookies()

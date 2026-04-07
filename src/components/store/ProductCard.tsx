@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingBag, ArrowUpRight, Star } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
@@ -15,9 +14,14 @@ interface ProductCardProps {
   product: {
     id: string;
     name: string;
-    price: number;
-    image: string;
-    category: string;
+    price: number | string;
+    primary_image?: string;
+    image?: string; // Fallback
+    category?: string;
+    categories?: { name: string; slug: string };
+    brand?: string;
+    rating?: number;
+    slug?: string;
   };
 }
 
@@ -35,6 +39,9 @@ export default function ProductCard({ product }: ProductCardProps) {
     checkUser();
   }, [supabase.auth]);
 
+  const displayImage = product.primary_image || product.image || "/placeholder.jpg";
+  const displayPrice = typeof product.price === 'string' ? parseFloat(product.price) : (product.price || 0);
+
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -46,8 +53,8 @@ export default function ProductCard({ product }: ProductCardProps) {
     addItem({
       id: product.id,
       name: product.name,
-      price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
-      image: product.image,
+      price: displayPrice,
+      image: displayImage,
       quantity: 1
     } as any);
     toast.success(`ARCHIVE ADDED: ${product.name}`, {
@@ -61,7 +68,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         padding: '20px',
         border: '1px solid rgba(255,255,255,0.1)'
       },
-      icon: <ShoppingBag size={14} className="text-secondary" />
+      icon: <span className="material-symbols-outlined text-secondary">shopping_cart</span>
     });
   };
 
@@ -70,64 +77,49 @@ export default function ProductCard({ product }: ProductCardProps) {
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 1, ease: [] } as any}
-      className="group flex flex-col bg-white border border-outline/5 overflow-hidden transition-all duration-700 hover:border-primary/20 editorial-shadow"
+      transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] } as any}
+      className="group flex flex-col bg-surface border border-black/5 overflow-hidden transition-all duration-700 hover:bg-surface-container-low editorial-shadow"
     >
       {/* Product Image Area */}
-      <Link href={`/product/${product.id}`} className="block relative aspect-[4/5] p-12 overflow-hidden bg-surface-container-low">
+      <Link href={`/product/${product.slug || product.id}`} className="block relative aspect-[4/5] p-12 overflow-hidden bg-surface-container-low">
         <Image 
-          src={product.image} 
+          src={displayImage} 
           alt={product.name} 
           fill 
-          className="object-contain p-10 grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-[1.2s] ease-out mix-blend-multiply" 
+          className="object-contain p-10 grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-[1.2s] ease-out" 
         />
         
         {/* Subtle Overlay */}
         <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/[0.02] transition-colors duration-700" />
         
-        {/* Editorial Badges */}
-        <div className="absolute top-6 left-6 flex flex-col gap-3 z-20">
-           <span className="text-[9px] font-bold uppercase tracking-[0.4em] bg-primary text-white px-4 py-2 italic font-serif">A/W 2024</span>
-           <span className="text-[8px] font-bold uppercase tracking-[0.3em] bg-white border border-outline/10 px-3 py-1.5 opacity-0 group-hover:opacity-100 transition-all duration-700 translate-x-[-10px] group-hover:translate-x-0">
-             {product.id.includes('sun') ? 'Polarized Optics' : 'Aerospace Grade'}
-           </span>
-        </div>
-
         {/* Action Triggers */}
-        <button className="absolute top-6 right-6 w-12 h-12 bg-white flex items-center justify-center translate-x-12 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 border border-outline/10 transition-all duration-500 z-20 hover:text-secondary hover:border-secondary">
-           <Heart size={14} />
+        <button className="absolute top-6 right-6 w-12 h-12 bg-surface flex items-center justify-center translate-x-12 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 border border-outline/10 transition-all duration-500 z-20 hover:text-secondary hover:border-secondary">
+           <span className="material-symbols-outlined text-lg">favorite</span>
         </button>
 
         {/* Acquisition Deployment */}
         <button 
           onClick={handleQuickAdd}
-          className="absolute bottom-0 left-0 right-0 bg-[#000000] text-white text-[10px] font-bold uppercase tracking-[0.4em] py-6 translate-y-full group-hover:translate-y-0 transition-all duration-700 z-30 hover:bg-white hover:text-primary border-t border-white/5 flex items-center justify-center gap-4 italic"
+          className="absolute bottom-0 left-0 right-0 bg-primary text-on-primary text-[10px] font-bold uppercase tracking-[0.4em] py-6 translate-y-full group-hover:translate-y-0 transition-all duration-700 z-30 hover:bg-secondary transition-colors flex items-center justify-center gap-4 italic"
         >
-           Acquire Vision <ArrowUpRight size={14} className="opacity-40" />
+           Acquire Entry <span className="material-symbols-outlined text-sm">arrow_outward</span>
         </button>
       </Link>
 
       {/* Product Details Area */}
-      <div className="p-8 space-y-6 text-center lg:text-left flex flex-col">
-         <div className="space-y-3">
-            <div className="flex justify-center lg:justify-start items-center gap-1.5 opacity-30 group-hover:opacity-100 transition-all duration-1000">
-              {[1, 2, 3, 4, 5].map((s) => <Star key={s} size={10} fill={s <= 4 ? "#775a19" : "transparent"} stroke={s <= 4 ? "#775a19" : "#000"} />)}
-            </div>
-            
-            <h4 className="text-xl font-serif italic text-primary leading-tight group-hover:text-secondary transition-colors duration-700">
+      <div className="p-8 space-y-4 text-center flex flex-col items-center">
+         <div className="space-y-2">
+            <h4 className="text-xl font-serif italic text-primary leading-tight group-hover:text-secondary transition-colors duration-700 uppercase">
                {product.name}
             </h4>
             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-on-surface/30">
-               Series {product.id.slice(-4)} Archival Entry
+               {product.brand || "Lenzify Archive"}
             </p>
          </div>
          
-         <div className="relative pt-6 border-t border-outline/5 overflow-hidden h-14 w-full flex flex-col items-center lg:items-start group/price">
-            <p className="text-2xl font-serif italic text-primary group-hover:-translate-y-full transition-transform duration-700 ease-in-out">
-               <span className="text-sm font-sans font-bold not-italic mr-1 opacity-50">₹</span>{product.price}
-            </p>
-            <p className="absolute top-6 left-0 right-0 lg:right-auto text-[9px] font-bold uppercase tracking-[0.4em] text-secondary opacity-0 group-hover:opacity-100 transition-all duration-700 italic">
-               Secured Deployment Available
+         <div className="pt-4 border-t border-black/5 w-full">
+            <p className="text-2xl font-serif italic text-primary">
+               <span className="text-sm font-sans font-bold not-italic mr-1 opacity-50">$</span>{displayPrice.toLocaleString()}
             </p>
          </div>
       </div>

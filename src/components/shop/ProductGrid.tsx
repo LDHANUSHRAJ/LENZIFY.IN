@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { products as allProducts } from "@/data/products";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { createClient } from "@/lib/supabase/client";
@@ -17,6 +16,9 @@ interface ProductGridProps {
 
 export default function ProductGrid({ initialCategory }: ProductGridProps) {
   const [user, setUser] = useState<any>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  
   const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,59 +34,69 @@ export default function ProductGrid({ initialCategory }: ProductGridProps) {
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
 
   useEffect(() => {
-    const checkUser = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+
+      // Fetch all enabled products with their category names
+      const { data, error } = await supabase
+        .from("products")
+        .select("*, categories(name, slug)")
+        .eq("is_enabled", true);
+      
+      if (data) {
+        setProducts(data);
+      }
+      setLoading(false);
     };
-    checkUser();
+    fetchData();
   }, [supabase.auth]);
 
   const handleAddToCart = (product: any, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) {
-      router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
-      return;
-    }
     addItem(product);
   };
 
   const filteredProducts = useMemo(() => {
-    let result = [...allProducts];
+    let result = [...products];
 
     if (routerSearch) {
       result = result.filter(p => 
         p.name.toLowerCase().includes(routerSearch) || 
         p.brand.toLowerCase().includes(routerSearch) ||
-        p.description.toLowerCase().includes(routerSearch)
+        p.description?.toLowerCase().includes(routerSearch)
       );
     }
 
     if (routerCategory) {
-      const cat = routerCategory.toLowerCase().replace("-", " ").replace("spectacles", "spectacles");
-      result = result.filter(p => p.category.toLowerCase() === cat || p.category.toLowerCase().replace("-", " ") === cat);
+      result = result.filter(p => 
+        p.categories?.slug === routerCategory || 
+        p.categories?.name.toLowerCase() === routerCategory.toLowerCase()
+      );
     }
 
     result = result.filter(p => p.price >= priceRange.min && p.price <= priceRange.max);
     
     if (selectedShapes.length > 0) {
-      result = result.filter(p => selectedShapes.some(s => p.description.toLowerCase().includes(s.toLowerCase())));
+      result = result.filter(p => selectedShapes.some(s => p.description?.toLowerCase().includes(s.toLowerCase())));
     }
 
     if (selectedMaterial !== "All") {
-      result = result.filter(p => p.description.toLowerCase().includes(selectedMaterial.toLowerCase()));
+      result = result.filter(p => p.description?.toLowerCase().includes(selectedMaterial.toLowerCase()));
     }
 
     if (viewMode === "price") {
       result.sort((a, b) => a.price - b.price);
     } else if (viewMode === "newest") {
-      result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     } else {
-      result.sort((a, b) => b.rating - a.rating);
+      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     }
 
     return result;
-  }, [routerSearch, routerCategory, viewMode, priceRange, selectedShapes, selectedMaterial]);
+  }, [products, routerSearch, routerCategory, viewMode, priceRange, selectedShapes, selectedMaterial]);
 
   const toggleShape = (shape: string) => {
     setSelectedShapes(prev => 
@@ -206,7 +218,7 @@ export default function ProductGrid({ initialCategory }: ProductGridProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-y-16 gap-x-12">
+        <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-y-12 gap-x-4 md:gap-x-12">
           <AnimatePresence mode="popLayout">
             {filteredProducts.map((product, i) => (
               <motion.div 
@@ -219,39 +231,39 @@ export default function ProductGrid({ initialCategory }: ProductGridProps) {
                 className="group flex flex-col h-full"
               >
                 <Link href={`/product/${product.id}`} className="block w-full h-full">
-                  <div className="relative aspect-[4/5] overflow-hidden bg-surface-container-low mb-8 group">
+                  <div className="relative aspect-[4/5] overflow-hidden bg-surface-container-low mb-6 group">
                     <Image 
-                      src={product.image} 
+                      src={product.primary_image || "/placeholder.jpg"} 
                       alt={product.name} 
                       fill 
-                      className="object-contain p-12 mix-blend-multiply grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000" 
+                      className="object-contain p-4 md:p-12 mix-blend-multiply grayscale group-hover:grayscale-0 transition-all duration-1000" 
                     />
                     {product.isNew && (
-                       <div className="absolute top-6 left-6 px-4 py-1.5 bg-secondary text-white text-[9px] font-black uppercase tracking-widest">
+                       <div className="absolute top-4 left-4 md:top-6 md:left-6 px-2 md:px-4 py-1 bg-secondary text-white text-[8px] md:text-[9px] font-black uppercase tracking-widest">
                           Editorial Choice
                        </div>
                     )}
                     <button 
                       onClick={(e) => handleAddToCart(product, e)}
-                      className="absolute bottom-0 left-0 w-full py-5 bg-primary text-white text-[10px] font-bold uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0"
+                      className="absolute bottom-0 left-0 w-full py-3 md:py-5 bg-primary text-white text-[10px] font-bold uppercase tracking-[0.2em] md:opacity-0 group-hover:opacity-100 md:translate-y-4 group-hover:translate-y-0 transition-all duration-500"
                     >
                       Acquire Vision
                     </button>
                   </div>
                 </Link>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <p className="text-[10px] uppercase font-bold tracking-widest text-secondary">{product.brand}</p>
-                      <h3 className="text-xl font-serif italic text-primary">{product.name}</h3>
+                <div className="space-y-3">
+                  <div className="flex flex-col md:flex-row md:justify-between items-start gap-1">
+                    <div className="space-y-0.5">
+                      <p className="text-[9px] uppercase font-bold tracking-widest text-secondary">{product.brand}</p>
+                      <h3 className="text-sm md:text-xl font-serif italic text-primary leading-tight">{product.name}</h3>
                     </div>
-                    <span className="text-sm font-bold tracking-tighter italic text-primary/60">₹{product.price}</span>
+                    <span className="text-xs md:text-sm font-bold tracking-tighter italic text-primary/60">₹{product.price}</span>
                   </div>
-                  <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-on-surface/40">
+                  <div className="flex justify-between items-center text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-on-surface/40">
                      <span>{product.category}</span>
                      <div className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-xs">star</span>
-                        <span>{product.rating}</span>
+                        <span className="material-symbols-outlined text-[10px] md:text-xs">star</span>
+                        <span>{product.rating || "4.5"}</span>
                      </div>
                   </div>
                 </div>
@@ -260,7 +272,15 @@ export default function ProductGrid({ initialCategory }: ProductGridProps) {
           </AnimatePresence>
         </div>
         
-        {filteredProducts.length === 0 && (
+        {loading && (
+           <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-y-12 gap-x-4 md:gap-x-12 opacity-50 pointer-events-none">
+              {[1,2,3,4,5,6].map(i => (
+                 <div key={i} className="aspect-[4/5] bg-surface-container-low animate-pulse rounded-lg" />
+              ))}
+           </div>
+        )}
+        
+        {!loading && filteredProducts.length === 0 && (
           <div className="py-24 text-center space-y-6">
              <span className="material-symbols-outlined text-6xl text-outline/20">search_off</span>
              <h3 className="text-2xl font-serif text-on-surface/40 italic">The archives are empty.</h3>

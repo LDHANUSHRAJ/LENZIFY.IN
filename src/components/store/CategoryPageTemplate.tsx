@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import ProductCard from "@/components/store/ProductCard";
-import { products, Product } from "@/data/products";
+import { createClient } from "@/lib/supabase/client";
 import { ChevronDown, SlidersHorizontal, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -14,30 +14,52 @@ interface CategoryPageProps {
 }
 
 export default function CategoryPageTemplate({ category, title, description }: CategoryPageProps) {
-    const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+    const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [sortBy, setSortBy] = useState("featured");
     const [searchQuery, setSearchQuery] = useState("");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    
+    const supabase = createClient();
 
     useEffect(() => {
-        let result = products.filter(p => !category || p.category === category);
-        
-        if (searchQuery) {
-            result = result.filter(p => 
-                p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                p.brand.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-        }
+        const fetchProducts = async () => {
+            setLoading(true);
+            let query = supabase
+                .from("products")
+                .select("*, categories!inner(slug)")
+                .eq("is_enabled", true);
 
-        if (sortBy === "price-low") {
-            result.sort((a, b) => a.price - b.price);
-        } else if (sortBy === "price-high") {
-            result.sort((a, b) => b.price - a.price);
-        } else if (sortBy === "rating") {
-            result.sort((a, b) => b.rating - a.rating);
-        }
+            if (category) {
+                query = query.eq("categories.slug", category);
+            }
 
-        setFilteredProducts(result);
+            const { data, error } = await query;
+            
+            if (data) {
+                let result = [...data];
+                
+                if (searchQuery) {
+                    result = result.filter(p => 
+                        p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        p.brand?.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+                }
+
+                if (sortBy === "price-low") {
+                    result.sort((a, b) => a.price - b.price);
+                } else if (sortBy === "price-high") {
+                    result.sort((a, b) => b.price - a.price);
+                } else if (sortBy === "rating") {
+                    result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                }
+
+                setFilteredProducts(result);
+            }
+            setLoading(false);
+        };
+
+        fetchProducts();
     }, [category, sortBy, searchQuery]);
 
     const fadeInUp = {

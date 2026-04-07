@@ -31,29 +31,70 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protect Admin routes
-  if (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin') {
-    if (!user) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/admin'
-      return NextResponse.redirect(url)
+  const isAdmin = user?.user_metadata?.role === 'admin' || user?.email === 'lenzify.in@gmail.com';
+  const pathname = request.nextUrl.pathname;
+
+  // 1. SESSION TIMEOUT: Administrative Inactivity Guard (30 Minutes)
+  if (isAdmin && pathname.startsWith('/admin')) {
+    const lastActive = request.cookies.get('admin-last-active')?.value;
+    const now = Date.now();
+    const thirtyMinutes = 30 * 60 * 1000;
+
+    if (lastActive && (now - parseInt(lastActive)) > thirtyMinutes) {
+      // Invalidate session and redirect to login
+      const url = request.nextUrl.clone();
+      url.pathname = '/admin/login';
+      url.searchParams.set('error', 'Session expired due to inactivity. Please re-authenticate.');
+      
+      const response = NextResponse.redirect(url);
+      response.cookies.delete('sb-access-token');
+      response.cookies.delete('admin-last-active');
+      return response;
     }
     
-    // Check if user is admin role for /admin/* paths 
-    if (user.user_metadata?.role !== 'admin') {
-      // You can redirect to home or unauthorized page
-      const url = request.nextUrl.clone()
-      url.pathname = '/'
-      return NextResponse.redirect(url)
+    // Update heartbeat timestamp
+    supabaseResponse.cookies.set('admin-last-active', now.toString(), {
+      path: '/',
+      maxAge: 60 * 60 * 24, // Persistent for 24h but checked for 30m gap
+      httpOnly: true,
+      sameSite: 'lax'
+    });
+  }
+
+  // 2. ADMIN ISOLATION: Prevent admins from accessing the storefront
+  const isStorefrontPath = !pathname.startsWith('/admin') && 
+                           !pathname.startsWith('/api') && 
+                           !pathname.startsWith('/_next') && 
+                           !pathname.includes('.') && // Skip static files with extensions
+                           pathname !== '/auth/logout';
+
+  if (isAdmin && isStorefrontPath) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/admin/dashboard';
+    return NextResponse.redirect(url);
+  }
+
+  // 3. SECURE ACCESS: Protect Admin routes
+  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/admin/login';
+      return NextResponse.redirect(url);
+    }
+    
+    if (!isAdmin) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
     }
   }
 
-  // Protect Customer Dashboard routes
-  if (request.nextUrl.pathname.startsWith('/dashboard')) {
+  // 4. CUSTOMER ACCESS: Protect Dashboard routes
+  if (pathname.startsWith('/dashboard')) {
     if (!user) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/auth/login'
-      return NextResponse.redirect(url)
+      const url = request.nextUrl.clone();
+      url.pathname = '/auth/login';
+      return NextResponse.redirect(url);
     }
   }
 

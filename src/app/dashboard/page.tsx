@@ -1,205 +1,155 @@
-"use client";
-
+import { createClient } from "@/lib/supabase/server";
+import { 
+  Package, 
+  MapPin, 
+  CreditCard, 
+  Clock, 
+  CheckCircle2, 
+  AlertCircle,
+  Truck,
+  ArrowRight,
+  ExternalLink,
+  ChevronRight,
+  User,
+  Settings,
+  XCircle,
+  RefreshCcw
+} from "lucide-react";
+import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-export default function DashboardPage() {
-  const stats = [
-    { label: "Active Protocols", value: "02", color: "text-primary" },
-    { label: "Vision Credits", value: "₹3450", color: "text-secondary" },
-    { label: "Archive Tier", value: "HERITAGE", color: "text-primary" },
-    { label: "Access Window", value: "14 APR", color: "text-on-surface/60" },
-  ];
+export default async function CustomerDashboardPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const activeOrders = [
-    { 
-      id: "LX-90122", 
-      status: "Optical Calibration", 
-      progress: 65, 
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCPJOFZOe3u0TQLIlFjJS59aDoiG9Z_j1KG7zZWvtJ6SRbyGHrdgaZtXs_ipzi61i8zoEczz4l3tDilIC557iERv3uoWcbBIrWoiUZtHTM4I4wAWU_2EF6luh1xx82lWeis7MDW-nkmQ2rUHRWfKoyQdSPym8MTXVhobxt-VWYBjEKQmMFS5Rjm9S8BwEfX17u15c43k4-YGqjFn1btVVNwwoH1XShyPqQLelcmQ0RGk_WRHpVRICKumJNkMrReUJDf3unNmIwaOL8" 
-    },
-    { 
-      id: "LX-90125", 
-      status: "Final Inspection", 
-      progress: 92, 
-      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBPfiZ7Fa-dRXkhRrkOnrPABL-vOvUxT4j09uA4dDObbjCHoSZO5rzKiOJZhHvZ-NBiBYfLrMmRdzIaXjTxrTtnXQEMdxIpsaOWdLEIzabJbkhXFx4VfyOElz8-pK7AruLrVMOo7zw4seLIzRjWeD-mlp8PLQbkIWSiTrPwEcxjgOU4BWbr-m9yESFySl3sxgBeZ1jWjC1iWHsKkkzX4gnuzATtbxCdKxwQuKSpL0V_B4MzWANdMmrO_Y4lmK6MeRVsUB2B0gza804" 
-    },
-  ];
+  if (!user) return <div className="py-20 text-center uppercase tracking-widest text-brand-navy/30">Unauthorized Access Protocol</div>;
 
-  const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.8, ease: [] } as any
-  };
+  // Fetch complete order history for the user
+  const { data: orders } = await supabase
+    .from("orders")
+    .select("*, order_items(*, products(*, product_images(*)))")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
 
   return (
-    <div className="bg-surface text-on-surface min-h-screen pt-24">
-      <main className="max-w-screen-2xl mx-auto px-8 md:px-12 py-12 pb-32 flex flex-col lg:flex-row gap-16 lg:gap-24">
-        {/* Profile Sidebar */}
-        <aside className="w-full lg:w-80 flex-shrink-0">
-          <div className="sticky top-32 space-y-12">
-            <div className="bg-white p-10 editorial-shadow rounded-sm border border-outline/10 text-center space-y-8 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-primary"></div>
-              <div className="relative z-10 space-y-6">
-                <div className="w-24 h-24 mx-auto rounded-full border border-outline/20 p-2 grayscale hover:grayscale-0 transition-all duration-700">
-                  <div className="w-full h-full rounded-full bg-surface-container flex items-center justify-center text-primary text-3xl font-serif italic border border-outline/10">JD</div>
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-2xl font-serif italic text-primary leading-tight">James Dalton</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-on-surface/40">Editorial Member</p>
-                </div>
-                <div className="pt-8 border-t border-outline/10 space-y-4 text-left">
-                  {["Member Dashboard", "Purchase History", "Vision Vault", "Archive Settings", "Concierge"].map((item, i) => (
-                    <button key={item} className={cn(
-                      "w-full py-4 px-6 text-[10px] font-bold uppercase tracking-widest transition-all text-left flex items-center gap-4",
-                      i === 0 ? "bg-primary text-white" : "text-on-surface/60 hover:text-primary hover:bg-surface-container-low"
-                    )}>
-                      <span className="material-symbols-outlined text-[18px]">
-                        {["dashboard", "history", "visibility", "settings", "support_agent"][i]}
-                      </span>
-                      {item}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <button className="w-full flex items-center justify-center gap-3 py-4 text-[10px] font-bold text-on-surface/40 uppercase tracking-widest hover:text-secondary transition-colors">
-              <span className="material-symbols-outlined text-[18px]">logout</span>
-              Terminate Session
-            </button>
-          </div>
-        </aside>
+    <div className="bg-surface text-brand-navy min-h-screen pt-24 font-sans">
+      <main className="max-w-7xl mx-auto px-8 md:px-12 py-20 pb-32 space-y-20">
+        <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-10 border-b border-brand-navy/5 pb-12">
+           <div className="space-y-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.5em] text-secondary italic leading-none">Identity Profile v4.2</p>
+              <h1 className="text-5xl md:text-7xl font-serif italic tracking-tight text-brand-navy uppercase leading-none pr-10">
+                 {user.user_metadata?.name || "Anonymous Agent"}
+              </h1>
+              <p className="text-[10px] uppercase font-bold tracking-[0.3em] text-brand-navy/30 italic">Linked Channel: {user.email}</p>
+           </div>
+           <div className="flex gap-4">
+              <Link href="/profile/edit" className="p-6 bg-white border border-brand-navy/5 hover:border-secondary transition-all">
+                 <Settings size={20} className="text-brand-navy/30" />
+              </Link>
+           </div>
+        </header>
 
-        {/* Dashboard Content */}
-        <section className="flex-grow space-y-20">
-          {/* Stats Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, i) => (
-              <motion.div 
-                key={stat.label}
-                {...fadeInUp}
-                transition={{  } as any}
-                className="bg-white p-8 border border-outline/10 space-y-4"
-              >
-                <p className="text-[10px] font-bold text-on-surface/40 uppercase tracking-widest">{stat.label}</p>
-                <p className={cn("text-5xl font-serif italic tracking-tighter", stat.color)}>{stat.value}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Active Status */}
-          <div className="space-y-12">
-            <header className="flex justify-between items-end border-b border-outline/10 pb-6">
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-secondary">Operational Status</p>
-                <h2 className="text-4xl font-serif italic text-primary">Active Protocols</h2>
-              </div>
-              <button className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40 hover:text-primary transition-colors pb-2">Full History Detail</button>
-            </header>
-            
-            <div className="space-y-8">
-              {activeOrders.map((order, i) => (
-                <motion.div 
-                  key={order.id}
-                  {...fadeInUp}
-                  transition={{  } as any}
-                  className="group flex flex-col md:flex-row items-center gap-12 p-8 bg-white border border-outline/10 hover:border-primary/20 transition-all"
-                >
-                  <div className="w-32 h-32 bg-surface-container-low p-4 flex-shrink-0 grayscale group-hover:grayscale-0 transition-all duration-1000 border border-outline/10">
-                    <Image src={order.img} alt={order.id} fill className="object-contain mix-blend-multiply" />
-                  </div>
-                  <div className="flex-grow space-y-6 w-full">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <h4 className="text-xl font-serif italic text-primary">Protocol {order.id}</h4>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40">Standard Vision Acquisition</p>
-                      </div>
-                      <div className="text-right space-y-1">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40">State</p>
-                        <p className="text-xs font-bold text-secondary uppercase tracking-widest italic">{order.status}</p>
-                      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-20">
+           {/* Sidebar: Profile Summary */}
+           <div className="space-y-12">
+              <section className="bg-white border border-brand-navy/5 p-10 shadow-sm relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform duration-1000">
+                    <CheckCircle2 size={48} />
+                 </div>
+                 <div className="space-y-6">
+                    <h3 className="text-lg font-serif italic text-brand-navy font-black tracking-tight uppercase">Vision Summary</h3>
+                    <div className="space-y-4">
+                       <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-navy/30">
+                          <span>Archive Count</span>
+                          <span className="text-brand-navy font-black italic">{orders?.length || 0} Acquisitions</span>
+                       </div>
+                       <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-navy/30">
+                          <span>Elite Status</span>
+                          <span className="text-secondary font-black italic">Platinum Nexus</span>
+                       </div>
                     </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-[10px] font-bold text-on-surface/60 uppercase tracking-widest">
-                        <span>Calibration Progress</span>
-                        <span>{order.progress}%</span>
-                      </div>
-                      <div className="h-0.5 w-full bg-surface-container overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${order.progress}%` }}
-                          transition={{ duration: 1.5, ease: "easeOut" }}
-                          className="h-full bg-primary"
-                        ></motion.div>
-                      </div>
+                 </div>
+              </section>
+
+              <section className="bg-brand-navy text-white p-10 shadow-2xl relative">
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-serif italic text-secondary font-black tracking-tight uppercase">Clinical Records</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 leading-relaxed italic">
+                      Your high-precision visionary data is encrypted and stored in our secure clinical vault.
+                    </p>
+                    <button className="w-full py-4 border border-white/10 text-[9px] font-black uppercase tracking-widest hover:border-secondary hover:text-secondary transition-all">View Health Matrix</button>
+                  </div>
+              </section>
+           </div>
+
+           {/* Main Content: Order History */}
+           <div className="lg:col-span-2 space-y-12">
+              <div className="flex justify-between items-baseline border-b border-brand-navy/5 pb-8">
+                 <h2 className="text-3xl font-serif italic text-brand-navy uppercase">Acquisition <span className="text-secondary">Logs</span></h2>
+                 <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-brand-navy/20">Archived Transactions</p>
+              </div>
+
+              <div className="space-y-8">
+                 {orders?.map((order) => (
+                    <div key={order.id} className="bg-white border border-brand-navy/5 overflow-hidden group hover:border-secondary/20 transition-all duration-700">
+                       <div className="p-10 space-y-8">
+                          <header className="flex justify-between items-start">
+                             <div className="space-y-2">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-brand-navy/20">Protocol #{order.id.slice(0, 8)}</p>
+                                <p className="text-xs font-bold text-brand-navy uppercase tracking-widest italic">{new Date(order.created_at).toLocaleDateString()}</p>
+                             </div>
+                             <div className={cn(
+                                "text-[9px] font-black uppercase tracking-widest px-4 py-2 border italic",
+                                order.status === 'delivered' ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/20" : 
+                                order.status === 'shipped' ? "bg-blue-500/5 text-blue-500 border-blue-500/20" :
+                                "bg-brand-navy/5 text-brand-navy/30 border-brand-navy/5"
+                             )}>
+                                {order.status}
+                             </div>
+                          </header>
+
+                          <div className="space-y-6">
+                             {order.order_items.map((item: any) => (
+                                <div key={item.id} className="flex gap-6 items-center">
+                                   <div className="w-16 h-16 bg-brand-background border border-brand-navy/5 p-2 overflow-hidden flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-700">
+                                      <img src={item.products?.product_images?.[0]?.image_url || "/placeholder.jpg"} className="w-full h-full object-contain mix-blend-multiply" />
+                                   </div>
+                                   <div className="flex-1 space-y-1 pr-6">
+                                      <p className="text-[10px] font-black uppercase tracking-widest text-brand-navy">{item.products?.name}</p>
+                                      <p className="text-[9px] font-bold text-brand-navy/30 uppercase tracking-widest italic">Unit Quantity: {item.quantity}</p>
+                                   </div>
+                                   <p className="text-sm font-serif italic text-brand-navy font-black tracking-tight">₹{item.price.toLocaleString()}</p>
+                                </div>
+                             ))}
+                          </div>
+
+                          <footer className="pt-8 border-t border-brand-navy/5 flex justify-between items-center">
+                             <div className="flex gap-6">
+                                <button className="text-[9px] font-black uppercase tracking-widest text-brand-navy/30 hover:text-brand-navy transition-all flex items-center gap-2 italic">
+                                   <RefreshCcw size={12} /> Request Return
+                                </button>
+                                <button className="text-[9px] font-black uppercase tracking-widest text-brand-navy/30 hover:text-brand-navy transition-all flex items-center gap-2 italic">
+                                   <ExternalLink size={12} /> Download Report
+                                </button>
+                             </div>
+                             <p className="text-xl font-serif italic text-brand-navy font-black pr-2">₹{order.total_price.toLocaleString()}</p>
+                          </footer>
+                       </div>
                     </div>
-                  </div>
-                  <button className="w-full md:w-auto px-10 py-5 border border-outline/10 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary hover:text-white transition-all">Track Coordinates</button>
-                </motion.div>
-              ))}
-            </div>
-          </div>
+                 ))}
 
-          {/* Lower Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-            <div className="space-y-10">
-              <h3 className="text-2xl font-serif italic text-primary">Vision Vault</h3>
-              <div className="bg-white p-10 border border-outline/10 space-y-8 italic">
-                <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 bg-surface-container flex items-center justify-center text-primary border border-outline/10">
-                    <span className="material-symbols-outlined">medical_mask</span>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-lg font-serif text-primary">Prescription 2024.1</h4>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40">Verified Archival Entry</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-8 border-y border-outline/10 py-8">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40">Oculus Sinister</p>
-                    <p className="text-2xl font-serif text-primary">-1.25 SPH</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40">Oculus Dexter</p>
-                    <p className="text-2xl font-serif text-primary">-1.50 SPH</p>
-                  </div>
-                </div>
-                <button className="w-full py-5 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary-container hover:text-white transition-all flex items-center justify-center gap-3">
-                  <span className="material-symbols-outlined text-[18px]">download_for_offline</span>
-                  Export Archival PDF
-                </button>
+                 {(!orders || orders.length === 0) && (
+                    <div className="py-32 text-center bg-brand-background/30 border border-dashed border-brand-navy/10 rounded-xl">
+                       <Package size={64} className="mx-auto text-brand-navy/10 mb-8" />
+                       <h3 className="text-xl font-serif italic text-brand-navy/40 uppercase tracking-widest leading-none">Vault Empty</h3>
+                       <p className="text-[9px] font-black uppercase tracking-[0.4em] text-brand-navy/20 mt-4 leading-none">No transactions registered in this identity profile.</p>
+                       <Link href="/products" className="inline-block mt-12 text-[10px] font-black uppercase tracking-[0.4em] border-b-2 border-secondary pb-1 hover:text-secondary transition-all">Initiate Acquisition</Link>
+                    </div>
+                 )}
               </div>
-            </div>
-
-            <div className="space-y-10">
-              <h3 className="text-2xl font-serif italic text-primary">Member Schedule</h3>
-              <div className="bg-white p-10 border border-outline/10 space-y-8">
-                <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 bg-secondary/10 flex items-center justify-center text-secondary border border-secondary/20">
-                    <span className="material-symbols-outlined">calendar_today</span>
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-lg font-serif text-primary">Expert Vision Exam</h4>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40">Lenzify Flagship Atelier</p>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                   <div className="flex justify-between items-baseline border-b border-outline/10 pb-4">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40">Scheduled Horizon</p>
-                      <p className="text-2xl font-serif italic text-primary">14 APR, 14:30</p>
-                   </div>
-                   <div className="flex gap-4">
-                      <button className="flex-grow py-5 text-[10px] font-bold uppercase tracking-widest bg-primary text-white hover:opacity-80 transition-all text-center">Reschedule Access</button>
-                   </div>
-                </div>
-              </div>
-              <button className="w-full py-6 border border-outline/10 border-dashed text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface/40 hover:border-primary hover:text-primary transition-all">
-                Request Protocol Maintenance
-              </button>
-            </div>
-          </div>
-        </section>
+           </div>
+        </div>
       </main>
     </div>
   );
