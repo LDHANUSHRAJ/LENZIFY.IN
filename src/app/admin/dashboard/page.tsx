@@ -144,7 +144,7 @@ export default async function AdminDashboardOverview() {
 
         {/* Side Panel Analysis */}
         <div className="lg:col-span-4 space-y-12">
-           <TopProducts products={statsData.topProducts as any} />
+           <TopProducts products={statsData.topProducts} />
 
            <div className="bg-[#000000] text-white p-10 lg:p-14 space-y-10 relative overflow-hidden group shadow-2xl">
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-secondary/10 blur-[100px] group-hover:bg-secondary/20 transition-all duration-1000"></div>

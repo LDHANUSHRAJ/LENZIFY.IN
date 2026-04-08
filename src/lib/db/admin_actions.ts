@@ -206,21 +206,27 @@ export async function getDashboardStats() {
     .select("product_id, quantity, products(name, brand)")
     .limit(10);
   
-  const productSales: any = {};
+  interface ProductSale {
+    name: string;
+    brand: string;
+    sales: number;
+  }
+  
+  const productSales: Record<string, ProductSale> = {};
   topSellingData?.forEach(item => {
     const id = item.product_id;
     if (!productSales[id]) {
       productSales[id] = { 
-        name: (item.products as any)?.name, 
-        brand: (item.products as any)?.brand, 
+        name: (item.products as any)?.name || "Unknown", 
+        brand: (item.products as any)?.brand || "Lenzify", 
         sales: 0 
       };
     }
-    productSales[id].sales += item.quantity;
+    productSales[id].sales += item.quantity || 0;
   });
   
-  const topProducts = Object.values(productSales)
-    .sort((a: any, b: any) => b.sales - a.sales)
+  const topProducts: ProductSale[] = Object.values(productSales)
+    .sort((a, b) => b.sales - a.sales)
     .slice(0, 5);
 
   // 8. Revenue & Order Trends (Last 7 days)
