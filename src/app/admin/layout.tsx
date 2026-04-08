@@ -7,7 +7,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-brand-surface font-sans selection:bg-secondary selection:text-brand-navy">
+    <div className="min-h-screen bg-brand-surface font-sans selection:bg-secondary selection:text-brand-navy" suppressHydrationWarning>
       {/* Global Administrative Sidebar - Fixed Navigation */}
       <Sidebar />
 

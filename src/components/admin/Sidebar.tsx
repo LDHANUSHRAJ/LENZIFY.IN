@@ -18,7 +18,11 @@ import {
   Zap,
   Globe,
   Search,
-  Shield
+  Shield,
+  PlusCircle,
+  FolderTree,
+  Tag,
+  Star
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/auth/actions";
@@ -27,13 +31,14 @@ import { createClient } from "@/lib/supabase/client";
 
 const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
+  { name: "Products", icon: Package, href: "/admin/products" },
+  { name: "Add Product", icon: PlusCircle, href: "/admin/products/new" },
+  { name: "Categories", icon: FolderTree, href: "/admin/categories" },
   { name: "Orders", icon: ShoppingCart, href: "/admin/orders" },
-  { name: "Catalog", icon: Package, href: "/admin/products" },
+  { name: "Customers", icon: Users, href: "/admin/customers" },
+  { name: "Brands", icon: Tag, href: "/admin/brands" },
+  { name: "Collections", icon: Star, href: "/admin/collections" },
   { name: "Inventory", icon: Warehouse, href: "/admin/inventory" },
-  { name: "Promotions", icon: Ticket, href: "/admin/offers" },
-  { name: "Insights", icon: BarChart3, href: "/admin/reports" },
-  { name: "Banners", icon: Globe, href: "/admin/homepage" },
-  { name: "Clients", icon: Users, href: "/admin/customers" },
   { name: "Settings", icon: Settings, href: "/admin/settings" },
 ];
 

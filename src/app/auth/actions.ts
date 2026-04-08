@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 export async function login(formData: FormData) {
   const supabase = await createClient()
@@ -38,6 +38,8 @@ export async function login(formData: FormData) {
 
 export async function signup(formData: FormData) {
   const supabase = await createClient()
+  const adminClient = await createAdminClient()
+  
   const data = {
     email: formData.get('email') as string,
     password: formData.get('password') as string,
@@ -49,18 +51,30 @@ export async function signup(formData: FormData) {
     return { error: 'All fields are required.' }
   }
 
-  const { error } = await supabase.auth.signUp({
+  // 1. Create user via Admin Client to bypass rate limits and auto-confirm email
+  const { data: userData, error: createError } = await adminClient.auth.admin.createUser({
     email: data.email,
     password: data.password,
-    options: {
-      data: {
-        name: data.name,
-      }
-    }
+    email_confirm: true,
+    user_metadata: { name: data.name }
   })
 
-  if (error) {
-    return { error: error.message }
+  if (createError) {
+    // If user already exists, try to log them in, otherwise show error
+    if (createError.message.includes("already registered")) {
+        return { error: "This email is already associated with an account. Please sign in." }
+    }
+    return { error: createError.message }
+  }
+
+  // 2. Establish Session using the regular client (to set cookies correctly)
+  const { error: loginError } = await supabase.auth.signInWithPassword({
+    email: data.email,
+    password: data.password
+  })
+
+  if (loginError) {
+    return { error: `Account created, but login failed: ${loginError.message}` }
   }
 
   revalidatePath('/', 'layout')

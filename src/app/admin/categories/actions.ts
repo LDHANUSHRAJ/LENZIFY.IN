@@ -28,7 +28,7 @@ export async function createCategory(formData: FormData) {
 
   if (error) {
     console.error("Error creating category:", error);
-    return { error: error.message };
+    redirect(`/admin/categories/new?error=${encodeURIComponent(error.message)}`);
   }
 
   revalidatePath("/admin/categories");
@@ -55,11 +55,11 @@ export async function updateCategory(id: number, formData: FormData) {
 
   if (error) {
     console.error("Error updating category:", error);
-    return { error: error.message };
+    redirect(`/admin/categories/${id}/edit?error=${encodeURIComponent(error.message)}`);
   }
 
   revalidatePath("/admin/categories");
-  return { success: true };
+  redirect("/admin/categories");
 }
 
 export async function deleteCategory(id: number) {

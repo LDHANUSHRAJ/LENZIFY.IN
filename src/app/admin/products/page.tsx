@@ -66,6 +66,7 @@ export default async function AdminProductsPage({
               defaultValue={query}
               placeholder="ACCESS SEARCH PARAMETERS..."
               className="w-full bg-brand-background border border-brand-navy/5 pl-16 pr-6 py-5 text-[10px] font-bold uppercase tracking-[0.2em] outline-none focus:border-secondary transition-all"
+              suppressHydrationWarning
             />
           </div>
           <div className="relative w-full lg:w-[200px]">
@@ -74,6 +75,7 @@ export default async function AdminProductsPage({
               name="cat"
               defaultValue={cat}
               className="w-full appearance-none bg-brand-background border border-brand-navy/10 pl-14 pr-16 py-5 text-[10px] font-bold uppercase tracking-[0.2em] outline-none focus:border-secondary cursor-pointer"
+              suppressHydrationWarning
             >
               <option value="all">Global Sectors</option>
               {categories?.map(c => (
@@ -81,7 +83,7 @@ export default async function AdminProductsPage({
               ))}
             </select>
           </div>
-          <button type="submit" className="bg-brand-navy text-white px-8 py-5 text-[10px] font-bold uppercase tracking-widest hover:bg-secondary transition-all shrink-0">Filter Matrix</button>
+          <button type="submit" className="bg-brand-navy text-white px-8 py-5 text-[10px] font-bold uppercase tracking-widest hover:bg-secondary transition-all shrink-0" suppressHydrationWarning>Filter Matrix</button>
         </form>
       </div>
 

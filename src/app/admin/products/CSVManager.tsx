@@ -80,6 +80,7 @@ export default function CSVManager() {
              onClick={handleExport}
              disabled={loading}
              className="bg-brand-navy text-white px-8 py-4 text-[9px] font-bold uppercase tracking-[0.3em] flex items-center gap-4 hover:bg-secondary transition-all shadow-xl group border border-white/5 disabled:opacity-50"
+             suppressHydrationWarning
            >
              {loading ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} className="group-hover:-translate-y-1 transition-transform" />}
              Export Matrix
@@ -88,7 +89,7 @@ export default function CSVManager() {
            <label className="bg-white/5 text-white px-8 py-4 text-[9px] font-bold uppercase tracking-[0.3em] flex items-center gap-4 hover:bg-white hover:text-brand-navy transition-all shadow-xl group border border-white/10 cursor-pointer disabled:opacity-50">
              {loading ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} className="group-hover:translate-y-1 transition-transform" />}
              Synchronize CSV
-             <input type="file" accept=".csv" onChange={handleImport} className="hidden" disabled={loading} />
+             <input type="file" accept=".csv" onChange={handleImport} className="hidden" disabled={loading} suppressHydrationWarning />
            </label>
         </div>
       </div>

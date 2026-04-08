@@ -7,77 +7,85 @@ import { revalidatePath } from "next/cache";
  * CHECKOUT & ORDER ACTIONS
  */
 
-export async function placeOrder(formData: FormData) {
+export async function placeOrder(data: {
+  items: any[];
+  total_price: number;
+  address: any;
+  prescription?: any;
+  payment: { id: string; method: string };
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Security identity required." };
 
-  // 1. Get Cart Items
-  const { data: cartItems, error: cartError } = await supabase
-    .from("cart")
-    .select("*, products(price, offer_price)")
-    .eq("user_id", user.id);
-
-  if (cartError || !cartItems || cartItems.length === 0) {
-    return { error: "Nexus cart empty. Cannot finalize order." };
-  }
-
-  // 2. Extract Data
-  const address_id = parseInt(formData.get("address_id") as string);
-  const total_price = cartItems.reduce((acc, item) => {
-    const price = item.products.offer_price || item.products.price;
-    return acc + (price * item.quantity);
-  }, 0);
-
-  // 3. Create Order
-  const { data: order, error: orderError } = await supabase
-    .from("orders")
+  // 1. Insert/Get Address ID
+  const { data: address, error: addrError } = await supabase
+    .from("addresses")
     .insert({
       user_id: user.id,
-      total_price,
-      status: 'pending',
-      payment_status: 'pending',
-      address_id
+      name: data.address.name,
+      phone: data.address.phone,
+      address: data.address.address,
+      city: data.address.city,
+      state: data.address.state || "Not Specified",
+      pincode: data.address.pincode
     })
     .select("id")
     .single();
 
-  if (orderError) return { error: orderError.message };
+  if (addrError) return { error: "Address synchronization failure: " + addrError.message };
 
-  // 4. Create Order Items
-  const orderItems = cartItems.map(item => ({
+  // 2. Create Order
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .insert({
+      user_id: user.id,
+      total_price: data.total_price,
+      status: 'pending',
+      payment_status: 'paid', // Assuming Razorpay success if this is called
+      address_id: address.id
+    })
+    .select("id")
+    .single();
+
+  if (orderError) return { error: "Order initialization failure: " + orderError.message };
+
+  // 3. Create Order Items
+  const orderItems = data.items.map(item => ({
     order_id: order.id,
-    product_id: item.product_id,
+    product_id: item.id,
     quantity: item.quantity,
-    price: item.products.offer_price || item.products.price,
+    price: item.price,
     lens_type: item.lens_type,
     power_left: item.power_left,
     power_right: item.power_right
   }));
 
   const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
-  if (itemsError) return { error: itemsError.message };
+  if (itemsError) return { error: "Item batch insert failure: " + itemsError.message };
 
-  // 5. Handle Prescription Upload (if exists)
-  const prescription_url = formData.get("prescription_url") as string;
-  if (prescription_url) {
+  // 4. Handle Prescription
+  if (data.prescription) {
       await supabase.from("prescriptions").insert({
           user_id: user.id,
           order_id: order.id,
-          file_url: prescription_url
+          left_eye: data.prescription.left_eye,
+          right_eye: data.prescription.right_eye,
+          pd: parseFloat(data.prescription.pd) || 0,
+          file_url: data.prescription.file_url
       });
   }
 
-  // 6. Record Payment Metadata (Simulated for flow)
-  const payment_method = formData.get("payment_method") as string;
+  // 5. Record Payment
   await supabase.from("payments").insert({
       order_id: order.id,
-      payment_method,
-      amount: total_price,
-      status: 'Success' // In reality, wait for Razorpay success
+      payment_method: data.payment.method,
+      transaction_id: data.payment.id,
+      amount: data.total_price,
+      status: 'Success'
   });
 
-  // 7. Clear Cart
+  // 6. Clear Cart
   await supabase.from("cart").delete().eq("user_id", user.id);
 
   revalidatePath("/admin/orders");

@@ -15,7 +15,15 @@ import {
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function NewProductPage() {
+export default async function NewProductPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; error?: string }>;
+}) {
+  const params = await searchParams;
+  const isSuccess = params.success === "true";
+  const error = params.error;
+
   const supabase = await createClient();
   const { data: categories } = await supabase.from("categories").select("*");
 
@@ -31,6 +39,37 @@ export default async function NewProductPage() {
           <h1 className="text-4xl md:text-5xl font-serif italic text-brand-navy tracking-tight">Deploy <span className="text-secondary">Model</span></h1>
         </div>
       </header>
+
+      {isSuccess && (
+        <div className="bg-emerald-50 border border-emerald-100 p-8 flex items-center gap-6 animate-in fade-in slide-in-from-top-4 duration-700 shadow-xl">
+           <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white shrink-0">
+              <Package size={24} />
+           </div>
+           <div>
+              <h3 className="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-900">Protocol Success: Model Deployed</h3>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 mt-1 italic">
+                 The product has been successfully registered in the catalog and synchronized with the storefront.
+              </p>
+           </div>
+           <Link href="/admin/products" className="ml-auto bg-emerald-500 text-white px-6 py-3 text-[9px] font-bold uppercase tracking-widest hover:bg-emerald-600 transition-colors">
+              View in Catalog
+           </Link>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-100 p-8 flex items-center gap-6 animate-in fade-in slide-in-from-top-4 duration-700 shadow-xl">
+           <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white shrink-0">
+              <Cpu size={24} />
+           </div>
+           <div className="flex-1">
+              <h3 className="text-[11px] font-bold uppercase tracking-[0.3em] text-red-900">Deployment Failure</h3>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-red-600 mt-1 italic leading-relaxed">
+                 {error}
+              </p>
+           </div>
+        </div>
+      )}
 
       <form action={async (formData) => { "use server"; await createProduct(formData); }} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
         {/* Left Column: Core Data */}
@@ -50,6 +89,7 @@ export default async function NewProductPage() {
                      required 
                      placeholder="e.g. AERO STEALTH BLUE" 
                      className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all" 
+                     suppressHydrationWarning
                    />
                 </div>
                 <div className="space-y-2 group">
@@ -59,6 +99,7 @@ export default async function NewProductPage() {
                      required 
                      placeholder="e.g. RAY-BAN LUX" 
                      className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all" 
+                     suppressHydrationWarning
                    />
                 </div>
                 <div className="space-y-2 group">
@@ -68,21 +109,10 @@ export default async function NewProductPage() {
                      required 
                      placeholder="LZ-AERO-001" 
                      className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all uppercase" 
+                     suppressHydrationWarning
                    />
                 </div>
-                <div className="space-y-2 group">
-                   <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted transition-colors group-focus-within:text-secondary italic">Deployment Sector</label>
-                   <select 
-                     name="category_id" 
-                     required 
-                     className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-bold tracking-widest uppercase outline-none focus:border-secondary transition-all cursor-pointer appearance-none"
-                   >
-                     <option value="">Select Sector...</option>
-                     {categories?.map((cat) => (
-                       <option key={cat.id} value={cat.id}>{cat.name}</option>
-                     ))}
-                   </select>
-                </div>
+                {/* Deployment sectors moved below */}
              </div>
 
              <div className="space-y-2 group">
@@ -93,7 +123,41 @@ export default async function NewProductPage() {
                   required 
                   placeholder="Provide detailed model specifications..." 
                   className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all resize-none" 
+                  suppressHydrationWarning
                 />
+             </div>
+
+             {/* Deployment Sectors */}
+             <div className="pt-6 border-t border-brand-navy/5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-brand-navy mb-6 block">Deployment Sectors</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   {[
+                     { label: "1. Gender", name: "gender", options: ["Men", "Women", "Unisex", "Kids"] },
+                     { label: "2. Product Type", name: "product_type", options: ["Eyeglasses", "Sunglasses", "Computer Glasses", "Reading Glasses", "Contact Lenses", "Accessories"] },
+                     { label: "3. Collection / Display Section", name: "collection", options: ["New Arrivals", "Trending", "Best Sellers", "Premium Collection", "Budget Collection", "Featured"] },
+                     { label: "4. Usage Type", name: "usage_type", options: ["Daily Wear", "Office Wear", "Gaming / Blue Light", "Driving", "Sports", "Fashion"] },
+                     { label: "5. Frame Style", name: "frame_style", options: ["Full Rim", "Half Rim", "Rimless", "Transparent", "Thick Frame", "Thin Frame"] },
+                     { label: "6. Material", name: "material", options: ["Metal", "Acetate", "TR90", "Titanium", "Plastic"] }
+                   ].map((sector) => (
+                     <div key={sector.name} className="space-y-3">
+                        <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">{sector.label}</label>
+                        <div className="grid grid-cols-2 gap-2">
+                           {sector.options.map((opt) => (
+                              <label key={opt} className="flex items-center gap-2 p-2 border border-brand-navy/5 hover:border-secondary/50 transition-all cursor-pointer bg-brand-background/50 group/check">
+                    <input 
+                      name={sector.name} 
+                      type="checkbox" 
+                      value={opt} 
+                      className="accent-secondary"
+                      suppressHydrationWarning
+                    />
+                                 <span className="text-[9px] font-bold uppercase tracking-wider text-brand-navy/70 group-hover/check:text-brand-navy">{opt}</span>
+                              </label>
+                           ))}
+                        </div>
+                     </div>
+                   ))}
+                </div>
              </div>
           </section>
 
@@ -113,6 +177,7 @@ export default async function NewProductPage() {
                      step="0.01" 
                      required 
                      className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-bold tracking-wider outline-none focus:border-secondary transition-all" 
+                     suppressHydrationWarning
                    />
                 </div>
                 <div className="space-y-2 group">
@@ -122,6 +187,7 @@ export default async function NewProductPage() {
                      type="number" 
                      step="0.01" 
                      className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-bold tracking-wider outline-none focus:border-secondary transition-all" 
+                     suppressHydrationWarning
                    />
                 </div>
                 <div className="space-y-2 group">
@@ -132,6 +198,7 @@ export default async function NewProductPage() {
                      defaultValue="0" 
                      required 
                      className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-bold tracking-wider outline-none focus:border-secondary transition-all" 
+                     suppressHydrationWarning
                    />
                 </div>
              </div>
@@ -146,10 +213,7 @@ export default async function NewProductPage() {
              
              <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-center md:text-left mb-8">
                 {[
-                  { label: "Frame Protocol", name: "frame_type", options: ["Full-Rim", "Half-Rim", "Rimless"] },
                   { label: "Unit Geometry", name: "shape", options: ["Round", "Square", "Aviator", "Rectangular", "Cat-Eye"] },
-                  { label: "Material Composition", name: "material", options: ["Metal", "Plastic", "Titanium", "Carbon-Fiber"] },
-                  { label: "Gender Designation", name: "gender", options: ["Men", "Women", "Unisex", "Kids"] },
                   { label: "Chroma Profile", name: "color", options: ["Black", "Gold", "Silver", "Tortoise", "Crystal"] },
                   { label: "Scale Factor", name: "size", options: ["Small", "Medium", "Large"] },
                 ].map((spec) => (
@@ -158,6 +222,7 @@ export default async function NewProductPage() {
                      <select 
                        name={spec.name} 
                        className="w-full bg-brand-background border border-brand-navy/10 px-4 py-3 text-[10px] font-bold tracking-widest uppercase outline-none focus:border-secondary transition-all cursor-pointer"
+                       suppressHydrationWarning
                      >
                        <option value="">N/A</option>
                        {spec.options.map(opt => <option key={opt} value={opt.toLowerCase()}>{opt}</option>)}
@@ -235,21 +300,23 @@ export default async function NewProductPage() {
              
              <div className="space-y-6">
                 <div className="space-y-2">
-                   <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Primary Model Image (URL)</label>
+                   <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Primary Model Image (Files)</label>
                    <input 
-                     name="primary_image" 
+                     type="file"
+                     name="primary_image_file" 
+                     accept="image/*"
                      required 
-                     placeholder="https://..." 
-                     className="w-full bg-brand-background border border-brand-navy/10 px-4 py-3 text-[10px] font-medium tracking-wider outline-none focus:border-secondary transition-all" 
+                     className="w-full bg-brand-background border border-brand-navy/10 px-4 py-3 text-[10px] font-medium tracking-wider outline-none focus:border-secondary transition-all file:mr-4 file:py-2 file:px-4 file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-brand-navy file:text-white cursor-pointer" 
                    />
                 </div>
                 <div className="space-y-2">
-                   <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Additional Images (Comma Separated URLs)</label>
-                   <textarea 
-                     name="additional_images"
-                     rows={3}
-                     placeholder="https://img1..., https://img2..."
-                     className="w-full bg-brand-background border border-brand-navy/10 px-4 py-3 text-[10px] font-mono tracking-wider outline-none focus:border-secondary transition-all resize-none"
+                   <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Additional Views (Upload Multiple)</label>
+                   <input 
+                     type="file"
+                     name="additional_images_files"
+                     accept="image/*"
+                     multiple
+                     className="w-full bg-brand-background border border-brand-navy/10 px-4 py-3 text-[10px] font-medium tracking-wider outline-none focus:border-secondary transition-all file:mr-4 file:py-2 file:px-4 file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-brand-navy file:text-white cursor-pointer" 
                    />
                 </div>
                 <div className="space-y-2 p-4 border border-brand-navy/10 bg-brand-background">

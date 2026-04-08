@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "react-router-dom";
+
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { useCartStore } from "@/store/cartStore";
@@ -11,70 +11,52 @@ import { cn } from "@/lib/utils";
 import { RefreshCw } from "lucide-react";
 import ProductCard from "@/components/store/ProductCard";
 
-const DEFAULT_SECTIONS = [
-  {
-    id: "default-hero",
-    section_key: "hero",
-    content: {
-      subtitle: "The Visionary Editorial",
-      title: "Visionary Excellence. Timeless Style.",
-      description: "Curated eyewear for those who view the world through a lens of sophistication and clarity.",
-      button_text: "Explore Collection",
-      button_link: "/products",
-      image_url: "/images/editorial/hero_woman_reading.png"
-    }
-  },
-  {
-    id: "default-categories",
-    section_key: "categories",
-    content: {
-      title: "Curated Categories",
-      subtitle: "Defining the future of optical aesthetics.",
-      items: [
-        { name: "Eyeglasses", label: "Collection", image_url: "/images/editorial/featured_woman.png", href: "/products?category=eyeglasses" },
-        { name: "Sunglasses", label: "Essentials", image_url: "/images/editorial/lifestyle_laughing.png", href: "/products?category=sunglasses" },
-        { name: "Precision Lenses", label: "Technical", image_url: "/images/editorial/community_group.png", href: "/lenses" }
-      ]
-    }
-  },
-  {
-    id: "default-featured",
-    section_key: "featured_products",
-    content: {
-      title: "Modern Minimalist",
-      subtitle: "Stripped of excess. Defined by structure. The ultimate expression of industrial optical design."
-    }
-  },
-  {
-    id: "default-heritage",
-    section_key: "full_width_banner",
-    content: {
-      subtitle: "EXCLUSIVELY LENZIFY",
-      title: "The Heritage Series",
-      description: "Inspired by the archives of 1950s visionary designers, The Heritage Series combines traditional craftsmanship with modern acetate technology.",
-      image_url: "/images/editorial/community_group.png"
-    }
-  }
+const CATEGORY_CARDS = [
+  { name: "Men", image_url: "/images/categories/men.png", href: "/products?gender=Men" },
+  { name: "Women", image_url: "/images/categories/women.png", href: "/products?gender=Women" },
+  { name: "Kids", image_url: "/images/categories/kids.png", href: "/products?gender=Kids" },
+  { name: "Eyeglasses", image_url: "/images/categories/eyeglasses.png", href: "/products?type=Eyeglasses" },
+  { name: "Sunglasses", image_url: "/images/categories/sunglasses.png", href: "/products?type=Sunglasses" },
+  { name: "Computer Glasses", image_url: "/images/categories/computer_glasses.png", href: "/products?type=Computer Glasses" },
+  { name: "Reading Glasses", image_url: "/images/categories/reading_glasses.png", href: "/products?type=Reading Glasses" },
+  { name: "Contact Lenses", image_url: "/images/categories/contact_lenses.png", href: "/products?type=Contact Lenses" },
+  { name: "Accessories", image_url: "/images/categories/accessories.png", href: "/products?type=Accessories" },
 ];
 
-function FeaturedProductsGrid() {
+const DEFAULT_SECTIONS = [
+  { id: "default-hero", section_key: "hero", content: { subtitle: "The Visionary Editorial", title: "Visionary Excellence. Timeless Style.", description: "Curated eyewear for those who view the world through a lens of sophistication and clarity.", button_text: "Explore Collection", button_link: "/products", image_url: "/images/editorial/hero_woman_reading.png" } },
+  { id: "default-categories", section_key: "categories", content: { title: "Categories", subtitle: "Defining the future of optical aesthetics.", items: CATEGORY_CARDS } },
+  { id: "default-featured", section_key: "featured_products", content: { title: "Featured Products", subtitle: "Handpicked selections." } },
+  { id: "default-trending", section_key: "trending_products", content: { title: "Trending", subtitle: "What everyone is wearing right now." } },
+  { id: "default-new", section_key: "new_arrivals", content: { title: "New Arrivals", subtitle: "Fresh out of the design lab." } },
+  { id: "default-bestsellers", section_key: "best_sellers", content: { title: "Best Sellers", subtitle: "Our most loved frames." } },
+  { id: "default-brands", section_key: "brand_section", content: { title: "Premium Brands", subtitle: "Top tier craftsmanship." } },
+];
+
+function ProductRow({ title, subtitle, filterField, filterValue }: { title: string, subtitle: string, filterField?: string, filterValue?: any }) {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
-    const fetchFeatured = async () => {
-      const { data } = await supabase
-        .from("products")
-        .select("*, categories(name, slug)")
-        .eq("is_featured", true)
-        .eq("is_enabled", true)
-        .limit(4);
+    const fetchProducts = async () => {
+      let query = supabase.from("products").select("*").eq("is_enabled", true).limit(4);
+      
+      if (filterField === 'is_featured') {
+          query = query.eq('is_featured', filterValue);
+      } else if (filterField === 'collection' && filterValue) {
+          query = query.contains("collection", [filterValue]);
+      } else {
+          // Fallback, order by created at descending
+          query = query.order('created_at', { ascending: false });
+      }
+
+      const { data } = await query;
       if (data) setProducts(data);
       setLoading(false);
     };
-    fetchFeatured();
-  }, [supabase]);
+    fetchProducts();
+  }, [supabase, filterField, filterValue]);
 
   if (loading) {
     return (
@@ -86,38 +68,31 @@ function FeaturedProductsGrid() {
     );
   }
 
-  const displayProducts = products.length > 0 ? products : [
-    { id: 'p1', name: 'TITAN 01', price: 295, primary_image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBkcfWEWRT3-q-UwrITAs3MTZMqxAHL_jEoGfzFzJ0T5z4puhpNoHT7NLCp2vgx5sQuf9LVorkqdR1BycNFeK9qf4_DkY6OX6anC77pwceLQbRckWF3wwTBodZPlFVaKlJf6Jg_L-R2NuPZ6xPQxluMOhnKwIGUtrcd0qvI7o9dQioXZChqF5aM-MqSqd2fW7Ou3-CIpg8_2Pj3MyXwD7lHtfebmn2Q0ouw01eiiTnMygPwAvQVnjQ3X46yNx3xoAC6As-FrFao59c' },
-    { id: 'p2', name: 'CRYSTAL LITE', price: 320, primary_image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD0NQL76kz7Cf9S-xGZBpeOQ8pTFn0frAz022U8ukKRZCqMM70UXup8e1M37n2RPFhShg-JnAHil0QzPXKe1-qLgyZSBtvm21uU9RBqZzIQG4cWxDV4ujkAix-h-ZyYLuqv3Gylbc6ayY8HoRoRccaPvv5EsNEvrXxF10rkw07j1efxXKD6gO5rIrNAmquDNN-TIx2e9znXmIGqOu95DujTN_YJ5r-y13jng3Lhp9n2sfA5YQSv0nYLa8vOSCZvYrNPR9tknktVu6M' },
-    { id: 'p3', name: 'BOUHAUS ROUND', price: 275, primary_image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD3WcmlmrsaUezzzf1uvNnjr0Hgoi_xraZn5gA_xo5xDP5GsMLQ3pN9cOhP8w2NT7J94jGj_D1rzO6ayNVJQuNX-f7-5t50FLonGd1M46kxpR7Z6CVzjMkuU5gIKLQ_iTPRfw0UfeBuN624UgeVJ1hIXIu2npMDOjrO96__CoWtLAZJDl4NSRUPhbWNmsv8FCqRKcZjmkFawSDsZZ17efdwQcdRRhTJ9pUcdb3GGwbRhTV42GnzYTz7XnjWTEmLyVsNj0xAunMtz98' },
-    { id: 'p4', name: 'LINEAR GOLD', price: 410, primary_image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBvmQ6ZHy5xrwiS5xrFkujTK6qNXlI_OxiXPXwX4z41Bnz5fCwZ-G2DbZiTEjzO7kKyaY08-1IAxboCkQEvigoWOTa1a-ZSLCoSlJ-yvkiMfDmiC-KvASQDIghrRz_4QJiR4X5XI-6WuCyD258jXC6HKdr-rbqEtDfFIM1oTr0OxWC0f67fbb7JWzkSodjsLwA4qjK6YxMFMCnXsyEYQedmwsGQvIphTLEIn8_7MeU8jAO49expZY51k9MUnRXDXq10qFMH0C9xIuc' }
-  ];
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-1">
-      {displayProducts.map((p: any) => (
-        <div key={p.id} className="bg-surface p-8 group transition-all duration-500 hover:bg-surface-container-low">
-          <div className="relative aspect-square mb-8 overflow-hidden">
-            <Image
-              src={p.primary_image || "/placeholder.png"}
-              alt={p.name}
-              fill
-              className="object-contain grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110"
-            />
+    <section className="py-24 bg-surface-container">
+      <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
+        <div className="flex justify-between items-end mb-16">
+          <div>
+            <h2 className="text-4xl font-serif text-primary">{title}</h2>
+            <p className="text-on-surface-variant mt-2 font-body">{subtitle}</p>
           </div>
-          <h4 className="font-medium text-center uppercase tracking-tight">{p.name}</h4>
-          <p className="text-secondary text-sm text-center mt-2 font-semibold tracking-tighter">₹{p.price}</p>
-          <Link 
-            href={`/product/${p.slug || p.id}`}
-            className="mt-4 block text-[10px] text-center uppercase tracking-widest text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity underline underline-offset-4"
-          >
-            View Specs
+          <Link href="/products" className="text-secondary font-medium underline underline-offset-8 hover:opacity-70 transition-all">
+            View All
           </Link>
         </div>
-      ))}
-    </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
+          {products.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+          {products.length === 0 && (
+             <div className="col-span-12 text-center py-10 opacity-50">No products found for this section.</div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
+// Removed old FeaturedProductsGrid function
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
@@ -247,10 +222,10 @@ export default function Home() {
                         View All
                       </Link>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                       {/* Category Items */}
                       {content.items?.map((cat: any, i: number) => (
-                        <Link href={cat.href || "/products"} key={cat.name} className="group relative overflow-hidden bg-surface aspect-[4/5] mt-0 md:mt-0">
+                        <Link href={cat.href || "/products"} key={cat.name} className="group relative overflow-hidden bg-surface aspect-[4/5] rounded-lg">
                           <Image 
                             src={cat.image_url || "/placeholder.png"} 
                             alt={cat.name} 
@@ -297,14 +272,27 @@ export default function Home() {
               );
 
             case "featured_products":
+              return <ProductRow key={section.id} title={content.title || "Featured"} subtitle={content.subtitle} filterField="is_featured" filterValue={true} />;
+            
+            case "trending_products":
+              return <ProductRow key={section.id} title={content.title || "Trending"} subtitle={content.subtitle} filterField="collection" filterValue="Trending" />;
+
+            case "new_arrivals":
+              return <ProductRow key={section.id} title={content.title || "New Arrivals"} subtitle={content.subtitle} filterField="collection" filterValue="New Arrivals" />;
+
+            case "best_sellers":
+              return <ProductRow key={section.id} title={content.title || "Best Sellers"} subtitle={content.subtitle} filterField="collection" filterValue="Best Sellers" />;
+
+            case "brand_section":
               return (
-                <section key={section.id} className="py-32 bg-surface-container">
-                  <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
-                    <div className="text-center max-w-2xl mx-auto mb-20">
-                      <h2 className="text-5xl font-serif mb-6">{content.title || "Modern Minimalist"}</h2>
-                      <p className="text-on-surface-variant">{content.subtitle || "Stripped of excess. Defined by structure. The ultimate expression of industrial optical design."}</p>
-                    </div>
-                    <FeaturedProductsGrid />
+                <section key={section.id} className="py-20 bg-surface text-center">
+                  <h3 className="text-2xl font-serif mb-10">{content.title || "Premium Brands"}</h3>
+                  <div className="flex flex-wrap justify-center gap-12 opacity-50 grayscale">
+                     <span className="font-bold text-xl uppercase tracking-widest">Ray-Ban</span>
+                     <span className="font-bold text-xl uppercase tracking-widest">Oakley</span>
+                     <span className="font-bold text-xl uppercase tracking-widest">Gucci</span>
+                     <span className="font-bold text-xl uppercase tracking-widest">Prada</span>
+                     <span className="font-bold text-xl uppercase tracking-widest">Persol</span>
                   </div>
                 </section>
               );

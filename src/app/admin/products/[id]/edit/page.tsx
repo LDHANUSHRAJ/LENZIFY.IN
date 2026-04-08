@@ -98,19 +98,7 @@ export default async function EditProductPage({ params }: Props) {
                       className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-bold tracking-wider outline-none focus:border-secondary transition-all uppercase" 
                    />
                 </div>
-                <div className="space-y-2 group">
-                   <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Deployment Sector</label>
-                   <select 
-                      name="category_id" 
-                      defaultValue={product.category_id} 
-                      required 
-                      className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-bold tracking-widest uppercase outline-none focus:border-secondary transition-all cursor-pointer appearance-none"
-                   >
-                     {categories?.map((cat) => (
-                       <option key={cat.id} value={cat.id}>{cat.name}</option>
-                     ))}
-                   </select>
-                </div>
+                {/* Deployment sectors moved below */}
              </div>
 
              <div className="space-y-2 group">
@@ -122,6 +110,39 @@ export default async function EditProductPage({ params }: Props) {
                    required 
                    className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all resize-none" 
                 />
+             </div>
+
+             {/* Deployment Sectors */}
+             <div className="pt-6 border-t border-brand-navy/5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-brand-navy mb-6 block">Deployment Sectors</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   {[
+                     { label: "1. Gender", name: "gender", options: ["Men", "Women", "Unisex", "Kids"], selected: product.gender?.split(", ") || [] },
+                     { label: "2. Product Type", name: "product_type", options: ["Eyeglasses", "Sunglasses", "Computer Glasses", "Reading Glasses", "Contact Lenses", "Accessories"], selected: product.specifications?.product_type || [] },
+                     { label: "3. Collection / Display Section", name: "collection", options: ["New Arrivals", "Trending", "Best Sellers", "Premium Collection", "Budget Collection", "Featured"], selected: product.specifications?.collection || [] },
+                     { label: "4. Usage Type", name: "usage_type", options: ["Daily Wear", "Office Wear", "Gaming / Blue Light", "Driving", "Sports", "Fashion"], selected: product.specifications?.usage_type || [] },
+                     { label: "5. Frame Style", name: "frame_style", options: ["Full Rim", "Half Rim", "Rimless", "Transparent", "Thick Frame", "Thin Frame"], selected: product.frame_type?.split(", ") || [] },
+                     { label: "6. Material", name: "material", options: ["Metal", "Acetate", "TR90", "Titanium", "Plastic"], selected: product.material?.split(", ") || [] }
+                   ].map((sector) => (
+                     <div key={sector.name} className="space-y-3">
+                        <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">{sector.label}</label>
+                        <div className="grid grid-cols-2 gap-2">
+                           {sector.options.map((opt) => (
+                              <label key={opt} className="flex items-center gap-2 p-2 border border-brand-navy/5 hover:border-secondary/50 transition-all cursor-pointer bg-brand-background/50 group/check">
+                                 <input 
+                                    type="checkbox" 
+                                    name={sector.name} 
+                                    value={opt} 
+                                    defaultChecked={sector.selected.includes(opt)}
+                                    className="accent-secondary" 
+                                 />
+                                 <span className="text-[9px] font-bold uppercase tracking-wider text-brand-navy/70 group-hover/check:text-brand-navy">{opt}</span>
+                              </label>
+                           ))}
+                        </div>
+                     </div>
+                   ))}
+                </div>
              </div>
           </section>
 
@@ -176,10 +197,7 @@ export default async function EditProductPage({ params }: Props) {
              
              <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-center md:text-left mb-8">
                 {[
-                  { label: "Frame Protocol", name: "frame_type", options: ["Full-Rim", "Half-Rim", "Rimless"] },
                   { label: "Unit Geometry", name: "shape", options: ["Round", "Square", "Aviator", "Rectangular", "Cat-Eye"] },
-                  { label: "Material Composition", name: "material", options: ["Metal", "Plastic", "Titanium", "Carbon-Fiber"] },
-                  { label: "Gender Designation", name: "gender", options: ["Men", "Women", "Unisex", "Kids"] },
                   { label: "Chroma Profile", name: "color", options: ["Black", "Gold", "Silver", "Tortoise", "Crystal"] },
                   { label: "Scale Factor", name: "size", options: ["Small", "Medium", "Large"] },
                 ].map((spec) => (
@@ -273,23 +291,34 @@ export default async function EditProductPage({ params }: Props) {
                 <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-navy">Visual Interface</h3>
              </div>
              <div className="space-y-6">
-                <div className="space-y-2">
-                   <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Primary Model Image (URL)</label>
+                <div className="space-y-4">
+                   <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Primary Model Image</label>
+                   {primaryImage && (
+                     <div className="relative group/img w-full aspect-video bg-brand-background border border-brand-navy/5 overflow-hidden">
+                        <img src={primaryImage} alt="Primary" className="w-full h-full object-contain p-4" />
+                        <div className="absolute inset-0 bg-brand-navy/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                           <span className="text-[8px] font-bold text-white uppercase tracking-widest">Currently Active</span>
+                        </div>
+                     </div>
+                   )}
                    <input 
-                      name="primary_image" 
-                      defaultValue={primaryImage}
-                      required 
-                      className="w-full bg-brand-background border border-brand-navy/10 px-4 py-3 text-[10px] font-medium tracking-wider outline-none focus:border-secondary transition-all" 
+                      type="file"
+                      name="primary_image_file" 
+                      accept="image/*"
+                      className="w-full bg-brand-background border border-brand-navy/10 px-4 py-3 text-[10px] font-medium tracking-wider outline-none focus:border-secondary transition-all file:mr-4 file:py-2 file:px-4 file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-brand-navy file:text-white cursor-pointer" 
                    />
+                   <p className="text-[7px] text-brand-navy/30 uppercase font-bold italic">Leave empty to retain current primary image</p>
                 </div>
-                <div className="space-y-2">
-                   <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Additional Buffers (Comma separated URLs)</label>
-                   <textarea 
-                      name="additional_images" 
-                      defaultValue={additionalImages}
-                      rows={4}
-                      className="w-full bg-brand-background border border-brand-navy/10 px-4 py-3 text-[10px] font-medium tracking-wider outline-none focus:border-secondary transition-all resize-none" 
+                <div className="space-y-4 pt-4 border-t border-brand-navy/5">
+                   <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Additional Buffers (Current: {additionalImages ? additionalImages.split(',').length : 0})</label>
+                   <input 
+                      type="file"
+                      name="additional_images_files" 
+                      accept="image/*"
+                      multiple
+                      className="w-full bg-brand-background border border-brand-navy/10 px-4 py-3 text-[10px] font-medium tracking-wider outline-none focus:border-secondary transition-all file:mr-4 file:py-2 file:px-4 file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-brand-navy file:text-white cursor-pointer" 
                    />
+                   <p className="text-[7px] text-brand-navy/30 uppercase font-bold italic">Uploading new files will APPEND to the existing additional images</p>
                 </div>
              </div>
           </section>

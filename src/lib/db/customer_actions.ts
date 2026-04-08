@@ -30,6 +30,8 @@ export async function addToCart(product_id: string, options: {
   power_left?: string; 
   power_right?: string;
   price?: number;
+  color?: string;
+  size?: string;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

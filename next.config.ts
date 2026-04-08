@@ -23,7 +23,20 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "static5.lenskart.com",
       },
+      {
+        protocol: "https",
+        hostname: "image.pollinations.ai",
+      },
+      {
+        protocol: "https",
+        hostname: "lglknxmkgoixyhksfbjy.supabase.co",
+      },
     ],
+  },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
 };
 

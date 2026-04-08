@@ -1,0 +1,19 @@
+- `[x]` Phase 1: Database Schema Migration & Admin Polish
+  - `[x]` Create `migration.sql` script for Supabase
+  - `[x]` Update `src/app/admin/products/actions.ts` mapping
+  - `[x]` Update Admin Dashboard Sidebar (`src/app/admin/layout.tsx`)
+- `[x]` Phase 2: Navigation & Homepage Architecture
+  - `[x]` Global Megamenu / Navbar
+  - `[x]` Homepage dynamic sections mapping (New Arrivals, Trending, Best Sellers)
+  - `[x]` Link routing verification
+- `[x]` Phase 3: The Products & Discovery Engine (Filtering)
+  - `[x]` Build `/products/page.tsx`
+  - `[x]` Left Sidebar (Checkboxes, Slider)
+  - `[x]` Right Grid (Dynamic rendering)
+  - `[x]` Filtering Logic & Supabase Queries
+  - `[x]` `ProductCard.tsx` improvements
+- `[x]` Phase 4: Product Detail Page & Extra Features
+  - `[x]` Build `/product/[id]/page.tsx` Layout
+  - `[x]` Gallery, Dynamic Selectors
+  - `[x]` Wishlist & Cart logic integration
+  - `[ ]` Sorting and Pagination Integration

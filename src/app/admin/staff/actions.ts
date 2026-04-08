@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export async function createStaffMember(formData: FormData) {
   const supabase = await createClient();
@@ -20,7 +21,7 @@ export async function createStaffMember(formData: FormData) {
 
   if (error) {
     console.error("Error creating staff:", error);
-    return { error: error.message };
+    redirect(`/admin/staff?error=${encodeURIComponent(error.message)}`);
   }
   
   revalidatePath("/admin/staff");
@@ -29,6 +30,6 @@ export async function createStaffMember(formData: FormData) {
 export async function deleteStaffMember(id: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("admins").delete().eq("id", id);
-  if (error) return { error: error.message };
+  if (error) redirect(`/admin/staff?error=${encodeURIComponent(error.message)}`);
   revalidatePath("/admin/staff");
 }

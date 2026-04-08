@@ -33,6 +33,19 @@ export default async function AdminDashboardOverview() {
         <div className="space-y-2">
           <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-secondary italic">Step 01: Global Overview</p>
           <h1 className="text-4xl md:text-5xl font-serif italic text-brand-navy tracking-tight">Management <span className="text-secondary">Terminal</span></h1>
+          
+          {process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('localhost') && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-100 rounded-lg flex items-center gap-4 text-red-600">
+               <span className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
+               <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest">CRITICAL: Environment Misconfiguration</p>
+                  <p className="text-[9px] font-medium opacity-80 uppercase tracking-wider leading-relaxed">
+                    Your Supabase URL in <code className="bg-red-100 px-1">.env.local</code> is pointing to localhost. 
+                    Unless you are running a local proxy, please update it to your Supabase Project URL.
+                  </p>
+               </div>
+            </div>
+          )}
         </div>
         <div className="flex gap-4">
           <div className="px-8 py-4 bg-white border border-brand-navy/10 text-[10px] font-bold uppercase tracking-widest text-brand-navy flex items-center gap-4 shadow-sm">
@@ -131,7 +144,7 @@ export default async function AdminDashboardOverview() {
 
         {/* Side Panel Analysis */}
         <div className="lg:col-span-4 space-y-12">
-           <TopProducts products={statsData.topProducts} />
+           <TopProducts products={statsData.topProducts as any} />
 
            <div className="bg-[#000000] text-white p-10 lg:p-14 space-y-10 relative overflow-hidden group shadow-2xl">
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-secondary/10 blur-[100px] group-hover:bg-secondary/20 transition-all duration-1000"></div>

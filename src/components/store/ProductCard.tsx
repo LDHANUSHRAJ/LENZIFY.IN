@@ -22,6 +22,7 @@ interface ProductCardProps {
     brand?: string;
     rating?: number;
     slug?: string;
+    discount_price?: number;
   };
 }
 
@@ -57,7 +58,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       image: displayImage,
       quantity: 1
     } as any);
-    toast.success(`ARCHIVE ADDED: ${product.name}`, {
+    toast.success(`ADDED TO CART: ${product.name}`, {
       style: {
         background: '#000000',
         color: '#fff',
@@ -92,8 +93,18 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Subtle Overlay */}
         <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/[0.02] transition-colors duration-700" />
         
+        {/* Discount Badge */}
+        {product.discount_price && product.discount_price < displayPrice && (
+          <div className="absolute top-4 left-4 bg-red-600 text-white text-[10px] uppercase tracking-widest font-bold px-3 py-1">
+            Sale
+          </div>
+        )}
+
         {/* Action Triggers */}
-        <button className="absolute top-6 right-6 w-12 h-12 bg-surface flex items-center justify-center translate-x-12 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 border border-outline/10 transition-all duration-500 z-20 hover:text-secondary hover:border-secondary">
+        <button 
+           onClick={(e) => { e.preventDefault(); e.stopPropagation(); /* Wishlist trigger */ }}
+           className="absolute top-6 right-6 w-12 h-12 bg-surface flex items-center justify-center translate-x-12 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 border border-outline/10 transition-all duration-500 z-20 hover:text-secondary hover:border-secondary shadow-lg"
+        >
            <span className="material-symbols-outlined text-lg">favorite</span>
         </button>
 
@@ -102,7 +113,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           onClick={handleQuickAdd}
           className="absolute bottom-0 left-0 right-0 bg-primary text-on-primary text-[10px] font-bold uppercase tracking-[0.4em] py-6 translate-y-full group-hover:translate-y-0 transition-all duration-700 z-30 hover:bg-secondary transition-colors flex items-center justify-center gap-4 italic"
         >
-           Acquire Entry <span className="material-symbols-outlined text-sm">arrow_outward</span>
+           Add to Cart <span className="material-symbols-outlined text-sm">shopping_cart</span>
         </button>
       </Link>
 
@@ -117,9 +128,16 @@ export default function ProductCard({ product }: ProductCardProps) {
             </p>
          </div>
          
-         <div className="pt-4 border-t border-black/5 w-full">
-            <p className="text-2xl font-serif italic text-primary">
-               <span className="text-sm font-sans font-bold not-italic mr-1 opacity-50">$</span>{displayPrice.toLocaleString()}
+         <div className="pt-4 border-t border-black/5 w-full flex flex-col items-center gap-1">
+            <p className="text-2xl font-serif italic text-primary flex items-center gap-2">
+               {product.discount_price ? (
+                 <>
+                   <span className="text-sm font-sans font-bold not-italic opacity-50 line-through mr-1">${typeof product.price === 'string' ? parseFloat(product.price).toLocaleString() : product.price?.toLocaleString()}</span>
+                   <span className="text-red-600"><span className="text-sm font-sans font-bold not-italic mr-1 opacity-50">$</span>{displayPrice.toLocaleString()}</span>
+                 </>
+               ) : (
+                 <><span className="text-sm font-sans font-bold not-italic mr-1 opacity-50">$</span>{displayPrice.toLocaleString()}</>
+               )}
             </p>
          </div>
       </div>

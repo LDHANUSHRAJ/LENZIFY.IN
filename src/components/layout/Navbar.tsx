@@ -59,11 +59,11 @@ export default function Navbar() {
   }, [isMobileMenuOpen]);
 
   const navLinks = [
-    { name: "Eyeglasses", href: "/products?category=eyeglasses" },
-    { name: "Sunglasses", href: "/products?category=sunglasses" },
-    { name: "Lenses", href: "/lenses" },
-    { name: "Stores", href: "/stores" },
-    { name: "Contact Us", href: "/contact" },
+    { name: "Men", href: "/products?gender=Men" },
+    { name: "Women", href: "/products?gender=Women" },
+    { name: "Eyeglasses", href: "/products?type=Eyeglasses" },
+    { name: "Sunglasses", href: "/products?type=Sunglasses" },
+    { name: "Lenses", href: "/products?type=Contact Lenses" },
   ];
 
   const handleSearch = (e: React.FormEvent) => {

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export async function createCoupon(formData: FormData) {
   const supabase = await createClient();
@@ -23,7 +24,7 @@ export async function createCoupon(formData: FormData) {
 
   if (error) {
     console.error("Error creating coupon:", error);
-    return { error: error.message };
+    redirect(`/admin/coupons?error=${encodeURIComponent(error.message)}`);
   }
 
   revalidatePath("/admin/coupons");
@@ -33,6 +34,6 @@ export async function deleteCoupon(id: number) {
   const supabase = await createClient();
   const { error } = await supabase.from("coupons").delete().eq("id", id);
   
-  if (error) return { error: error.message };
+  if (error) redirect(`/admin/coupons?error=${encodeURIComponent(error.message)}`);
   revalidatePath("/admin/coupons");
 }
