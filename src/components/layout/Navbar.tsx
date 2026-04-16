@@ -342,6 +342,7 @@ export default function Navbar() {
             <button 
               onClick={() => toggleMenu('support')}
               className="group p-1 transition-transform hover:scale-110 flex items-center"
+              suppressHydrationWarning
             >
               <span className="material-symbols-outlined text-2xl text-primary hover:text-secondary transition-colors">support_agent</span>
             </button>
