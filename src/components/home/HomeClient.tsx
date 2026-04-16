@@ -149,9 +149,7 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
                         <Link href={content.button_link || "/products"} className="px-10 py-4 bg-primary text-on-primary font-medium tracking-tight hover:opacity-90 transition-all">
                           {content.button_text || "Explore Collection"}
                         </Link>
-                        <Link href="/try-on" className="px-10 py-4 border border-outline-variant text-primary font-medium tracking-tight hover:bg-surface-container transition-all">
-                          Virtual Try-On
-                        </Link>
+
                       </motion.div>
                     </div>
                     <div className="col-span-12 lg:col-span-7 absolute lg:relative right-0 top-0 h-full w-full lg:w-auto overflow-hidden">
