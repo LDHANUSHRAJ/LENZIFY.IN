@@ -24,9 +24,11 @@ import {
   Shield
 } from "lucide-react";
 
+import { useAuth } from "@/components/providers/AuthProvider";
+
 export default function CheckoutPage() {
   const [cartItems, setCartItems] = useState<any[]>([]);
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [orderProcessing, setOrderProcessing] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
@@ -52,35 +54,35 @@ export default function CheckoutPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) {
-        router.push("/auth/login?redirect=/checkout");
-        return;
-      }
-      setUser(currentUser);
-      
-      const cart = await getCart();
-      if (!cart || cart.length === 0) {
-        router.push("/cart");
-        return;
-      }
-      setCartItems(cart);
-      
-      setAddressData(prev => ({
-          ...prev,
-          name: currentUser.user_metadata?.name || ""
-      }));
-      setLoading(false);
-    };
-    init();
+    if (!authLoading && !user) {
+      router.push("/auth/login?redirect=/checkout");
+      return;
+    }
+
+    if (user) {
+        const init = async () => {
+          const cart = await getCart();
+          if (!cart || cart.length === 0) {
+            router.push("/cart");
+            return;
+          }
+          setCartItems(cart);
+          
+          setAddressData(prev => ({
+              ...prev,
+              name: user.user_metadata?.name || ""
+          }));
+          setLoading(false);
+        };
+        init();
+    }
 
     // Load Razorpay Script
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
     document.body.appendChild(script);
-  }, [supabase.auth, router]);
+  }, [user, authLoading, router]);
 
   const handlePayment = async () => {
     if (!addressData.address || !addressData.pincode) {
@@ -101,13 +103,16 @@ export default function CheckoutPage() {
               id: item.product_id,
               quantity: item.quantity,
               price: item.price,
-              lens_type: item.lens_type,
-              power_left: prescription.left_eye,
-              power_right: prescription.right_eye
+              lens_id: item.lens_id,
+              prescription_json: item.prescription_json || (prescription.left_eye ? { 
+                od_sph: prescription.right_eye, 
+                os_sph: prescription.left_eye,
+                pd: prescription.pd
+              } : null)
           })),
           total_price: totalAmount,
           address: addressData,
-          prescription: prescription.left_eye ? prescription : undefined,
+          prescription: (prescription.left_eye || prescription.file_url) ? prescription : undefined,
           payment: {
               id: `cod_${Date.now()}`,
               method: "cod"
@@ -178,13 +183,16 @@ export default function CheckoutPage() {
                   id: item.product_id,
                   quantity: item.quantity,
                   price: item.price,
-                  lens_type: item.lens_type,
-                  power_left: prescription.left_eye,
-                  power_right: prescription.right_eye
+                  lens_id: item.lens_id,
+                  prescription_json: item.prescription_json || (prescription.left_eye ? { 
+                    od_sph: prescription.right_eye, 
+                    os_sph: prescription.left_eye,
+                    pd: prescription.pd
+                  } : null)
               })),
               total_price: totalAmount,
               address: addressData,
-              prescription: prescription.left_eye ? prescription : undefined,
+              prescription: (prescription.left_eye || prescription.file_url) ? prescription : undefined,
               payment: {
                   id: response.razorpay_payment_id,
                   method: "razorpay"

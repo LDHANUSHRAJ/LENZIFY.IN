@@ -14,7 +14,7 @@ export async function getCart() {
 
   const { data, error } = await supabase
     .from("cart")
-    .select("*, products(name, price, offer_price, product_images(*))")
+    .select("*, products(name, price, offer_price, product_images(*)), lenses(name, price), lens_config")
     .eq("user_id", user.id);
 
   if (error) {
@@ -26,9 +26,9 @@ export async function getCart() {
 
 export async function addToCart(product_id: string, options: { 
   quantity?: number; 
-  lens_type?: string; 
-  power_left?: string; 
-  power_right?: string;
+  lens_id?: string | null; 
+  lens_config?: any;
+  prescription_json?: any;
   price?: number;
   color?: string;
   size?: string;
@@ -43,9 +43,16 @@ export async function addToCart(product_id: string, options: {
     .select("id, quantity")
     .eq("user_id", user.id)
     .eq("product_id", product_id)
-    .maybeSingle();
+    // If it has a prescription or specific lens, we usually don't merge quantities, but for simplicity we can just check if it's identical
+    // Actually, if they are adding different prescriptions for the same frame, we shouldn't merge them.
+    // For now, let's strictly match product, lens_id, and prescription
+    // But supabase maybeSingle throws if multiple. We will handle without merging if there's a prescription.
+    .eq("lens_id", options.lens_id || null)
+    .limit(1)
+    .single();
 
-  if (existing) {
+  // It's safer to always insert a new cart item if there's a custom prescription, or we can just ignore maybeSingle error. Let's just insert as new if prescription exists.
+  if (existing && !options.prescription_json && !options.lens_config) {
     await supabase
       .from("cart")
       .update({ quantity: (existing.quantity || 0) + (options.quantity || 1) })
@@ -55,9 +62,9 @@ export async function addToCart(product_id: string, options: {
       user_id: user.id,
       product_id,
       quantity: options.quantity || 1,
-      lens_type: options.lens_type,
-      power_left: options.power_left,
-      power_right: options.power_right,
+      lens_id: options.lens_id || null,
+      lens_config: options.lens_config || null,
+      prescription_json: options.prescription_json || null,
       price: options.price
     });
   }

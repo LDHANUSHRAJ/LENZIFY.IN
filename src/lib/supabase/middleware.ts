@@ -27,12 +27,24 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const pathname = request.nextUrl.pathname;
+  
+  // Optimization: Skip getUser() for public routes if no auth cookie exists
+  const isPublicRoute = !pathname.startsWith('/admin') && !pathname.startsWith('/dashboard') && !pathname.startsWith('/checkout');
+  const hasAuthCookie = request.cookies.getAll().some(c => c.name.startsWith('sb-'));
+
+  let user = null;
+  if (!isPublicRoute || hasAuthCookie) {
+    try {
+      const { data } = await supabase.auth.getUser();
+      user = data?.user;
+    } catch (err) {
+      console.error("Middleware Auth Error:", err);
+      user = null;
+    }
+  }
 
   const isAdmin = user?.user_metadata?.role === 'admin' || user?.email === 'lenzify.in@gmail.com';
-  const pathname = request.nextUrl.pathname;
 
   // 1. SESSION TIMEOUT: Administrative Inactivity Guard (30 Minutes)
   if (isAdmin && pathname.startsWith('/admin')) {

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import ProductCard from "@/components/store/ProductCard";
+import LensCard from "@/components/store/LensCard";
 
 interface ProductGridProps {
   initialCategory?: string;
@@ -16,6 +17,7 @@ interface ProductGridProps {
 
 export default function ProductGrid({ initialCategory, initialGender }: ProductGridProps) {
   const [products, setProducts] = useState<any[]>([]);
+  const [lenses, setLenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const supabase = createClient();
@@ -25,6 +27,7 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
   
   const searchGender = searchParams.get("gender") || "";
   const searchType = searchParams.get("type") || "";
+  const searchLensType = searchParams.get("lens_type") || "";
 
   const [viewMode, setViewMode] = useState<"popularity" | "price_asc" | "price_desc" | "newest">("newest");
   const [priceRange, setPriceRange] = useState({ min: 0, max: 25000 });
@@ -42,23 +45,49 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
 
+  const [categories, setCategories] = useState<any[]>([]);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("products")
-        .select("*")
-        .eq("is_enabled", true);
       
-      if (data) {
-        setProducts(data);
+      const promises: any[] = [
+         supabase.from("products").select(`
+            *,
+            categories (id, name, type)
+         `).eq("is_enabled", true),
+         supabase.from("categories").select("*").eq("is_active", true)
+      ];
+
+      if (searchType === 'lens' || selectedTypes.includes('lens')) {
+         promises.push(supabase.from("lenses").select("*").eq("is_active", true));
+      }
+
+      const [productsRes, catRes, lensesRes] = await Promise.all(promises);
+      
+      if (productsRes?.data) {
+        setProducts(productsRes.data);
+      }
+      if (catRes?.data) {
+        setCategories(catRes.data);
+      }
+      if (lensesRes?.data) {
+        setLenses(lensesRes.data);
       }
       setLoading(false);
     };
     fetchData();
-  }, [supabase]);
+  }, [supabase, searchType, selectedTypes]);
 
-  // Derive unique options dynamically from database items
+  const genderCategories = useMemo(() => categories.filter(c => c.type === 'gender').map(c => c.name), [categories]);
+  const productTypeCategories = useMemo(() => categories.filter(c => c.type === 'product').map(c => c.name), [categories]);
+  const collectionCategories = useMemo(() => categories.filter(c => c.type === 'collection').map(c => c.name), [categories]);
+
+  const dynamicGenders = useMemo(() => Array.from(new Set([...genderCategories, ...products.flatMap(p => p.categories?.filter((c: any) => c.type === 'gender').map((c: any) => c.name) || [])])).sort(), [genderCategories, products]);
+  const dynamicTypes = useMemo(() => Array.from(new Set([...productTypeCategories, ...products.flatMap(p => p.categories?.filter((c: any) => c.type === 'product').map((c: any) => c.name) || [])])).sort(), [productTypeCategories, products]);
+  const dynamicCollections = useMemo(() => Array.from(new Set([...collectionCategories, ...products.flatMap(p => p.categories?.filter((c: any) => c.type === 'collection').map((c: any) => c.name) || [])])).sort(), [collectionCategories, products]);
+
+  // ... (brands, colors, etc. remain derived from base product fields)
   const brands = useMemo(() => Array.from(new Set(products.map(p => p.brand).filter(Boolean))), [products]);
   const colors = useMemo(() => Array.from(new Set(products.flatMap(p => p.colors || []).filter(Boolean))), [products]);
   const sizes = useMemo(() => Array.from(new Set(products.flatMap(p => p.sizes || []).filter(Boolean))), [products]);
@@ -70,9 +99,34 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
   };
 
   const filteredProducts = useMemo(() => {
+    // Determine if we are in Lens mode
+    const isLensMode = searchType === 'lens' || selectedTypes.includes('lens');
+    
+    if (isLensMode) {
+      let result = [...lenses];
+      if (routerSearch) {
+        result = result.filter(l => 
+          l.name.toLowerCase().includes(routerSearch) || 
+          l.description?.toLowerCase().includes(routerSearch)
+        );
+      }
+      
+      if (searchLensType) {
+         result = result.filter(l => 
+          l.sub_category?.toLowerCase() === searchLensType.toLowerCase() ||
+          l.category?.toLowerCase() === searchLensType.toLowerCase()
+         );
+      }
+
+      // Price Filter
+      result = result.filter(l => l.price >= priceRange.min && l.price <= priceRange.max);
+
+      return result.map(l => ({ ...l, isLens: true }));
+    }
+
     let result = [...products];
 
-    // Live filtering
+    // Search filter
     if (routerSearch) {
       result = result.filter(p => 
         p.name.toLowerCase().includes(routerSearch) || 
@@ -81,15 +135,18 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
       );
     }
 
+    // New Multi-Sector Filtering
     if (selectedGenders.length > 0) {
-      result = result.filter(p => p.gender && selectedGenders.some(g => p.gender.includes(g)));
+      result = result.filter(p => p.categories?.some((c: any) => c.type === 'gender' && selectedGenders.includes(c.name)));
     }
     if (selectedTypes.length > 0) {
-      result = result.filter(p => p.type && selectedTypes.some(t => p.type.includes(t)));
+      result = result.filter(p => p.categories?.some((c: any) => c.type === 'product' && selectedTypes.includes(c.name)));
     }
     if (selectedCollections.length > 0) {
-      result = result.filter(p => p.collection && selectedCollections.some(c => p.collection.includes(c)));
+      result = result.filter(p => p.categories?.some((c: any) => c.type === 'collection' && selectedCollections.includes(c.name)));
     }
+
+    // Standard attribute filters
     if (selectedBrands.length > 0) {
       result = result.filter(p => selectedBrands.includes(p.brand));
     }
@@ -105,6 +162,7 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
     if (selectedMaterials.length > 0) {
       result = result.filter(p => selectedMaterials.includes(p.material));
     }
+
 
     // Price Filter
     result = result.filter(p => {
@@ -122,7 +180,7 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
     }
 
     return result;
-  }, [products, routerSearch, selectedGenders, selectedTypes, selectedCollections, selectedBrands, selectedColors, selectedSizes, selectedFrameTypes, selectedMaterials, priceRange, viewMode]);
+  }, [products, lenses, searchType, searchLensType, routerSearch, selectedGenders, selectedTypes, selectedCollections, selectedBrands, selectedColors, selectedSizes, selectedFrameTypes, selectedMaterials, priceRange, viewMode]);
 
   const FilterCheckboxBlock = ({ title, options, state, setter }: any) => {
      if (!options || options.length === 0) return null;
@@ -156,9 +214,9 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
         </div>
 
         <div className="space-y-8">
-           <FilterCheckboxBlock title="Category (Gender)" options={["Men", "Women", "Kids", "Unisex"]} state={selectedGenders} setter={setSelectedGenders} />
-           <FilterCheckboxBlock title="Product Type" options={["Eyeglasses", "Sunglasses", "Computer Glasses", "Reading Glasses", "Contact Lenses", "Accessories"]} state={selectedTypes} setter={setSelectedTypes} />
-           <FilterCheckboxBlock title="Collection" options={["Trending", "New Arrivals", "Best Sellers", "Featured", "Premium Collection", "Budget Collection"]} state={selectedCollections} setter={setSelectedCollections} />
+           <FilterCheckboxBlock title="Category (Gender)" options={dynamicGenders} state={selectedGenders} setter={setSelectedGenders} />
+           <FilterCheckboxBlock title="Product Type" options={dynamicTypes} state={selectedTypes} setter={setSelectedTypes} />
+           <FilterCheckboxBlock title="Collection" options={dynamicCollections} state={selectedCollections} setter={setSelectedCollections} />
            
            <FilterCheckboxBlock title="Brand" options={brands} state={selectedBrands} setter={setSelectedBrands} />
 
@@ -176,8 +234,8 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
                  className="w-full accent-brand-navy h-1 bg-brand-navy/10 rounded-lg appearance-none cursor-pointer"
                />
                <div className="flex justify-between text-[11px] font-bold tracking-widest text-brand-text-muted">
-                 <span>$0</span>
-                 <span>MAX: ${priceRange.max}</span>
+                 <span>₹0</span>
+                 <span>MAX: ₹{priceRange.max}</span>
                </div>
              </div>
            </div>
@@ -232,16 +290,16 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
         ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               <AnimatePresence mode="popLayout">
-                {filteredProducts.map((product, i) => (
+                {filteredProducts.map((item, i) => (
                   <motion.div 
                     layout
-                    key={product.id}
+                    key={item.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.5, delay: (i % 10) * 0.05 }}
                   >
-                     <ProductCard product={product} />
+                     {item.isLens ? <LensCard lens={item} /> : <ProductCard product={item} />}
                   </motion.div>
                 ))}
               </AnimatePresence>

@@ -16,12 +16,9 @@ export async function uploadToSupabase(file: File, bucket: string = "product-ima
 
   if (error) {
     console.error("Upload error details:", error);
-    
-    // If we get an RLS error, it's almost certainly because of the bucket policies.
     if (error.message.includes("row-level security policy")) {
       throw new Error(`STORAGE PERMISSION DENIED: Your Supabase bucket "product-images" is locked. Please run the SQL fix I provided in the dashboard to unlock it.`);
     }
-    
     throw new Error(`Failed to upload ${file.name}: ${error.message}`);
   }
 
@@ -35,6 +32,8 @@ export async function uploadToSupabase(file: File, bucket: string = "product-ima
 export async function createProduct(formData: FormData) {
   const supabase = await createAdminClient();
 
+  const product_type = formData.get("product_type") as string || "frame";
+  
   // Extract common fields
   const name = formData.get("name") as string;
   const brand = formData.get("brand") as string;
@@ -54,12 +53,13 @@ export async function createProduct(formData: FormData) {
   const color = formData.get("color") as string;
   const size = formData.get("size") as string;
 
-  // New Sectors mapping into structured arrays
-  const type_array = formData.getAll("product_type");
   const collection = formData.getAll("collection");
   const usage_type = formData.getAll("usage_type");
-  const colors = formData.getAll("color");
-  const sizes = formData.getAll("size");
+  
+  const colorsListRaw = formData.get("colors_list") as string;
+  const sizesListRaw = formData.get("sizes_list") as string;
+  const colors = colorsListRaw ? colorsListRaw.split(",").map(c => c.trim()).filter(Boolean) : [];
+  const sizes = sizesListRaw ? sizesListRaw.split(",").map(s => s.trim()).filter(Boolean) : [];
   
   // Extract Metadata
   const is_featured = formData.get("is_featured") === "true";
@@ -88,20 +88,20 @@ export async function createProduct(formData: FormData) {
     discount_price,
     category_id,
     brand,
+    product_type,
     frame_type,
     shape,
     gender,
     material,
     color,
     size,
-    type: type_array,
     collection,
     colors,
     sizes,
     stock,
     is_featured,
     primary_image: primary_image_url,
-    is_enabled: formData.get("is_enabled") !== "false", // Default true
+    is_enabled: formData.get("is_enabled") !== "false",
     images_360: JSON.parse(formData.get("images_360") as string || "[]"),
     specifications: {
       ...JSON.parse(formData.get("specifications") as string || "{}"),
@@ -116,7 +116,20 @@ export async function createProduct(formData: FormData) {
     redirect(`/admin/products/new?error=${encodeURIComponent(productError.message)}`);
   }
 
-  // Insert Images record into product_images table if we have urls
+  // Handle compatible lenses
+  if (product_type === "frame") {
+    const compatibleLenses = formData.getAll("compatible_lenses") as string[];
+    if (compatibleLenses.length > 0) {
+      const productLensesToInsert = compatibleLenses.map(lensId => ({
+        product_id: product.id,
+        lens_id: lensId
+      }));
+      const { error: plError } = await supabase.from("product_lenses").insert(productLensesToInsert);
+      if (plError) console.error("Error inserting product lenses:", plError);
+    }
+  }
+
+  // Insert Images record into product_images table
   const imagesToInsert = [];
   if (primary_image_url) {
     imagesToInsert.push({ product_id: product.id, image_url: primary_image_url, is_primary: true });
@@ -130,6 +143,17 @@ export async function createProduct(formData: FormData) {
     if (imageError) console.error("Error inserting product images:", imageError);
   }
 
+  // Handle Multi-Sector (Junction Table)
+  const categoryIds = formData.getAll("category_ids") as string[];
+  if (categoryIds.length > 0) {
+    const sectorLinks = categoryIds.map(catId => ({
+      product_id: product.id,
+      category_id: parseInt(catId)
+    }));
+    const { error: sectorError } = await supabase.from("product_categories").insert(sectorLinks);
+    if (sectorError) console.error("Error linking sectors:", sectorError);
+  }
+
   revalidatePath("/admin/products");
   revalidatePath("/products");
   revalidatePath("/");
@@ -138,6 +162,8 @@ export async function createProduct(formData: FormData) {
 
 export async function updateProduct(id: string, formData: FormData) {
   const supabase = await createAdminClient();
+
+  const product_type = formData.get("product_type") as string || "frame";
 
   // Extract common fields
   const name = formData.get("name") as string;
@@ -158,16 +184,17 @@ export async function updateProduct(id: string, formData: FormData) {
   const color = formData.get("color") as string;
   const size = formData.get("size") as string;
 
-  // New Sectors mapping into structured arrays
-  const type_array = formData.getAll("product_type");
   const collection = formData.getAll("collection");
   const usage_type = formData.getAll("usage_type");
-  const colors = formData.getAll("color");
-  const sizes = formData.getAll("size");
+  
+  const colorsListRaw = formData.get("colors_list") as string;
+  const sizesListRaw = formData.get("sizes_list") as string;
+  const colors = colorsListRaw ? colorsListRaw.split(",").map(c => c.trim()).filter(Boolean) : [];
+  const sizes = sizesListRaw ? sizesListRaw.split(",").map(s => s.trim()).filter(Boolean) : [];
   
   // Extract Metadata
   const is_featured = formData.get("is_featured") === "true";
-  const is_enabled = formData.get("is_enabled") === "true";
+  const is_enabled = formData.get("is_enabled") !== "false";
 
   const updatePayload: any = {
     name,
@@ -177,13 +204,13 @@ export async function updateProduct(id: string, formData: FormData) {
     discount_price,
     category_id,
     brand,
+    product_type,
     frame_type,
     shape,
     gender,
     material,
     color,
     size,
-    type: type_array,
     collection,
     colors,
     sizes,
@@ -210,6 +237,25 @@ export async function updateProduct(id: string, formData: FormData) {
   }
 
   const { error: productError } = await supabase.from("products").update(updatePayload).eq("id", id);
+  if (productError) {
+      console.error("Error updating product:", productError);
+      redirect(`/admin/products/${id}/edit?error=${encodeURIComponent(productError.message)}`);
+  }
+
+  // Handle compatible lenses update
+  if (product_type === "frame") {
+    // Delete existing
+    await supabase.from("product_lenses").delete().eq("product_id", id);
+    // Insert new
+    const compatibleLenses = formData.getAll("compatible_lenses") as string[];
+    if (compatibleLenses.length > 0) {
+      const productLensesToInsert = compatibleLenses.map(lensId => ({
+        product_id: id,
+        lens_id: lensId
+      }));
+      await supabase.from("product_lenses").insert(productLensesToInsert);
+    }
+  }
 
   if ((primaryFile && primaryFile.size > 0) || additionalFiles.some(f => f && f.size > 0)) {
       const imagesToInsert = [];
@@ -232,12 +278,26 @@ export async function updateProduct(id: string, formData: FormData) {
       }
   }
 
+  // Handle Multi-Sector Update
+  const categoryIds = formData.getAll("category_ids") as string[];
+  if (categoryIds.length > 0) {
+    // 1. Clear existing links
+    await supabase.from("product_categories").delete().eq("product_id", id);
+    // 2. Insert new links
+    const sectorLinks = categoryIds.map(catId => ({
+      product_id: id,
+      category_id: parseInt(catId)
+    }));
+    const { error: listError } = await supabase.from("product_categories").insert(sectorLinks);
+    if (listError) console.error("Error updating sector links:", listError);
+  }
+
   revalidatePath("/admin/products");
   revalidatePath("/products");
   revalidatePath(`/products/${id}`);
   revalidatePath("/");
   
-  redirect("/admin/products");
+  redirect(`/admin/products/${id}/edit?success=true`);
 }
 
 export async function deleteProduct(id: string) {
@@ -272,41 +332,6 @@ export async function duplicateProduct(id: string) {
     revalidatePath("/");
 }
 
-export async function exportProducts() {
-    const supabase = await createAdminClient();
-    const { data: products, error } = await supabase.from("products").select("*, categories(name)");
-    if (error || !products) return { error: error?.message || "No products found" };
-
-    const headers = ["id", "name", "brand", "sku", "price", "discount_price", "stock", "category_id", "description", "frame_type", "shape", "material", "gender", "color", "size", "is_featured", "is_enabled"];
-    const rows = products.map(p => [p.id, p.name, p.brand, p.sku, p.price, p.discount_price || "", p.stock, p.category_id, p.description?.replace(/,/g, ";") || "", p.frame_type, p.shape, p.material, Array.isArray(p.gender) ? p.gender.join(";") : p.gender, p.color, p.size, p.is_featured, p.is_enabled]);
-    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    return { success: true, csv: csvContent };
-}
-
-export async function importProducts(csvContent: string) {
-    const supabase = await createAdminClient();
-    const lines = csvContent.split("\n").filter(l => l.trim() !== "");
-    const headers = lines[0].split(",");
-    const products = lines.slice(1).map(line => {
-        const values = line.split(",");
-        const obj: any = {};
-        headers.forEach((header, i) => {
-            let val: any = values[i];
-            if (["price", "discount_price", "stock", "category_id"].includes(header)) val = val ? parseFloat(val) : null;
-            else if (["is_featured", "is_enabled"].includes(header)) val = val === "true";
-            obj[header] = val;
-        });
-        return obj;
-    });
-
-    const { error } = await supabase.from("products").upsert(products, { onConflict: "sku" });
-    if (error) return { error: error.message };
-    revalidatePath("/admin/products");
-    revalidatePath("/products");
-    revalidatePath("/");
-    return { success: true };
-}
-
 export async function toggleProductStatus(id: string, currentStatus: boolean) {
   const supabase = await createAdminClient();
   const { error } = await supabase.from("products").update({ is_enabled: !currentStatus }).eq("id", id);
@@ -314,4 +339,69 @@ export async function toggleProductStatus(id: string, currentStatus: boolean) {
   revalidatePath("/admin/products");
   revalidatePath("/products");
   revalidatePath("/");
+}
+
+/**
+ * CATALOG SYNCHRONIZATION (CSV)
+ */
+
+export async function exportProducts() {
+    const supabase = await createAdminClient();
+    const { data: products, error } = await supabase
+        .from("products")
+        .select("*")
+        .order('created_at', { ascending: false });
+
+    if (error) return { error: error.message };
+    if (!products || products.length === 0) return { success: true, csv: "" };
+
+    // Standard CSV Generation
+    const headers = ["name", "brand", "sku", "price", "discount_price", "stock", "product_type", "frame_type", "shape", "material", "color", "size"];
+    const csvContent = [
+        headers.join(","),
+        ...products.map(p => headers.map(h => `"${(p as any)[h] || ''}"`).join(","))
+    ].join("\n");
+
+    return { success: true, csv: csvContent };
+}
+
+export async function importProducts(csvContent: string) {
+    const supabase = await createAdminClient();
+    const lines = csvContent.split("\n").filter(line => line.trim());
+    if (lines.length < 2) return { error: "Insufficient data protocol." };
+
+    const headers = lines[0].split(",").map(h => h.trim().replace(/"/g, ''));
+    const data = lines.slice(1).map(line => {
+        const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
+        const obj: any = {};
+        headers.forEach((h, i) => {
+            obj[h] = values[i];
+        });
+        return obj;
+    });
+
+    for (const item of data) {
+        // Upsert logic based on SKU
+        const { error } = await supabase.from("products").upsert({
+            name: item.name,
+            brand: item.brand,
+            sku: item.sku,
+            price: parseFloat(item.price) || 0,
+            discount_price: parseFloat(item.discount_price) || null,
+            stock: parseInt(item.stock) || 0,
+            product_type: item.product_type || 'frame',
+            frame_type: item.frame_type,
+            shape: item.shape,
+            material: item.material,
+            color: item.color,
+            size: item.size,
+            is_enabled: true
+        }, { onConflict: 'sku' });
+        
+        if (error) console.error(`Sync error for ${item.sku}:`, error);
+    }
+
+    revalidatePath("/admin/products");
+    revalidatePath("/products");
+    return { success: true };
 }

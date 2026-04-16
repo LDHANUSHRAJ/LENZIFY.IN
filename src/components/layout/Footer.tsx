@@ -26,9 +26,23 @@ export default function Footer() {
           <p className="text-sm text-stone-600 leading-relaxed mb-6">
             Redefining vision through the lens of high-fashion editorial. Excellence in every frame.
           </p>
-          <div className="flex gap-4">
-            <span className="material-symbols-outlined text-stone-600" data-icon="public">public</span>
-            <span className="material-symbols-outlined text-stone-600" data-icon="share">share</span>
+          <div className="flex gap-6 items-center">
+            <a 
+              href="https://www.instagram.com/lenzify.in?igsh=ZXhrOHJtNzF5bHlr" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="group flex flex-col items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-stone-600 group-hover:text-secondary transition-colors" data-icon="public">public</span>
+              <span className="text-[8px] font-black uppercase tracking-widest text-stone-400 group-hover:text-secondary">Instagram</span>
+            </a>
+            <a 
+              href="mailto:lenzify.in@gmail.com"
+              className="group flex flex-col items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-stone-600 group-hover:text-secondary transition-colors" data-icon="mail">mail</span>
+              <span className="text-[8px] font-black uppercase tracking-widest text-stone-400 group-hover:text-secondary">Email Us</span>
+            </a>
           </div>
         </div>
 

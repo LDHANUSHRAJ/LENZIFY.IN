@@ -10,6 +10,7 @@ export async function createCategory(formData: FormData) {
   const name = formData.get("name") as string;
   const slug = formData.get("slug") as string;
   const image_url = formData.get("image_url") as string;
+  const type = formData.get("type") as string || "product";
   const is_featured = formData.get("is_featured") === "true";
   const is_active = formData.get("is_active") === "true";
   const parent_id_val = formData.get("parent_id") as string;
@@ -20,6 +21,7 @@ export async function createCategory(formData: FormData) {
     name,
     slug,
     image_url,
+    type,
     is_featured,
     is_active,
     parent_id,
@@ -45,6 +47,7 @@ export async function updateCategory(id: number, formData: FormData) {
     name: formData.get("name") as string,
     slug: formData.get("slug") as string,
     image_url: formData.get("image_url") as string,
+    type: formData.get("type") as string || "product",
     is_featured: formData.get("is_featured") === "true",
     is_active: formData.get("is_active") === "true",
     parent_id: parent_id_val ? parseInt(parent_id_val) : null,

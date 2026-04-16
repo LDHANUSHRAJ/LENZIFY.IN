@@ -56,9 +56,8 @@ export async function placeOrder(data: {
     product_id: item.id,
     quantity: item.quantity,
     price: item.price,
-    lens_type: item.lens_type,
-    power_left: item.power_left,
-    power_right: item.power_right
+    lens_id: item.lens_id,
+    prescription_json: item.prescription_json
   }));
 
   const { error: itemsError } = await supabase.from("order_items").insert(orderItems);

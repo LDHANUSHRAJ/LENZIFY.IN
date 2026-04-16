@@ -81,7 +81,11 @@ export default function AdminCategoriesPage() {
               <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-xl font-serif italic text-brand-navy tracking-tight">{category.name}</h3>
-                    <p className="text-[9px] text-brand-navy/30 uppercase font-bold tracking-[0.2em] mt-2 italic">Slug: {category.slug}</p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <p className="text-[9px] text-brand-navy/30 uppercase font-bold tracking-[0.2em] italic">Slug: {category.slug}</p>
+                      <span className="text-brand-navy/10">|</span>
+                      <p className="text-[9px] text-secondary uppercase font-bold tracking-[0.2em] italic">Type: {category.type || 'product'}</p>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                      <Link href={`/admin/categories/${category.id}/edit`} className="p-3 bg-brand-background hover:bg-white border border-brand-navy/5 text-brand-navy/30 hover:text-secondary transition-all"><Edit size={16} /></Link>

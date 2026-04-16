@@ -9,11 +9,20 @@ export default async function OrdersPage() {
 
   if (!user) return <div className="py-20 text-center uppercase tracking-widest text-brand-navy/30">Unauthorized Access Protocol</div>;
 
-  const { data: orders } = await supabase
+  const { data: standardOrders } = await supabase
     .from("orders")
     .select("*, order_items(*, products(*, product_images(*)))")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  const { data: replacementOrders } = await supabase
+    .from("lens_replacement_orders")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const mappedRep = (replacementOrders || []).map(r => ({...r, isReplacement: true}));
+  const orders = [...(standardOrders || []), ...mappedRep].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return (
     <div className="bg-surface text-brand-navy min-h-screen pt-24 font-sans">
@@ -42,6 +51,12 @@ export default async function OrdersPage() {
                                 <p className="text-[9px] font-black uppercase tracking-widest text-brand-navy/20">Timestamp</p>
                                 <p className="text-xs font-bold text-brand-navy uppercase tracking-widest italic">{new Date(order.created_at).toLocaleDateString()}</p>
                              </div>
+                             {order.isReplacement && (
+                               <div className="space-y-1">
+                                  <p className="text-[9px] font-black uppercase tracking-widest text-brand-navy/20">Type</p>
+                                  <p className="text-[10px] font-bold text-secondary uppercase tracking-widest italic bg-secondary/10 px-2 py-0.5">Replacement</p>
+                               </div>
+                             )}
                           </div>
                           
                           <div className={cn(
@@ -56,40 +71,53 @@ export default async function OrdersPage() {
 
                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 pt-4">
                           <div className="space-y-6">
-                             {order.order_items.map((item: any) => (
-                                <div key={item.id} className="flex gap-6 items-center">
+                             {!order.isReplacement ? (
+                                order.order_items?.map((item: any) => (
+                                   <div key={item.id} className="flex gap-6 items-center">
+                                      <div className="w-20 h-20 bg-brand-background border border-brand-navy/5 p-4 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-1000">
+                                         <img src={item.products?.product_images?.[0]?.image_url || "/placeholder.jpg"} className="w-full h-full object-contain mix-blend-multiply" />
+                                      </div>
+                                      <div className="flex-1 space-y-1">
+                                         <p className="text-xs font-black uppercase tracking-widest text-brand-navy">{item.products?.name}</p>
+                                         <p className="text-[9px] font-bold text-secondary uppercase tracking-[0.2em] italic">Quantity: {item.quantity}</p>
+                                      </div>
+                                      <p className="text-sm font-serif italic text-brand-navy font-black tracking-tight">₹{item.price?.toLocaleString() || 0}</p>
+                                   </div>
+                                ))
+                             ) : (
+                                <div className="flex gap-6 items-center">
                                    <div className="w-20 h-20 bg-brand-background border border-brand-navy/5 p-4 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-1000">
-                                      <img src={item.products?.product_images?.[0]?.image_url || "/placeholder.jpg"} className="w-full h-full object-contain mix-blend-multiply" />
+                                      <Package size={32} className="text-brand-navy/20" />
                                    </div>
                                    <div className="flex-1 space-y-1">
-                                      <p className="text-xs font-black uppercase tracking-widest text-brand-navy">{item.products?.name}</p>
-                                      <p className="text-[9px] font-bold text-secondary uppercase tracking-[0.2em] italic">Quantity: {item.quantity}</p>
+                                      <p className="text-xs font-black uppercase tracking-widest text-brand-navy">Lens Replacement Service</p>
+                                      <p className="text-[9px] font-bold text-secondary uppercase tracking-[0.2em] italic">Frame: {order.frame_type}</p>
                                    </div>
-                                   <p className="text-sm font-serif italic text-brand-navy font-black tracking-tight">₹{item.price.toLocaleString()}</p>
+                                   <p className="text-sm font-serif italic text-brand-navy font-black tracking-tight">₹{order.total_price?.toLocaleString() || 0}</p>
                                 </div>
-                             ))}
+                             )}
                           </div>
 
                           <div className="bg-brand-background/50 border border-brand-navy/5 p-10 space-y-8 flex flex-col justify-center">
                              <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-navy/30 italic">
                                 <span>Logistic Routing</span>
-                                <span className="text-brand-navy">{order.shipping_address || 'Archive Standard'}</span>
+                                <span className="text-brand-navy">Standard Matrix</span>
                              </div>
                              <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-navy/30 italic">
                                 <span>Financial Settlement</span>
-                                <span className="text-brand-navy">{order.payment_method || 'Razorpay Protocol'}</span>
+                                <span className="text-brand-navy">{order.payment_method || 'System Authorized'}</span>
                              </div>
                              <div className="pt-6 border-t border-brand-navy/5 flex justify-between items-center">
                                 <span className="text-sm font-serif italic text-brand-navy uppercase font-black">Total Acquisition Cost</span>
-                                <span className="text-2xl font-serif italic text-brand-navy font-black">₹{order.total_price.toLocaleString()}</span>
+                                <span className="text-2xl font-serif italic text-brand-navy font-black">₹{order.total_price?.toLocaleString() || 0}</span>
                              </div>
                           </div>
                        </div>
 
                        <div className="flex justify-start gap-10 pt-4">
-                          <button className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] text-secondary hover:text-brand-navy transition-all">
+                          <Link href={`/orders/${order.id}`} className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] text-secondary hover:text-brand-navy transition-all">
                              <Clock size={14} /> Track Timeline
-                          </button>
+                          </Link>
                           <button className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] text-brand-navy/30 hover:text-brand-navy transition-all">
                              <RefreshCcw size={14} /> Request Support
                           </button>

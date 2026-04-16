@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-
+import { cn } from "@/lib/utils";
 export default function StoresPage() {
   const outlets = [
     { name: "Lenzify Neo-City", address: "Alpha Sector 4, Silicon Valley", status: "Operational", lat: "12.9716", lng: "77.5946" },
@@ -74,7 +74,3 @@ export default function StoresPage() {
   );
 }
 
-// Minimal cn for component
-function cn(...classes: any[]) {
-    return classes.filter(Boolean).join(' ');
-}

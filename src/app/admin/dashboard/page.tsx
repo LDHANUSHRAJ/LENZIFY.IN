@@ -25,7 +25,7 @@ export default async function AdminDashboardOverview() {
     { name: "Generate Coupon", icon: ShoppingBag, href: "/admin/offers/coupons/new", color: "bg-secondary" },
   ];
 
-  const { data: { user } } = await supabase.auth.getUser();
+
 
   return (
     <div className="space-y-12 text-brand-navy">

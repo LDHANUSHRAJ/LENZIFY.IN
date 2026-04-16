@@ -8,7 +8,8 @@ import {
   AlertCircle, 
   ShoppingBag,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Package
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -20,6 +21,7 @@ interface StatsProps {
     totalCustomers: number;
     lowStockCount: number;
     abandonedCarts: number;
+    replacementsCount?: number;
   };
 }
 
@@ -44,13 +46,16 @@ export default function DashboardStats({ initialStats }: StatsProps) {
       const { count: totalCustomers } = await supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "customer");
       const { count: lowStockCount } = await supabase.from("products").select("*", { count: "exact", head: true }).lte("stock", 5);
       const { data: cartUsers } = await supabase.from("cart").select("user_id");
+      const { count: replacementsCount } = await supabase.from("lens_replacement_orders").select("*", { count: "exact", head: true });
       const abandonedCarts = new Set(cartUsers?.map(c => c.user_id)).size;
 
       setStats({
+        ...stats,
         totalSales: salesData?.reduce((acc, curr) => acc + Number(curr.total_price), 0) || 0,
         totalOrders: totalOrders || 0,
         totalCustomers: totalCustomers || 0,
         lowStockCount: lowStockCount || 0,
+        replacementsCount: replacementsCount || 0,
         abandonedCarts
       });
     }
@@ -63,6 +68,7 @@ export default function DashboardStats({ initialStats }: StatsProps) {
     { label: "Active Orders", value: stats.totalOrders.toString(), icon: ShoppingBag, trend: "+3.2%", positive: true, period: "Life-cycle Total" },
     { label: "Client Base", value: stats.totalCustomers.toString(), icon: Users, trend: "+8.1%", positive: true, period: "Verified Agents" },
     { label: "Critical Stock", value: stats.lowStockCount.toString(), icon: AlertCircle, trend: "Priority", positive: false, period: "Units < 5" },
+    { label: "Replacements", value: stats.replacementsCount?.toString() || "0", icon: Package, trend: "Active", positive: true, period: "Service Lane" },
     { label: "Abandoned Carts", value: stats.abandonedCarts.toString(), icon: ShoppingCart, trend: "-2.4%", positive: false, period: "Inactive Sessions" },
   ];
 

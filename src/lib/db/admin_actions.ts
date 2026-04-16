@@ -160,52 +160,39 @@ export async function updateHomepageSection(key: string, content: any, isActive:
 export async function getDashboardStats() {
   const supabase = await createClient();
 
-  // 1. Total Sales (Revenue)
-  const { data: salesData } = await supabase
-    .from("orders")
-    .select("total_price")
-    .eq("payment_status", "paid");
+  const last7DaysDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [
+    salesDataRes,
+    totalOrdersRes,
+    totalCustomersRes,
+    lowStockRes,
+    cartUsersRes,
+    recentOrdersRes,
+    topSellingDataRes,
+    trendOrdersRes
+  ] = await Promise.all([
+    supabase.from("orders").select("total_price").eq("payment_status", "paid"),
+    supabase.from("orders").select("*", { count: "exact", head: true }),
+    supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "customer"),
+    supabase.from("products").select("id, name, stock, brand", { count: "exact" }).lte("stock", 5).limit(5),
+    supabase.from("cart").select("user_id"),
+    supabase.from("orders").select("*, users(name)").order("created_at", { ascending: false }).limit(5),
+    supabase.from("order_items").select("product_id, quantity, products(name, brand)").limit(10),
+    supabase.from("orders").select("created_at, total_price, payment_status").gte("created_at", last7DaysDate)
+  ]);
+
+  const totalSales = salesDataRes.data?.reduce((acc, curr) => acc + Number(curr.total_price), 0) || 0;
+  const totalOrders = totalOrdersRes.count || 0;
+  const totalCustomers = totalCustomersRes.count || 0;
   
-  const totalSales = salesData?.reduce((acc, curr) => acc + Number(curr.total_price), 0) || 0;
-
-  // 2. Total Orders (Volume)
-  const { count: totalOrders } = await supabase
-    .from("orders")
-    .select("*", { count: "exact", head: true });
-
-  // 3. Total Customers (Identity Count)
-  const { count: totalCustomers } = await supabase
-    .from("users")
-    .select("*", { count: "exact", head: true })
-    .eq("role", "customer");
-
-  // 4. Low Stock Alerts (Critical Inventory)
-  const { data: lowStockProducts, count: lowStockCount } = await supabase
-    .from("products")
-    .select("id, name, stock, brand", { count: "exact" })
-    .lte("stock", 5)
-    .limit(5);
-
-  // 5. Abandoned Carts (Identity Count)
-  // Proxy: Unique users with items in cart
-  const { data: cartUsers } = await supabase
-    .from("cart")
-    .select("user_id");
-  const uniqueCartUsers = new Set(cartUsers?.map(c => c.user_id)).size;
-
-  // 6. Recent Orders (Tactical Feed)
-  const { data: recentOrders } = await supabase
-    .from("orders")
-    .select("*, users(name)")
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  // 7. Top Selling Products
-  const { data: topSellingData } = await supabase
-    .from("order_items")
-    .select("product_id, quantity, products(name, brand)")
-    .limit(10);
+  const lowStockProducts = lowStockRes.data || [];
+  const lowStockCount = lowStockRes.count || 0;
   
+  const uniqueCartUsers = new Set(cartUsersRes.data?.map(c => c.user_id)).size;
+  const recentOrders = recentOrdersRes.data || [];
+  const topSellingData = topSellingDataRes.data;
+
   interface ProductSale {
     name: string;
     brand: string;
@@ -236,13 +223,8 @@ export async function getDashboardStats() {
     return d.toISOString().split('T')[0];
   }).reverse();
 
-  const { data: trendOrders } = await supabase
-    .from("orders")
-    .select("created_at, total_price, payment_status")
-    .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
-
   const chartData = last7Days.map(date => {
-    const dayOrders = trendOrders?.filter(o => o.created_at.startsWith(date)) || [];
+    const dayOrders = trendOrdersRes.data?.filter(o => o.created_at.startsWith(date)) || [];
     const revenue = dayOrders
       .filter(o => o.payment_status === 'paid')
       .reduce((acc, curr) => acc + Number(curr.total_price), 0);

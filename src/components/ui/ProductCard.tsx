@@ -12,7 +12,10 @@ interface ProductCardProps {
         name: string;
         price: number;
         image: string;
-        brand: string;
+        category?: string;
+        categories?: { slug: string };
+        type?: string;
+        brand?: string;
     };
 }
 
@@ -83,8 +86,11 @@ export default function ProductCard({ product }: ProductCardProps) {
                         <h4 className="text-2xl font-black italic uppercase leading-none mb-4">{product.name}</h4>
                         <div className="flex justify-between items-end">
                             <span className="text-xl font-bold">₹{product.price.toLocaleString()}</span>
-                            <div className="w-12 h-12 rounded-full glass-morphism border border-white/10 flex items-center justify-center group-hover:bg-brand-electric group-hover:text-black smooth-transition">
-                                <ArrowUpRight size={20} />
+                            <div className="flex gap-4">
+
+                                <div className="w-12 h-12 rounded-full glass-morphism border border-white/10 flex items-center justify-center group-hover:bg-brand-electric group-hover:text-black smooth-transition">
+                                    <ArrowUpRight size={20} />
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -7,7 +7,7 @@ export default function LensesPage() {
   return (
     <div className="bg-background min-h-screen">
       <Suspense fallback={<div className="min-h-screen bg-background" />}>
-        <ProductGrid initialCategory="lenses" />
+        <ProductGrid />
       </Suspense>
     </div>
   );

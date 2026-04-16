@@ -31,6 +31,10 @@ export const metadata: Metadata = {
   description: "Excellence in every frame. Redefining vision through the lens of high-fashion editorial.",
 };
 
+import { AuthProvider } from "@/components/providers/AuthProvider";
+
+import VirtualTryOnModal from "@/components/try-on/VirtualTryOnModal";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,6 +43,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn(inter.variable, interLabel.variable, notoSerif.variable)} suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
       <body className="bg-surface text-on-surface font-body selection:bg-secondary-fixed selection:text-on-secondary-fixed antialiased">
@@ -54,11 +60,14 @@ export default function RootLayout({
             letterSpacing: '0.1em'
           }
         }} />
-        <ConditionalWrapper>
-          <DynamicThemeProvider>
-             {children}
-          </DynamicThemeProvider>
-        </ConditionalWrapper>
+        <AuthProvider>
+          <ConditionalWrapper>
+            <DynamicThemeProvider>
+               {children}
+            </DynamicThemeProvider>
+          </ConditionalWrapper>
+          <VirtualTryOnModal />
+        </AuthProvider>
       </body>
     </html>
   );

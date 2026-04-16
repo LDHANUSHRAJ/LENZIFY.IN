@@ -37,7 +37,10 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
+  compress: true,
+  poweredByHeader: false,
 };
 
 export default nextConfig;

@@ -2,7 +2,7 @@
 
 @theme {
   --color-surface-container: #f0eded;
-  --color-on-primary-container: #778598;
+  --color-on-primary-container: #d6e4f9;
   --color-secondary-fixed-dim: #e9c176;
   --color-on-tertiary: #ffffff;
   --color-surface-container-high: #eae7e7;
@@ -38,7 +38,7 @@
   --color-primary: #000000;
   --color-error: #ba1a1a;
   --color-surface-container-low: #f6f3f2;
-  --color-on-tertiary-container: #9a7f61;
+  --color-on-tertiary-container: #e0c1a0;
   --color-on-secondary-fixed-variant: #5d4201;
   --color-outline-variant: #c4c6cc;
   --color-primary-fixed-dim: #bac8dc;
@@ -48,6 +48,13 @@
   --color-on-secondary: #ffffff;
   --color-on-error: #ffffff;
   --color-secondary-container: #fed488;
+
+  /* Admin Brand Colors */
+  --color-brand-navy: #0F172A;
+  --color-brand-gold: #D4A853;
+  --color-brand-background: #F8FAFC;
+  --color-brand-text-muted: #64748B;
+  --color-brand-gold-rgb: 212, 168, 83;
   
   --font-headline: var(--font-headline);
   --font-body: var(--font-body);

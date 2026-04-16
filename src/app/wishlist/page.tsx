@@ -1,27 +1,47 @@
 "use client";
 
-import { useCartStore } from "@/store/cartStore";
-import { products } from "@/data/products";
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, ShoppingBag, Heart, ChevronRight, Grid } from "lucide-react";
+import { Trash2, Heart, Grid } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ProductCard from "@/components/store/ProductCard";
+import { getWishlist, toggleWishlist } from "@/lib/db/customer_actions";
 
 export default function WishlistPage() {
-    // For now, we'll just mock the wishlist from products or use a simple local state
-    // In a real app, this would be a separate Zustand store or Supabase table
-    const [wishlistItems, setWishlistItems] = useState(products.slice(0, 2));
+    const [wishlistItems, setWishlistItems] = useState<any[]>([]);
     const [mounted, setMounted] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    useEffect(() => setMounted(true), []);
+    useEffect(() => {
+        setMounted(true);
+        fetchWishlist();
+    }, []);
+
+    const fetchWishlist = async () => {
+        setLoading(true);
+        const data = await getWishlist();
+        // data contains objects like { id, product_id, products: { ... } }
+        const formatted = data.map((item: any) => ({
+            ...item.products,
+            id: item.product_id,
+            wishlist_id: item.id
+        }));
+        setWishlistItems(formatted);
+        setLoading(false);
+    };
 
     if (!mounted) return null;
 
-    const removeItem = (id: string) => {
-        setWishlistItems(prev => prev.filter(item => item.id !== id));
+    const removeItem = async (productId: string) => {
+        // Optimistic UI update
+        setWishlistItems(prev => prev.filter(item => item.id !== productId));
+        await toggleWishlist(productId);
     };
+
+    if (loading) {
+        return <div className="min-h-screen flex items-center justify-center">Loading Archives...</div>;
+    }
 
     if (wishlistItems.length === 0) {
         return (
@@ -83,17 +103,6 @@ export default function WishlistPage() {
                            </motion.div>
                         ))}
                     </AnimatePresence>
-                </div>
-
-                <div className="mt-32 pt-16 border-t border-brand-navy/5 text-center">
-                    <h2 className="text-2xl font-display text-brand-navy uppercase tracking-widest mb-4">Complete the Look</h2>
-                    <p className="text-brand-text-muted text-[10px] uppercase tracking-widest mb-12">Recommended for your curated style</p>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 text-left">
-                        {products.slice(2, 6).map((p) => (
-                          <ProductCard key={p.id} product={p} />
-                        ))}
-                    </div>
                 </div>
             </div>
         </div>

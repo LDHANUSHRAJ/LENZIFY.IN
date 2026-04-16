@@ -1,23 +1,11 @@
-import { 
-  getFinancialSummary, 
-  getRevenueStream, 
-  getSectorDistribution 
-} from "./data_actions";
-import FinancialDashboard from "@/components/admin/FinancialDashboard";
+import { fetchReportData } from "@/lib/db/reports_actions";
+import ReportDashboardClient from "./ReportDashboardClient";
 
 export default async function AdminReportsPage() {
   // Fetch real-time telemetry from the transaction vault
-  const [summary, revenueStream, sectorDistribution] = await Promise.all([
-    getFinancialSummary(),
-    getRevenueStream(),
-    getSectorDistribution()
-  ]);
+  const data = await fetchReportData();
 
   return (
-    <FinancialDashboard 
-      summary={summary} 
-      revenueStream={revenueStream} 
-      sectorDistribution={sectorDistribution} 
-    />
+    <ReportDashboardClient initialData={data} />
   );
 }

@@ -56,6 +56,21 @@ export default async function NewCategoryPage() {
                    />
                 </div>
              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                 <div className="space-y-2 group">
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted transition-colors group-focus-within:text-secondary italic">Sector Classification (Type)</label>
+                    <select 
+                      name="type" 
+                      className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-bold tracking-widest uppercase outline-none focus:border-secondary transition-all cursor-pointer appearance-none"
+                    >
+                      <option value="product">Product Frame</option>
+                      <option value="gender">Gender Profile</option>
+                      <option value="collection">Collection Matrix</option>
+                      <option value="usage">Usage Protocol</option>
+                      <option value="display">Storefront Display Group</option>
+                    </select>
+                 </div>
+              </div>
           </section>
 
           {/* Hierarchy */}

@@ -51,7 +51,7 @@ export async function signup(formData: FormData) {
     return { error: 'All fields are required.' }
   }
 
-  // 1. Create user via Admin Client to bypass rate limits and auto-confirm email
+  // 1. Create user via Admin Client
   const { data: userData, error: createError } = await adminClient.auth.admin.createUser({
     email: data.email,
     password: data.password,
@@ -60,23 +60,23 @@ export async function signup(formData: FormData) {
   })
 
   if (createError) {
-    // If user already exists, try to log them in, otherwise show error
     if (createError.message.includes("already registered")) {
         return { error: "This email is already associated with an account. Please sign in." }
     }
     return { error: createError.message }
   }
 
-  // 2. Establish Session using the regular client (to set cookies correctly)
+  // 2. Immediate Login
   const { error: loginError } = await supabase.auth.signInWithPassword({
     email: data.email,
     password: data.password
   })
 
   if (loginError) {
-    return { error: `Account created, but login failed: ${loginError.message}` }
+    return { error: `Account created, but login synchronization failed: ${loginError.message}` }
   }
 
+  // Use revalidatePath sparingly - only for the root to update the header
   revalidatePath('/', 'layout')
   redirect(data.redirectTo)
 }

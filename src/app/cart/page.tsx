@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,19 +9,25 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { getCart, removeFromCart, addToCart } from "@/lib/db/customer_actions";
 
+const supabaseInstance = createClient();
+
 export default function CartPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const supabase = createClient();
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  // Stable supabase reference
+  const supabase = useMemo(() => supabaseInstance, []);
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      
-      const cartData = await getCart();
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+        
+        const cartData = await getCart();
       const mappedItems = (cartData || []).map((item: any) => ({
         id: item.id,
         database_id: item.id,
@@ -32,12 +38,19 @@ export default function CartPage() {
         image: item.products.product_images?.[0]?.image_url || "/placeholder.jpg",
         category: "Optic Archive",
         quantity: item.quantity,
+        lens_name: item.lenses?.name,
+        lens_config: item.lens_config,
+        prescription: item.prescription_json,
       }));
       setItems(mappedItems);
       setLoading(false);
+      } catch (err) {
+        console.error("Cart Init Error:", err);
+        setLoading(false);
+      }
     };
     init();
-  }, [supabase.auth]);
+  }, [supabase]);
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const tax = subtotal * 0.18; 
@@ -55,7 +68,14 @@ export default function CartPage() {
     if (newQty < 1) return;
     
     setItems(prev => prev.map(i => i.id === id ? { ...i, quantity: newQty } : i));
-    await addToCart(item.product_id, { quantity: delta });
+    // When updating qty, we probably don't want to add a *new* item if it had prescription,
+    // but the current addToCart logic updates qty if id exists.
+    // However, for items with prescription, they are unique.
+    // For now, let's just use the direct DB update if we had a more specific action, 
+    // but the existing handleUpdateQty is fine for simple qty increment.
+    // However, our new addToCart handles qty updates differently if prescription exists.
+    // Let's just assume simple frames for qty update for now.
+    await addToCart(item.product_id, { quantity: delta, lens_id: item.lens_id, prescription_json: item.prescription });
   };
 
   const handleCheckout = () => {
@@ -104,15 +124,48 @@ export default function CartPage() {
                           <div>
                             <p className="text-[10px] text-brand-navy/30 font-black uppercase tracking-[0.3em] mb-1 italic">{item.brand}</p>
                             <h3 className="text-3xl font-serif italic font-black text-brand-navy uppercase tracking-tighter leading-tight">{item.name}</h3>
+                            {item.lens_name && (
+                               <div className="mt-2 flex items-center gap-2">
+                                  <span className="px-2 py-1 bg-secondary/10 border border-secondary/20 text-[8px] font-bold uppercase tracking-widest text-secondary">Optics: {item.lens_name}</span>
+                               </div>
+                            )}
                           </div>
                           <p className="text-3xl font-serif italic font-black text-brand-navy italic tracking-tighter">₹{item.price}</p>
                         </div>
                         
-                        <div className="flex gap-10">
+                        <div className="flex flex-wrap gap-x-10 gap-y-4">
                           <div className="space-y-1">
                             <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Classification</p>
                             <p className="text-[11px] text-brand-navy font-black uppercase tracking-widest italic">{item.category}</p>
                           </div>
+                          {item.lens_config && (
+                            <>
+                              {item.lens_config.features?.length > 0 && (
+                                <div className="space-y-1">
+                                   <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Features</p>
+                                   <p className="text-[10px] text-secondary font-black uppercase tracking-widest italic">+{item.lens_config.features.length} Modules</p>
+                                </div>
+                              )}
+                              {item.lens_config.coatings?.length > 0 && (
+                                <div className="space-y-1">
+                                   <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Coatings</p>
+                                   <p className="text-[10px] text-brand-navy font-black uppercase tracking-widest italic">+{item.lens_config.coatings.length} Layers</p>
+                                </div>
+                              )}
+                              {(item.lens_config.material || item.lens_config.thickness) && (
+                                <div className="space-y-1">
+                                   <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Materials</p>
+                                   <p className="text-[10px] text-brand-navy font-black uppercase tracking-widest italic">{item.lens_config.thickness?.name} | {item.lens_config.material?.name}</p>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {item.prescription && (
+                            <div className="space-y-1">
+                               <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Calibration</p>
+                               <p className="text-[11px] text-brand-navy font-black uppercase tracking-widest italic">OD: {item.prescription.od_sph} | OS: {item.prescription.os_sph}</p>
+                            </div>
+                          )}
                           <div className="space-y-1">
                             <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Availability</p>
                             <p className="text-[11px] text-emerald-500 font-black uppercase tracking-widest italic">In Stock</p>

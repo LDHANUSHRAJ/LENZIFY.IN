@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 export default async function AdminNotificationsPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+
 
   // Load notifications (joining with potential admin info)
   const { data: notifications } = await supabase

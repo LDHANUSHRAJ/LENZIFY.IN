@@ -31,7 +31,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       addresses(*),
       order_items(
         *,
-        products(name, brand, product_images(*))
+        products(name, brand, product_images(*)),
+        lenses(name)
       ),
       prescriptions(*)
     `)
@@ -161,11 +162,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4 border-t border-brand-navy/[0.03]">
                              <div>
                                 <p className="text-[9px] uppercase font-bold text-brand-navy/30 tracking-widest mb-1">Optical Type</p>
-                                <p className="text-[10px] font-bold text-brand-navy/60 uppercase">{item.lens_type || 'Frame Only'}</p>
+                                <p className="text-[10px] font-bold text-brand-navy/60 uppercase">{item.lenses?.name || item.lens_type || 'Frame Only'}</p>
                              </div>
                              <div>
                                 <p className="text-[9px] uppercase font-bold text-brand-navy/30 tracking-widest mb-1">Power Matrix</p>
-                                <p className="text-[10px] font-bold text-brand-navy/60 uppercase">L: {item.power_left || 'PL'} | R: {item.power_right || 'PL'}</p>
+                                <p className="text-[10px] font-bold text-brand-navy/60 uppercase">
+                                  {item.prescription_json ? 
+                                    `L: ${item.prescription_json.os_sph || '0.00'} | R: ${item.prescription_json.od_sph || '0.00'}` : 
+                                    `L: ${item.power_left || 'PL'} | R: ${item.power_right || 'PL'}`}
+                                </p>
                              </div>
                              <div>
                                 <p className="text-[9px] uppercase font-bold text-brand-navy/30 tracking-widest mb-1">Quantity</p>

@@ -36,6 +36,7 @@ export default async function AdminLoginPage({ searchParams }: Props) {
               name="email"
               type="email"
               required
+              suppressHydrationWarning
               placeholder="admin@lenzify.in"
               className="w-full bg-brand-background border border-brand-navy/10 rounded-none px-4 py-3 text-brand-text-primary placeholder-brand-text-muted/50 focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all"
             />
@@ -47,13 +48,18 @@ export default async function AdminLoginPage({ searchParams }: Props) {
               name="password"
               type="password"
               required
+              suppressHydrationWarning
               placeholder="••••••••"
               className="w-full bg-brand-background border border-brand-navy/10 rounded-none px-4 py-3 text-brand-text-primary placeholder-brand-text-muted/50 focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all"
             />
           </div>
 
           <div className="pt-4">
-            <button formAction={adminLogin} className="w-full group relative flex items-center justify-center gap-2 bg-brand-navy text-white px-6 py-4 uppercase text-sm font-semibold tracking-wider hover:bg-brand-gold transition-colors shadow-lg">
+            <button 
+              formAction={adminLogin} 
+              suppressHydrationWarning
+              className="w-full group relative flex items-center justify-center gap-2 bg-brand-navy text-white px-6 py-4 uppercase text-sm font-semibold tracking-wider hover:bg-brand-gold transition-colors shadow-lg"
+            >
               <span>Secure Login</span>
               <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </button>
