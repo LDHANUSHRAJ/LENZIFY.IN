@@ -14,7 +14,19 @@ export async function fetchReportData() {
   ] = await Promise.all([
     supabase
       .from("orders")
-      .select("*, order_items(*, products(name, category, brand, cost_price, price)), users(name, email, created_at)")
+      .select(`
+        *, 
+        order_items(
+          *, 
+          products(
+            name, 
+            brand, 
+            price,
+            categories(name)
+          )
+        ), 
+        users(name, email, created_at)
+      `)
       .order("created_at", { ascending: false }),
       
     supabase
@@ -24,7 +36,7 @@ export async function fetchReportData() {
       
     supabase
       .from("products")
-      .select("*")
+      .select("*, categories(name)")
       .order("created_at", { ascending: false }),
       
     supabase

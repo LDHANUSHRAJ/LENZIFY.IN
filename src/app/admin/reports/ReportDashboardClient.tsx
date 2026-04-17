@@ -80,8 +80,9 @@ export default function ReportDashboardClient({ initialData }: { initialData: an
         const productSales: any = {};
         _orders.forEach((o: any) => {
           o.order_items?.forEach((item: any) => {
-             const pid = item.products?.name || "Unknown";
-             if(!productSales[pid]) productSales[pid] = { Product: pid, Category: item.products?.category, Brand: item.products?.brand, "Units Sold": 0, Revenue: 0 };
+              const pid = item.products?.name || "Unknown";
+              const catName = item.products?.categories?.name || "N/A";
+              if(!productSales[pid]) productSales[pid] = { Product: pid, Category: catName, Brand: item.products?.brand, "Units Sold": 0, Revenue: 0 };
              productSales[pid]["Units Sold"] += item.quantity;
              productSales[pid].Revenue += (item.quantity * item.price);
           });
@@ -102,9 +103,9 @@ export default function ReportDashboardClient({ initialData }: { initialData: an
          return initialData.products?.map((p: any) => ({
            Product: p.name,
            Brand: p.brand,
-           Category: p.category,
+           Category: p.categories?.name || "N/A",
            Stock: p.stock,
-           "Stock Value": p.stock * p.cost_price,
+           "Stock Value": p.stock * (p.price || 0), // Fallback to price
            Status: p.stock === 0 ? "Out of Stock" : p.stock < 5 ? "Critical" : "Healthy"
          }));
       }

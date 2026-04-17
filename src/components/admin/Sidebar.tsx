@@ -27,7 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/auth/actions";
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
@@ -47,16 +47,7 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
-  const supabase = createClient();
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
-  }, [supabase.auth]);
+  const { user } = useAuth();
 
   return (
     <aside className="w-64 h-screen fixed left-0 top-0 bg-[#0F1115] border-r border-white/5 flex flex-col z-[100] overflow-hidden font-sans">

@@ -3,20 +3,11 @@
 import { Search, Bell, User, Settings, Shield, Menu, Command, LayoutGrid, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 export default function TopBar() {
-  const [user, setUser] = useState<any>(null);
+  const { user } = useAuth();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const supabase = createClient();
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
-  }, [supabase.auth]);
 
   return (
     <header className="h-20 bg-white/80 backdrop-blur-md border-b border-brand-navy/5 flex items-center justify-between px-10 sticky top-0 z-40 transition-all duration-500">

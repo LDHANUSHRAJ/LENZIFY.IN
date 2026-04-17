@@ -208,17 +208,74 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
             case "new_arrivals":
               return <ProductRow key={section.id} title={content.title || "New Arrivals"} subtitle={content.subtitle} filterField="collection" filterValue="New Arrivals" />;
 
+            case "collections_gallery":
+              const collections = content.items || [];
+              return (
+                <section key={section.id} className="py-32 bg-brand-background">
+                   <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
+                      <div className="flex justify-between items-end mb-16">
+                        <div>
+                          <h2 className="text-4xl font-serif text-brand-navy italic">{content.title || "The Collections"}</h2>
+                          <p className="text-brand-navy/40 mt-2 font-body uppercase tracking-widest text-[10px] font-bold">{content.subtitle || "Curated aesthetic narratives."}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                         {collections.length > 0 ? (
+                           collections.map((col: any) => (
+                            <Link href={`/products?collection=${col.name}`} key={col.id} className="group relative aspect-[16/10] overflow-hidden bg-white border border-brand-navy/5">
+                               {col.banner_url ? (
+                                 <Image src={col.banner_url} alt={col.name} fill className="object-cover transition-transform duration-1000 group-hover:scale-110" />
+                               ) : (
+                                 <div className="w-full h-full flex items-center justify-center bg-brand-navy/[0.02] text-[8px] font-bold tracking-widest uppercase text-brand-navy/10 italic">SCHEMA ASSET MISSING</div>
+                               )}
+                               <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/60 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
+                               <div className="absolute bottom-8 left-8 right-8">
+                                  <p className="text-[9px] font-bold text-white/60 tracking-[0.3em] uppercase mb-2">{col.type || "CURATED"}</p>
+                                  <h3 className="text-2xl font-serif text-white italic">{col.name}</h3>
+                               </div>
+                            </Link>
+                          ))
+                         ) : (
+                           [1,2,3].map(i => (
+                            <div key={i} className="aspect-[16/10] bg-brand-navy/5 animate-pulse rounded-lg" />
+                           ))
+                         )}
+                      </div>
+                   </div>
+                </section>
+              );
+
             case "best_sellers":
               return <ProductRow key={section.id} title={content.title || "Best Sellers"} subtitle={content.subtitle} filterField="collection" filterValue="Best Sellers" />;
 
             case "brand_section":
+              const brands = content.items || [];
               return (
-                <section key={section.id} className="py-20 bg-surface text-center">
-                  <h3 className="text-2xl font-serif mb-10">{content.title || "Premium Brands"}</h3>
-                  <div className="flex flex-wrap justify-center gap-12 opacity-50 grayscale">
-                     {["Ray-Ban", "Oakley", "Gucci", "Prada", "Persol"].map(brand => (
-                        <span key={brand} className="font-bold text-xl uppercase tracking-widest">{brand}</span>
-                     ))}
+                <section key={section.id} className="py-32 bg-surface text-center border-t border-brand-navy/5">
+                  <div className="container mx-auto px-6">
+                    <span className="text-[10px] font-bold text-secondary tracking-[0.4em] mb-4 block uppercase leading-none italic">{content.subtitle || "The Vanguard of Optics"}</span>
+                    <h3 className="text-4xl font-serif italic mb-20 text-brand-navy">{content.title || "Premium Partners"}</h3>
+                    
+                    <div className="flex flex-wrap justify-center items-center gap-x-20 gap-y-16 lg:gap-x-32">
+                       {brands.length > 0 ? (
+                         brands.map((brand: any) => (
+                          <div key={brand.id} className="group flex flex-col items-center gap-4 transition-all duration-700 hover:-translate-y-2">
+                            <div className="w-24 h-16 relative grayscale hover:grayscale-0 transition-all duration-700 opacity-40 hover:opacity-100">
+                               {brand.logo_url ? (
+                                 <Image src={brand.logo_url} alt={brand.name} fill className="object-contain" />
+                               ) : (
+                                 <span className="font-black text-lg uppercase tracking-widest text-brand-navy whitespace-nowrap">{brand.name}</span>
+                               )}
+                            </div>
+                          </div>
+                        ))
+                       ) : (
+                         ["Ray-Ban", "Oakley", "Gucci", "Prada", "Persol"].map(brand => (
+                            <span key={brand} className="font-black text-xl lg:text-3xl uppercase tracking-[0.2em] text-brand-navy/20 hover:text-secondary hover:opacity-100 transition-all cursor-default">{brand}</span>
+                         ))
+                       )}
+                    </div>
                   </div>
                 </section>
               );

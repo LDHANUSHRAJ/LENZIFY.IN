@@ -79,7 +79,7 @@ export default function AdminSettingsPage() {
                      <label className="text-[9px] font-bold uppercase tracking-widest text-brand-navy/30 italic">Organization Designation</label>
                      <input 
                        name="store_name"
-                       defaultValue={settings.store_name}
+                       defaultValue={settings?.store_name || ""}
                        className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all"
                      />
                   </div>
@@ -87,7 +87,7 @@ export default function AdminSettingsPage() {
                      <label className="text-[9px] font-bold uppercase tracking-widest text-brand-navy/30 italic">Logo Protocol (URL)</label>
                      <input 
                        name="logo_url"
-                       defaultValue={settings.logo_url}
+                       defaultValue={settings?.logo_url || ""}
                        className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all"
                      />
                   </div>
@@ -95,7 +95,7 @@ export default function AdminSettingsPage() {
                      <label className="text-[9px] font-bold uppercase tracking-widest text-brand-navy/30 italic">Favicon Registry (URL)</label>
                      <input 
                        name="favicon_url"
-                       defaultValue={settings.favicon_url}
+                       defaultValue={settings?.favicon_url || ""}
                        className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all"
                      />
                   </div>
@@ -105,12 +105,12 @@ export default function AdminSettingsPage() {
                         <input 
                           name="primary_color"
                           type="color"
-                          defaultValue={settings.primary_color || "#000000"}
+                          defaultValue={settings?.primary_color || "#000000"}
                           className="h-14 w-20 bg-brand-background border border-brand-navy/10 p-1 cursor-pointer"
                         />
                         <input 
                           type="text"
-                          value={settings.primary_color || "#000000"}
+                          value={settings?.primary_color || "#000000"}
                           readOnly
                           className="flex-1 bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-mono tracking-wider outline-none"
                         />
@@ -122,12 +122,12 @@ export default function AdminSettingsPage() {
                         <input 
                           name="brand_color"
                           type="color"
-                          defaultValue={settings.brand_color || "#775a19"}
+                          defaultValue={settings?.brand_color || "#775a19"}
                           className="h-14 w-20 bg-brand-background border border-brand-navy/10 p-1 cursor-pointer"
                         />
                         <input 
                           type="text"
-                          value={settings.brand_color || "#775a19"}
+                          value={settings?.brand_color || "#775a19"}
                           readOnly
                           className="flex-1 bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-mono tracking-wider outline-none"
                         />
@@ -147,7 +147,7 @@ export default function AdminSettingsPage() {
                      <label className="text-[9px] font-bold uppercase tracking-widest text-brand-navy/30 italic">Support Uplink (Email)</label>
                      <input 
                        name="contact_email"
-                       defaultValue={settings.contact_email}
+                       defaultValue={settings?.contact_email || ""}
                        className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all"
                      />
                   </div>
@@ -155,7 +155,7 @@ export default function AdminSettingsPage() {
                      <label className="text-[9px] font-bold uppercase tracking-widest text-brand-navy/30 italic">Voice Frequency (Phone)</label>
                      <input 
                        name="contact_phone"
-                       defaultValue={settings.contact_phone}
+                       defaultValue={settings?.contact_phone || ""}
                        className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all"
                      />
                   </div>
@@ -164,7 +164,7 @@ export default function AdminSettingsPage() {
                   <label className="text-[9px] font-bold uppercase tracking-widest text-brand-navy/30 italic">Physical Nexus (Address)</label>
                   <textarea 
                     name="address"
-                    defaultValue={settings.address}
+                    defaultValue={settings?.address || ""}
                     rows={3}
                     className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all resize-none italic"
                   />
@@ -183,7 +183,7 @@ export default function AdminSettingsPage() {
                      <input 
                        name="base_shipping_charge"
                        type="number"
-                       defaultValue={settings.base_shipping_charge}
+                       defaultValue={settings?.base_shipping_charge || 0}
                        className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-bold tracking-wider outline-none focus:border-secondary transition-all"
                      />
                   </div>
@@ -192,7 +192,7 @@ export default function AdminSettingsPage() {
                      <input 
                        name="free_shipping_threshold"
                        type="number"
-                       defaultValue={settings.free_shipping_threshold}
+                       defaultValue={settings?.free_shipping_threshold || 0}
                        className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-bold tracking-wider outline-none focus:border-secondary transition-all"
                      />
                   </div>
@@ -227,10 +227,17 @@ export default function AdminSettingsPage() {
             <div className="bg-white border border-brand-navy/5 p-10 lg:p-14 space-y-8 shadow-sm">
                <h3 className="text-xl font-serif italic text-brand-navy leading-tight">System <br/>Integrity</h3>
                <p className="text-[10px] text-brand-navy/40 leading-relaxed uppercase tracking-[0.2em] font-bold italic">Configuration changes are immediate and reflect across all edge nodes.</p>
-               <button type="button" onClick={fetchSettings} className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary hover:text-brand-navy transition-all flex items-center gap-3 group">
-                  RELOAD CORE
-                  <RefreshCw size={12} className="group-hover:rotate-180 transition-transform duration-700" />
-               </button>
+               <div className="flex flex-col gap-4">
+                  <button type="button" onClick={fetchSettings} className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary hover:text-brand-navy transition-all flex items-center gap-3 group">
+                     RELOAD CORE
+                     <RefreshCw size={12} className="group-hover:rotate-180 transition-transform duration-700" />
+                  </button>
+                  {!settings && (
+                    <p className="text-[8px] text-red-500 font-bold uppercase tracking-widest animate-pulse mt-2">
+                       [!] SYSTEM NOT INITIALIZED
+                    </p>
+                  )}
+               </div>
             </div>
          </div>
       </form>

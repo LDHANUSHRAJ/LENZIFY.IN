@@ -36,18 +36,22 @@ const getCachedHomeData = unstable_cache(
 
     
     // Run queries in parallel
-    const [configRes, featuredRes, trendingRes, categoriesRes] = await Promise.all([
+    const [configRes, featuredRes, trendingRes, categoriesRes, brandsRes, collectionsRes] = await Promise.all([
       supabase.from("homepage_config").select("*").eq("is_active", true).order("sort_order", { ascending: true }),
       supabase.from("products").select("*").eq("is_enabled", true).eq("is_featured", true).limit(4),
       supabase.from("products").select("*").eq("is_enabled", true).contains("collection", ["Trending"]).limit(4),
-      supabase.from("categories").select("*").eq("is_active", true).order("sort_order", { ascending: true })
+      supabase.from("categories").select("*").eq("is_active", true).order("sort_order", { ascending: true }),
+      supabase.from("brands").select("*").eq("is_featured", true).limit(10),
+      supabase.from("collections").select("*").limit(10)
     ]);
 
     return {
       config: configRes.data,
       featuredProducts: featuredRes.data || [],
       trendingProducts: trendingRes.data || [],
-      categories: categoriesRes.data || []
+      categories: categoriesRes.data || [],
+      brands: brandsRes.data || [],
+      collections: collectionsRes.data || []
     };
   },
   ['home-data'],
@@ -55,7 +59,7 @@ const getCachedHomeData = unstable_cache(
 );
 
 export default async function Home() {
-  const { config, featuredProducts, trendingProducts, categories } = await getCachedHomeData();
+  const { config, featuredProducts, trendingProducts, categories, brands, collections } = await getCachedHomeData();
 
   const dynamicCategories = categories.map((c: any) => ({
      name: c.name,
@@ -70,8 +74,9 @@ export default async function Home() {
     { id: "default-featured", section_key: "featured_products", content: { title: "Featured Products", subtitle: "Handpicked selections." } },
     { id: "default-trending", section_key: "trending_products", content: { title: "Trending", subtitle: "What everyone is wearing right now." } },
     { id: "default-new", section_key: "new_arrivals", content: { title: "New Arrivals", subtitle: "Fresh out of the design lab." } },
+    { id: "default-collections", section_key: "collections_gallery", content: { title: "Editor's Collections", subtitle: "Curated aesthetic paths.", items: collections } },
     { id: "default-bestsellers", section_key: "best_sellers", content: { title: "Best Sellers", subtitle: "Our most loved frames." } },
-    { id: "default-brands", section_key: "brand_section", content: { title: "Premium Brands", subtitle: "Top tier craftsmanship." } },
+    { id: "default-brands", section_key: "brand_section", content: { title: "Premium Brands", subtitle: "Top tier craftsmanship.", items: brands } },
   ];
 
   initialSections = initialSections.map(sec => {
