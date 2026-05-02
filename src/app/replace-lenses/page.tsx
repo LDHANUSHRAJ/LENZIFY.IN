@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeft, Upload, CheckCircle2, ShieldCheck, Truck, Eye, Camera, Info, Clock, Calendar, CreditCard, Wallet, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ const steps = [
 
 const supabase = createClient();
 
-export default function ReplaceLensesPage() {
+function ReplaceLensesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
@@ -898,5 +898,20 @@ export default function ReplaceLensesPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ReplaceLensesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-brand-surface font-sans">
+          <div className="text-center space-y-4">
+              <div className="w-12 h-12 border-4 border-secondary border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-brand-navy">Initializing Protocol...</p>
+          </div>
+      </div>
+    }>
+      <ReplaceLensesContent />
+    </Suspense>
   );
 }

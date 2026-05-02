@@ -1,11 +1,20 @@
 "use client";
 
+import { Suspense } from "react";
 import { createCoating } from "../actions";
 import { ArrowLeft, Save, Shield } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 export default function NewCoatingPage() {
+  return (
+    <Suspense fallback={<div>Loading Matrix...</div>}>
+      <NewCoatingContent />
+    </Suspense>
+  );
+}
+
+function NewCoatingContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
 

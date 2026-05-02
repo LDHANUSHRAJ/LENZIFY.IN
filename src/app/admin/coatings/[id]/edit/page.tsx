@@ -1,6 +1,7 @@
 "use client";
 
 import { updateCoating } from "../../actions";
+import { Suspense } from "react";
 import { ArrowLeft, Save, Shield, CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams, useParams } from "next/navigation";
@@ -9,6 +10,14 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 export default function EditCoatingPage() {
+  return (
+    <Suspense fallback={<div>Loading Protocol...</div>}>
+      <EditCoatingContent />
+    </Suspense>
+  );
+}
+
+function EditCoatingContent() {
   const params = useParams();
   const id = params.id as string;
   const searchParams = useSearchParams();
