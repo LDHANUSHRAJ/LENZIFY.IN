@@ -21,7 +21,7 @@ export default function DynamicThemeProvider({ children }: { children: React.Rea
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "store_settings", filter: "id=eq.1" },
-        (payload) => {
+        (payload: any) => {
           setSettings(payload.new);
         }
       )

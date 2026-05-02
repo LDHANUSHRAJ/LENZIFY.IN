@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Package, Truck, CheckCircle2, ChevronRight, Clock, AlertCircle } from "lucide-react";
+import { Package, Truck, CheckCircle2, ChevronRight, Clock, AlertCircle, Eye } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -43,12 +43,20 @@ export default async function OrderTrackingPage({ params }: { params: Promise<{ 
     );
   }
 
-  const steps = [
-    { key: "pending", label: isReplacement ? "Setup Initiated" : "Order Placed", date: order.created_at },
-    { key: "confirmed", label: isReplacement ? "Diagnostic Confirm" : "Confirmed", date: order.order_tracking?.find((t: any) => t.status === "confirmed")?.created_at },
-    { key: "processing", label: "In Lab Processing", date: order.order_tracking?.find((t: any) => t.status === "processing")?.created_at },
-    { key: "shipped", label: "Dispatched", date: order.order_tracking?.find((t: any) => t.status === "shipped")?.created_at },
-    { key: "delivered", label: "Delivered", date: order.order_tracking?.find((t: any) => t.status === "delivered")?.created_at },
+  const steps = isReplacement ? [
+    { key: "Order Placed", label: "Protocol Initiated", icon: <Package size={14} /> },
+    { key: "Pickup Scheduled", label: "Extraction Scheduled", icon: <Clock size={14} /> },
+    { key: "Picked Up", label: "Frame Retrieved", icon: <Truck size={14} /> },
+    { key: "Processing", label: "In Lab Processing", icon: <Eye size={14} /> },
+    { key: "Ready", label: "Quality Verified", icon: <CheckCircle2 size={14} /> },
+    { key: "Out for Delivery", label: "Final Transit", icon: <Truck size={14} /> },
+    { key: "Delivered", label: "Reunited", icon: <CheckCircle2 size={14} /> },
+  ] : [
+    { key: "pending", label: "Order Placed", icon: <Package size={14} /> },
+    { key: "confirmed", label: "Confirmed", icon: <CheckCircle2 size={14} /> },
+    { key: "processing", label: "Processing", icon: <Clock size={14} /> },
+    { key: "shipped", label: "Dispatched", icon: <Truck size={14} /> },
+    { key: "delivered", label: "Delivered", icon: <CheckCircle2 size={14} /> },
   ];
 
   const currentStepIndex = steps.findIndex(s => s.key === order.status);
@@ -93,11 +101,6 @@ export default async function OrderTrackingPage({ params }: { params: Promise<{ 
                               <p className={cn("text-[9px] font-black uppercase tracking-[0.2em] mb-1", isCompleted ? "text-brand-navy" : "text-brand-navy/30")}>
                                  {step.label}
                               </p>
-                              {step.date && (
-                                 <p className="text-[8px] font-bold uppercase tracking-widest text-brand-navy/40 italic">
-                                    {new Date(step.date).toLocaleDateString()}
-                                 </p>
-                              )}
                            </div>
                         </div>
                      </div>

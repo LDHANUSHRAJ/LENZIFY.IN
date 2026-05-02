@@ -61,12 +61,18 @@ const getCachedHomeData = unstable_cache(
 export default async function Home() {
   const { config, featuredProducts, trendingProducts, categories, brands, collections } = await getCachedHomeData();
 
-  const dynamicCategories = categories.map((c: any) => ({
-     name: c.name,
-     image_url: c.image_url || "/images/categories/men.png",
-     href: `/products?category=${c.slug}`,
-     type: c.type
-  }));
+  const dynamicCategories = categories.map((c: any) => {
+     let href = `/products?type=${c.name}`;
+     if (c.type === 'gender') href = `/products?gender=${c.name}`;
+     else if (c.type === 'collection') href = `/products?collection=${c.name}`;
+     
+     return {
+       name: c.name,
+       image_url: c.image_url || "/images/categories/men.png",
+       href,
+       type: c.type
+     };
+  });
 
   let initialSections = config && config.length > 0 ? config : [
   { id: "default-hero", section_key: "hero", content: { subtitle: "The Visionary Editorial", title: "Visionary Excellence. Timeless Style.", description: "Curated eyewear for those who view the world through a lens of sophistication and clarity.", button_text: "Explore Collection", button_link: "/products", image_url: "/images/editorial/hero_home_right.png" } },

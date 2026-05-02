@@ -8,6 +8,10 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { cn } from "@/lib/utils";
 import ProductCard from "@/components/store/ProductCard";
+import HomeCarousel from "./HomeCarousel";
+import SectionBanner from "./SectionBanner";
+import LensesSection from "./LensesSection";
+
 
 interface HomeClientProps {
   initialSections: any[];
@@ -108,66 +112,22 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
   return (
     <div className="bg-surface text-on-surface selection:bg-secondary-fixed selection:text-on-secondary-fixed">
       <main className="pt-0">
+        <HomeCarousel />
+        
         {sections.map((section) => {
+
           const content = section.content;
 
           switch (section.section_key) {
             case "hero":
-              // ... same as before
-              return (
-                <section key={section.id} className="relative h-[921px] flex items-center overflow-hidden bg-surface">
-                  <div className="container mx-auto px-6 md:px-12 grid grid-cols-12 gap-8 items-center h-full">
-                    <div className="col-span-12 lg:col-span-5 z-10">
-                      <motion.span 
-                        initial={{ opacity: 0, y: 10 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        className="label-md uppercase tracking-[0.2em] text-secondary font-semibold mb-6 block"
-                      >
-                        {content.subtitle || "The Visionary Editorial"}
-                      </motion.span>
-                      <motion.h1 
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-6xl md:text-8xl font-serif leading-[1.1] text-primary -tracking-[0.03em] mb-8"
-                        dangerouslySetInnerHTML={{ __html: content.title ? content.title.replace(" ", "<br/>") : "" }}
-                      />
-                      <motion.p 
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-body-lg text-on-surface-variant max-w-md mb-10 leading-relaxed"
-                      >
-                        {content.description || "Curated eyewear for those who view the world through a lens of sophistication and clarity."}
-                      </motion.p>
-                      <motion.div 
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="flex gap-6"
-                      >
-                        <Link href={content.button_link || "/products"} className="px-10 py-4 bg-primary text-on-primary font-medium tracking-tight hover:opacity-90 transition-all">
-                          {content.button_text || "Explore Collection"}
-                        </Link>
+              return null;
 
-                      </motion.div>
-                    </div>
-                    <div className="col-span-12 lg:col-span-7 absolute lg:relative right-0 top-0 h-full w-full lg:w-auto overflow-hidden">
-                      <Image 
-                        src={content.image_url || "/hero_spectacles_editorial_1775490575090.png"} 
-                        alt="Hero Image" 
-                        fill
-                        className="w-full h-full object-cover object-center grayscale-[20%] hover:scale-105 transition-transform duration-[2000ms]"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/10 to-transparent lg:hidden"></div>
-                    </div>
-                  </div>
-                </section>
-              );
 
             case "categories":
               return (
                 <section key={section.id} className="py-32 bg-surface-container-low">
+
+
                   <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
                     <div className="flex justify-between items-end mb-16">
                       <div>
@@ -178,9 +138,9 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
                         View All
                       </Link>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-6">
                       {content.items?.map((cat: any, i: number) => (
-                        <Link href={cat.href || "/products"} key={cat.name} className="group relative overflow-hidden bg-surface aspect-[4/5] rounded-lg">
+                        <Link href={cat.href || "/products"} key={cat.name} className="group relative overflow-hidden bg-surface aspect-[3/4] md:aspect-[4/5] rounded-lg">
                           <Image 
                             src={cat.image_url || "/placeholder.png"} 
                             alt={cat.name} 
@@ -188,9 +148,9 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                           />
                           <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                          <div className="absolute bottom-8 left-8">
-                            <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-on-surface/50 block mb-2">{cat.type || cat.label || "Collection"}</span>
-                            <h3 className="text-2xl font-serif">{cat.name}</h3>
+                          <div className="absolute bottom-3 left-3 md:bottom-8 md:left-8">
+                            <span className="text-[7px] md:text-[9px] font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] text-on-surface/50 block mb-1 md:mb-2">{cat.type || cat.label || "Collection"}</span>
+                            <h3 className="text-sm md:text-2xl font-serif">{cat.name}</h3>
                           </div>
                         </Link>
                       ))}
@@ -199,19 +159,31 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
                 </section>
               );
 
+
             case "featured_products":
               return <ProductRow key={section.id} title={content.title || "Featured"} subtitle={content.subtitle} filterField="is_featured" filterValue={true} initialData={initialProducts?.featured} />;
+
+
             
             case "trending_products":
               return <ProductRow key={section.id} title={content.title || "Trending"} subtitle={content.subtitle} filterField="collection" filterValue="Trending" initialData={initialProducts?.trending} />;
 
             case "new_arrivals":
-              return <ProductRow key={section.id} title={content.title || "New Arrivals"} subtitle={content.subtitle} filterField="collection" filterValue="New Arrivals" />;
+              return (
+                <div key={section.id}>
+                  <SectionBanner title={content.title || "New Arrivals"} image="/images/editorial/lifestyle_laughing.png" />
+                  <ProductRow title={content.title || "New Arrivals"} subtitle={content.subtitle} filterField="collection" filterValue="New Arrivals" />
+                </div>
+              );
 
             case "collections_gallery":
               const collections = content.items || [];
               return (
-                <section key={section.id} className="py-32 bg-brand-background">
+                <div key={section.id}>
+                  <LensesSection />
+                  <section className="py-32 bg-brand-background">
+
+
                    <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
                       <div className="flex justify-between items-end mb-16">
                         <div>
@@ -244,10 +216,18 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
                       </div>
                    </div>
                 </section>
+                </div>
               );
 
             case "best_sellers":
-              return <ProductRow key={section.id} title={content.title || "Best Sellers"} subtitle={content.subtitle} filterField="collection" filterValue="Best Sellers" />;
+              return (
+                <div key={section.id}>
+                  <SectionBanner title={content.title || "Best Sellers"} image="/images/editorial/featured_woman.png" />
+                  <ProductRow title={content.title || "Best Sellers"} subtitle={content.subtitle} filterField="collection" filterValue="Best Sellers" />
+                </div>
+              );
+
+
 
             case "brand_section":
               const brands = content.items || [];
@@ -281,40 +261,8 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
               );
 
             case "full_width_banner":
-              return (
-                <section key={section.id} className="py-32 bg-surface">
-                  <div className="max-w-screen-2xl mx-auto px-6 md:px-12 grid grid-cols-12 gap-16 items-center">
-                    <div className="col-span-12 lg:col-span-6 order-2 lg:order-1">
-                      <div className="relative h-[600px] w-full overflow-hidden editorial-shadow">
-                        <Image 
-                          src={content.image_url || "/heritage_spectacles_editorial_2_1775490822405.png"} 
-                          alt="Heritage Series" 
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    </div>
-                    <div className="col-span-12 lg:col-span-6 order-1 lg:order-2">
-                      <span className="text-[10px] font-bold text-secondary tracking-widest mb-4 block uppercase font-body">{content.subtitle || "EXCLUSIVELY LENZIFY"}</span>
-                      <h2 className="text-5xl font-serif mb-8">{content.title || "The Heritage Series"}</h2>
-                      <p className="text-lg text-on-surface-variant leading-relaxed mb-8">
-                        {content.description || "Inspired by the archives of 1950s visionary designers, The Heritage Series combines traditional craftsmanship with modern acetate technology."}
-                      </p>
-                      <ul className="space-y-4 mb-12">
-                        {["Mazzucchelli Acetate", "Five-Barrel Hinges", "Gold Filigree Wire Core"].map(item => (
-                          <li key={item} className="flex items-center gap-4 text-on-surface text-sm uppercase tracking-wider font-semibold">
-                            <span className="w-1.5 h-1.5 bg-secondary rounded-full"></span>
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                      <Link href="/collections/heritage" className="px-12 py-5 bg-primary text-on-primary hover:bg-primary/90 transition-all font-medium inline-block">
-                        Explore The Archive
-                      </Link>
-                    </div>
-                  </div>
-                </section>
-              );
+              return null;
+
 
             default:
               return null;

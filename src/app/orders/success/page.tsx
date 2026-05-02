@@ -31,7 +31,7 @@ function SuccessContent() {
          </div>
       </header>
 
-      <section className="bg-white border border-brand-navy/5 p-12 md:p-16 shadow-2xl space-y-12 relative overflow-hidden group">
+      <section className="bg-white border border-brand-navy/5 p-12 md:p-16 shadow-2xl space-y-12 relative overflow-hidden group print:shadow-none print:border-none">
          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform duration-1000">
             <Package size={80} />
          </div>
@@ -72,9 +72,9 @@ function SuccessContent() {
 
          <div className="pt-8 border-t border-brand-navy/5 flex flex-col md:flex-row gap-6 justify-between items-center">
             <div className="flex gap-4">
-               <button className="flex items-center gap-2 py-4 px-8 bg-brand-navy text-white text-[9px] font-black uppercase tracking-widest hover:bg-secondary transition-all">
+               <button onClick={() => window.print()} className="print:hidden flex items-center gap-2 py-4 px-8 bg-brand-navy text-white text-[9px] font-black uppercase tracking-widest hover:bg-secondary transition-all">
                   <Printer size={12} />
-                  Download Manifest
+                  Download Order Details
                </button>
             </div>
             <div className="flex gap-2 items-center">
@@ -84,7 +84,7 @@ function SuccessContent() {
          </div>
       </section>
 
-      <footer className="flex flex-col md:flex-row justify-center gap-8 md:gap-16 pt-12">
+      <footer className="print:hidden flex flex-col md:flex-row justify-center gap-8 md:gap-16 pt-12">
          <Link href="/profile/orders" className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-navy hover:text-secondary transition-all flex items-center gap-4">
             <span>View Acquisition Logs</span>
             <ArrowRight size={14} />

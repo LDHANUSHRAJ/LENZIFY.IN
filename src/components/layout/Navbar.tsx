@@ -12,33 +12,25 @@ import UserMenu from "./UserMenu";
 
 // Mega Menu Content
 const SHOP_CATEGORIES = [
-  { name: "Eyeglasses", href: "/products?category=eyeglasses" },
-  { name: "Sunglasses", href: "/products?category=sunglasses" },
-  { name: "Computer Glasses", href: "/products?category=computer-glasses" },
-  { name: "Reading Glasses", href: "/products?category=reading-glasses" },
-  { name: "Contact Lenses", href: "/products?category=contact-lenses" },
-  { name: "Accessories", href: "/products?category=accessories" },
+  { name: "Eyeglasses", href: "/products?type=Eyeglasses" },
+  { name: "Sunglasses", href: "/products?type=Sunglasses" },
+  { name: "Computer Glasses", href: "/products?type=Computer Glasses" },
+  { name: "Reading Glasses", href: "/products?type=Reading Glasses" },
+  { name: "Contact Lenses", href: "/products?type=Contact Lenses" },
+  { name: "Accessories", href: "/products?type=Accessories" },
 ];
 
 const SHOP_GENDER = [
-  { name: "Men", href: "/products?gender=men" },
-  { name: "Women", href: "/products?gender=women" },
-  { name: "Kids", href: "/products?gender=kids" },
+  { name: "Men", href: "/products?gender=Men" },
+  { name: "Women", href: "/products?gender=Women" },
+  { name: "Kids", href: "/products?gender=Kids" },
 ];
 
 const SHOP_COLLECTION = [
-  { name: "New Arrivals", href: "/products?collection=new-arrivals" },
-  { name: "Trending", href: "/products?collection=trending" },
-  { name: "Best Sellers", href: "/products?collection=best-sellers" },
-  { name: "Premium Collection", href: "/products?collection=premium" },
-];
-
-const LENS_OPTIONS = [
-  { name: "Single Vision", href: "/products?type=lens&lens_type=single-vision" },
-  { name: "Progressive", href: "/products?type=lens&lens_type=progressive" },
-  { name: "Blue Light", href: "/products?type=lens&lens_type=blue-light" },
-  { name: "Photochromic", href: "/products?type=lens&lens_type=photochromic" },
-  { name: "Zero Power", href: "/products?type=lens&lens_type=zero-power" },
+  { name: "New Arrivals", href: "/products?collection=New Arrivals" },
+  { name: "Trending", href: "/products?collection=Trending" },
+  { name: "Best Sellers", href: "/products?collection=Best Sellers" },
+  { name: "Premium Collection", href: "/products?collection=Premium Collection" },
 ];
 
 const OFFERS = [
@@ -60,6 +52,8 @@ export default function Navbar() {
   
   const [user, setUser] = useState<any>(null);
   const [brands, setBrands] = useState<{name: string, slug: string}[]>([]);
+  const [lenses, setLenses] = useState<{name: string, id: string}[]>([]);
+  const [coatings, setCoatings] = useState<{name: string, id: string}[]>([]);
   
   const totalItems = useCartStore((state) => state.getTotalItems());
   const wishlistCount = useWishlistStore((state) => state.items.length);
@@ -95,7 +89,7 @@ export default function Navbar() {
     };
     getUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       setUser(session?.user ?? null);
     });
 
@@ -122,7 +116,32 @@ export default function Navbar() {
         ]);
       }
     };
+    
+    const fetchLenses = async () => {
+      const { data } = await supabase
+        .from("lenses")
+        .select("id, name")
+        .eq("is_active", true)
+        .eq("category", "type")
+        .order("name", { ascending: true });
+        
+      if (data) setLenses(data);
+    };
+
+    const fetchCoatings = async () => {
+      const { data } = await supabase
+        .from("lenses")
+        .select("id, name")
+        .eq("is_active", true)
+        .eq("category", "feature")
+        .order("name", { ascending: true });
+        
+      if (data) setCoatings(data);
+    };
+
     fetchBrands();
+    fetchLenses();
+    fetchCoatings();
   }, [supabase]);
 
   useEffect(() => {
@@ -158,7 +177,7 @@ export default function Navbar() {
     <header 
       ref={navRef}
       className={cn(
-        "fixed top-0 w-full z-50 transition-all duration-500",
+        "fixed top-0 w-full z-50 transition-all duration-500 print:hidden",
         (isScrolled || activeMenu) ? "bg-surface/95 backdrop-blur-md editorial-shadow py-4" : "bg-surface py-6"
       )}
     >
@@ -198,7 +217,7 @@ export default function Navbar() {
         </div>
         
         {/* 🔹 Center (Core Navigation) */}
-        <div className="hidden lg:flex items-center gap-6 xl:gap-10 absolute left-1/2 -translate-x-1/2">
+        <div className="hidden lg:flex items-center gap-4 xl:gap-8 flex-1 justify-center">
           {/* Home */}
           <Link
             href="/"
@@ -424,16 +443,35 @@ export default function Navbar() {
             exit={{ opacity: 0, y: 10 }}
             className={cn(
               "absolute top-full bg-white border border-outline/10 shadow-lg p-2 flex flex-col gap-1 z-50 rounded-sm hidden lg:flex min-w-[200px] editorial-shadow mt-4",
-              activeMenu === 'lenses' && "left-[calc(50%-150px)]",
+              activeMenu === 'lenses' && "left-[calc(50%-250px)] min-w-[500px] p-6 grid grid-cols-2 gap-8",
               activeMenu === 'offers' && "left-[calc(50%+60px)]",
               activeMenu === 'brands' && "left-[calc(50%+140px)]"
             )}
           >
-            {activeMenu === 'lenses' && LENS_OPTIONS.map(link => (
-              <Link key={link.name} href={link.href} className="px-4 py-3 hover:bg-surface-container-low text-xs font-bold uppercase tracking-widest text-primary hover:text-secondary transition-colors rounded-sm">
-                {link.name}
-              </Link>
-            ))}
+            {activeMenu === 'lenses' && (
+              <>
+                <div className="space-y-4">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface/40 px-4">Lens Types</h3>
+                  <div className="flex flex-col gap-1">
+                    {lenses.map(lens => (
+                      <Link key={lens.id} href={`/lenses/${lens.id}`} className="px-4 py-3 hover:bg-surface-container-low text-xs font-bold uppercase tracking-widest text-primary hover:text-secondary transition-colors rounded-sm">
+                        {lens.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-4 border-l border-outline/5">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface/40 px-4">Laboratory Enhancements</h3>
+                  <div className="flex flex-col gap-1">
+                    {coatings.map(coating => (
+                      <Link key={coating.id} href={`/lenses/${coating.id}`} className="px-4 py-3 hover:bg-surface-container-low text-xs font-bold uppercase tracking-widest text-primary hover:text-secondary transition-colors rounded-sm">
+                        {coating.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
             {activeMenu === 'offers' && OFFERS.map(link => (
               <Link key={link.name} href={link.href} className="px-4 py-3 hover:bg-surface-container-low text-xs font-bold uppercase tracking-widest text-primary hover:text-secondary transition-colors rounded-sm">
                 {link.name}
@@ -541,12 +579,23 @@ export default function Navbar() {
                 {/* Lenses */}
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-on-surface/40 mb-4 border-b border-outline/10 pb-2">Lenses</h3>
-                  <div className="space-y-3 pl-2">
-                    {LENS_OPTIONS.map((link) => (
-                      <Link key={link.name} href={link.href} onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-primary">
-                        {link.name}
-                      </Link>
-                    ))}
+                  <div className="space-y-6 pl-2">
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-bold text-on-surface/30 uppercase">Lens Types</p>
+                      {lenses.map((lens) => (
+                        <Link key={lens.id} href={`/lenses/${lens.id}`} onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-primary">
+                          {lens.name}
+                        </Link>
+                      ))}
+                    </div>
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-bold text-on-surface/30 uppercase">Coatings</p>
+                      {coatings.map((coating) => (
+                        <Link key={coating.id} href={`/lenses/${coating.id}`} onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-primary">
+                          {coating.name}
+                        </Link>
+                      ))}
+                    </div>
                     <Link href="/replace-lenses" onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-secondary mt-2">
                       Replace Your Lenses
                     </Link>

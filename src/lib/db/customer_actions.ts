@@ -79,6 +79,12 @@ export async function removeFromCart(cartItemId: number) {
   revalidatePath("/cart");
 }
 
+export async function updateCartQuantity(cartItemId: number, quantity: number) {
+  const supabase = await createClient();
+  await supabase.from("cart").update({ quantity }).eq("id", cartItemId);
+  revalidatePath("/cart");
+}
+
 /**
  * WISHLIST ACTIONS
  */

@@ -47,11 +47,11 @@ export default function DashboardStats({ initialStats }: StatsProps) {
       const { count: lowStockCount } = await supabase.from("products").select("*", { count: "exact", head: true }).lte("stock", 5);
       const { data: cartUsers } = await supabase.from("cart").select("user_id");
       const { count: replacementsCount } = await supabase.from("lens_replacement_orders").select("*", { count: "exact", head: true });
-      const abandonedCarts = new Set(cartUsers?.map(c => c.user_id)).size;
+      const abandonedCarts = new Set(cartUsers?.map((c: any) => c.user_id)).size;
 
       setStats({
         ...stats,
-        totalSales: salesData?.reduce((acc, curr) => acc + Number(curr.total_price), 0) || 0,
+        totalSales: salesData?.reduce((acc: any, curr: any) => acc + Number(curr.total_price), 0) || 0,
         totalOrders: totalOrders || 0,
         totalCustomers: totalCustomers || 0,
         lowStockCount: lowStockCount || 0,

@@ -35,7 +35,7 @@ export default function ProductDetailsClient({
   const [isInWish, setIsInWish] = useState(isInWishlist);
   
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       setCurrentUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();

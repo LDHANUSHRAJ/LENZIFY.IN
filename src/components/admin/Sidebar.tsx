@@ -34,6 +34,7 @@ const menuItems = [
   { name: "Products", icon: Package, href: "/admin/products" },
   { name: "Add Product", icon: PlusCircle, href: "/admin/products/new" },
   { name: "Optical Lenses", icon: Layers, href: "/admin/lenses" },
+  { name: "Lens Coatings", icon: Shield, href: "/admin/coatings" },
   { name: "Categories", icon: FolderTree, href: "/admin/categories" },
   { name: "Orders", icon: ShoppingCart, href: "/admin/orders" },
   { name: "Replacements", icon: Settings, href: "/admin/replacements" },

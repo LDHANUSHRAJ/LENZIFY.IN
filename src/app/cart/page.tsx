@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { getCart, removeFromCart, addToCart } from "@/lib/db/customer_actions";
+import { getCart, removeFromCart, addToCart, updateCartQuantity } from "@/lib/db/customer_actions";
 
 const supabaseInstance = createClient();
 
@@ -23,9 +23,10 @@ export default function CartPage() {
 
   useEffect(() => {
     const init = async () => {
+      if (user) return; // Prevent concurrent/redundant auth calls
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        setUser(authUser);
         
         const cartData = await getCart();
       const mappedItems = (cartData || []).map((item: any) => ({
@@ -65,17 +66,14 @@ export default function CartPage() {
     const item = items.find(i => i.id === id);
     if (!item) return;
     const newQty = item.quantity + delta;
-    if (newQty < 1) return;
+    
+    if (newQty < 1) {
+      await handleRemove(id);
+      return;
+    }
     
     setItems(prev => prev.map(i => i.id === id ? { ...i, quantity: newQty } : i));
-    // When updating qty, we probably don't want to add a *new* item if it had prescription,
-    // but the current addToCart logic updates qty if id exists.
-    // However, for items with prescription, they are unique.
-    // For now, let's just use the direct DB update if we had a more specific action, 
-    // but the existing handleUpdateQty is fine for simple qty increment.
-    // However, our new addToCart handles qty updates differently if prescription exists.
-    // Let's just assume simple frames for qty update for now.
-    await addToCart(item.product_id, { quantity: delta, lens_id: item.lens_id, prescription_json: item.prescription });
+    await updateCartQuantity(id, newQty);
   };
 
   const handleCheckout = () => {

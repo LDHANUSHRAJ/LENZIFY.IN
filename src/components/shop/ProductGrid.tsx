@@ -10,6 +10,20 @@ import { createClient } from "@/lib/supabase/client";
 import ProductCard from "@/components/store/ProductCard";
 import LensCard from "@/components/store/LensCard";
 
+const parseArray = (val: any): string[] => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    if (val === "[]") return [];
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed;
+    } catch(e) {}
+    return [val];
+  }
+  return [];
+};
+
 interface ProductGridProps {
   initialCategory?: string;
   initialGender?: string;
@@ -28,6 +42,7 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
   const searchGender = searchParams.get("gender") || "";
   const searchType = searchParams.get("type") || "";
   const searchLensType = searchParams.get("lens_type") || "";
+  const searchCollection = searchParams.get("collection") || "";
 
   const [viewMode, setViewMode] = useState<"popularity" | "price_asc" | "price_desc" | "newest">("newest");
   const [priceRange, setPriceRange] = useState({ min: 0, max: 25000 });
@@ -43,7 +58,9 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedFrameTypes, setSelectedFrameTypes] = useState<string[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
-  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<string[]>(
+    searchCollection ? [searchCollection] : []
+  );
 
   const [categories, setCategories] = useState<any[]>([]);
 
@@ -83,9 +100,23 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
   const productTypeCategories = useMemo(() => categories.filter(c => c.type === 'product').map(c => c.name), [categories]);
   const collectionCategories = useMemo(() => categories.filter(c => c.type === 'collection').map(c => c.name), [categories]);
 
-  const dynamicGenders = useMemo(() => Array.from(new Set([...genderCategories, ...products.flatMap(p => p.categories?.filter((c: any) => c.type === 'gender').map((c: any) => c.name) || [])])).sort(), [genderCategories, products]);
-  const dynamicTypes = useMemo(() => Array.from(new Set([...productTypeCategories, ...products.flatMap(p => p.categories?.filter((c: any) => c.type === 'product').map((c: any) => c.name) || [])])).sort(), [productTypeCategories, products]);
-  const dynamicCollections = useMemo(() => Array.from(new Set([...collectionCategories, ...products.flatMap(p => p.categories?.filter((c: any) => c.type === 'collection').map((c: any) => c.name) || [])])).sort(), [collectionCategories, products]);
+  const dynamicGenders = useMemo(() => {
+    const fromCats = products.flatMap(p => p.categories?.filter((c: any) => c.type === 'gender').map((c: any) => c.name) || []);
+    const fromProps = products.flatMap(p => parseArray(p.gender));
+    return Array.from(new Set([...genderCategories, ...fromCats, ...fromProps])).filter(Boolean).sort();
+  }, [genderCategories, products]);
+
+  const dynamicTypes = useMemo(() => {
+    const fromCats = products.flatMap(p => p.categories?.filter((c: any) => c.type === 'product').map((c: any) => c.name) || []);
+    const fromProps = products.flatMap(p => parseArray(p.type));
+    return Array.from(new Set([...productTypeCategories, ...fromCats, ...fromProps])).filter(Boolean).sort();
+  }, [productTypeCategories, products]);
+
+  const dynamicCollections = useMemo(() => {
+    const fromCats = products.flatMap(p => p.categories?.filter((c: any) => c.type === 'collection').map((c: any) => c.name) || []);
+    const fromProps = products.flatMap(p => parseArray(p.collection));
+    return Array.from(new Set([...collectionCategories, ...fromCats, ...fromProps])).filter(Boolean).sort();
+  }, [collectionCategories, products]);
 
   // ... (brands, colors, etc. remain derived from base product fields)
   const brands = useMemo(() => Array.from(new Set(products.map(p => p.brand).filter(Boolean))), [products]);
@@ -137,13 +168,22 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
 
     // New Multi-Sector Filtering
     if (selectedGenders.length > 0) {
-      result = result.filter(p => p.categories?.some((c: any) => c.type === 'gender' && selectedGenders.includes(c.name)));
+      result = result.filter(p => {
+        const pGenders = parseArray(p.gender);
+        return pGenders.some(g => selectedGenders.includes(g)) || p.categories?.some((c: any) => c.type === 'gender' && selectedGenders.includes(c.name));
+      });
     }
     if (selectedTypes.length > 0) {
-      result = result.filter(p => p.categories?.some((c: any) => c.type === 'product' && selectedTypes.includes(c.name)));
+      result = result.filter(p => {
+        const pTypes = parseArray(p.type);
+        return pTypes.some(t => selectedTypes.includes(t)) || p.categories?.some((c: any) => c.type === 'product' && selectedTypes.includes(c.name));
+      });
     }
     if (selectedCollections.length > 0) {
-      result = result.filter(p => p.categories?.some((c: any) => c.type === 'collection' && selectedCollections.includes(c.name)));
+      result = result.filter(p => {
+        const pCollections = parseArray(p.collection);
+        return pCollections.some(col => selectedCollections.includes(col)) || p.categories?.some((c: any) => c.type === 'collection' && selectedCollections.includes(c.name));
+      });
     }
 
     // Standard attribute filters
@@ -263,7 +303,7 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
       <section className="flex-grow">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 border-b border-brand-navy/10 pb-4">
           <h1 className="text-3xl font-serif text-brand-navy">
-            {routerSearch ? `Search: "${routerSearch}"` : (selectedTypes.join(", ") || "All Archives")}
+            {routerSearch ? `Search: "${routerSearch}"` : ([...selectedTypes, ...selectedGenders, ...selectedCollections].join(", ") || "All Archives")}
           </h1>
           
           <div className="flex items-center gap-3">
