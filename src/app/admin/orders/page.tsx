@@ -159,7 +159,7 @@ export default async function AdminOrdersPage({
                     </div>
                   </td>
                   <td className="px-6 py-8">
-                     <p className="text-sm font-serif italic text-brand-navy font-black tracking-tight">₹{order.total_price.toLocaleString()}</p>
+                     <p className="text-sm font-serif italic text-brand-navy font-black tracking-tight">₹{(order.total_price || 0).toLocaleString()}</p>
                   </td>
                   <td className="px-6 py-8">
                      <span className={cn(

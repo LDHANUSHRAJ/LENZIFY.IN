@@ -119,7 +119,7 @@ export default async function CustomerDashboardPage() {
                                       <p className="text-[10px] font-black uppercase tracking-widest text-brand-navy">{item.products?.name}</p>
                                       <p className="text-[9px] font-bold text-brand-navy/30 uppercase tracking-widest italic">Unit Quantity: {item.quantity}</p>
                                    </div>
-                                   <p className="text-sm font-serif italic text-brand-navy font-black tracking-tight">₹{item.price.toLocaleString()}</p>
+                                   <p className="text-sm font-serif italic text-brand-navy font-black tracking-tight">₹{(item.price || 0).toLocaleString()}</p>
                                 </div>
                              ))}
                           </div>
@@ -133,7 +133,7 @@ export default async function CustomerDashboardPage() {
                                    <ExternalLink size={12} /> Download Report
                                 </button>
                              </div>
-                             <p className="text-xl font-serif italic text-brand-navy font-black pr-2">₹{order.total_price.toLocaleString()}</p>
+                             <p className="text-xl font-serif italic text-brand-navy font-black pr-2">₹{(order.total_price || 0).toLocaleString()}</p>
                           </footer>
                        </div>
                     </div>

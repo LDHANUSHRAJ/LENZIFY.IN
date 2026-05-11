@@ -128,7 +128,7 @@ export default function CartPage() {
                                </div>
                             )}
                           </div>
-                          <p className="text-3xl font-serif italic font-black text-brand-navy italic tracking-tighter">₹{item.price}</p>
+                          <p className="text-3xl font-serif italic font-black text-brand-navy italic tracking-tighter">₹{(item.price || 0).toLocaleString()}</p>
                         </div>
                         
                         <div className="flex flex-wrap gap-x-10 gap-y-4">

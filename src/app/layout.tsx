@@ -26,14 +26,62 @@ const notoSerif = Noto_Serif({
   style: ['normal', 'italic']
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lenzify.in';
+
 export const metadata: Metadata = {
-  title: "LENZIFY | The Visionary Editorial",
-  description: "Excellence in every frame. Redefining vision through the lens of high-fashion editorial.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "LENZIFY | Premium Eyewear Store — Spectacles, Sunglasses, Contact Lenses",
+    template: "%s | LENZIFY",
+  },
+  description: "Shop premium eyeglasses, sunglasses, contact lenses & accessories online. Free shipping, virtual try-on, and lens replacement services. India's visionary eyewear destination.",
+  keywords: ["eyeglasses", "sunglasses", "contact lenses", "eyewear online", "spectacles", "optical store", "buy glasses online India", "prescription glasses", "reading glasses", "computer glasses", "lenzify"],
+  authors: [{ name: "Lenzify" }],
+  creator: "Lenzify",
+  publisher: "Lenzify",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_IN',
+    url: siteUrl,
+    siteName: 'LENZIFY',
+    title: 'LENZIFY — Premium Eyewear Store',
+    description: 'Shop premium eyeglasses, sunglasses & contact lenses online. Free shipping & virtual try-on.',
+    images: [
+      {
+        url: `${siteUrl}/images/og-banner.png`,
+        width: 1200,
+        height: 630,
+        alt: 'LENZIFY — The Visionary Editorial',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'LENZIFY — Premium Eyewear Store',
+    description: 'Shop premium eyeglasses, sunglasses & contact lenses online.',
+    images: [`${siteUrl}/images/og-banner.png`],
+  },
+  alternates: {
+    canonical: siteUrl,
+  },
 };
 
 import { AuthProvider } from "@/components/providers/AuthProvider";
-
 import VirtualTryOnModal from "@/components/try-on/VirtualTryOnModal";
+import GoogleAnalytics from "@/components/seo/GoogleAnalytics";
+import CookieConsent from "@/components/layout/CookieConsent";
+import { OrganizationJsonLd } from "@/components/seo/JsonLd";
 
 export default function RootLayout({
   children,
@@ -46,6 +94,8 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+        <OrganizationJsonLd />
+        <GoogleAnalytics />
       </head>
       <body className="bg-surface text-on-surface font-body selection:bg-secondary-fixed selection:text-on-secondary-fixed antialiased">
         <Toaster position="bottom-right" toastOptions={{
@@ -67,6 +117,7 @@ export default function RootLayout({
             </DynamicThemeProvider>
           </ConditionalWrapper>
           <VirtualTryOnModal />
+          <CookieConsent />
         </AuthProvider>
       </body>
     </html>

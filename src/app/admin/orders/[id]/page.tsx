@@ -157,7 +157,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-brand-navy/30 mb-1">{item.products.brand}</p>
                                 <h3 className="text-lg font-serif italic text-brand-navy font-black tracking-tight">{item.products.name}</h3>
                              </div>
-                             <p className="text-sm font-serif italic text-secondary font-black italic">₹{item.price.toLocaleString()}</p>
+                             <p className="text-sm font-serif italic text-secondary font-black italic">₹{(item.price || 0).toLocaleString()}</p>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4 border-t border-brand-navy/[0.03]">
                              <div>

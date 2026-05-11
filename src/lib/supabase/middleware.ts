@@ -44,7 +44,26 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  const isAdmin = user?.user_metadata?.role === 'admin' || user?.email === 'lenzify.in@gmail.com';
+  // Check admin status: metadata role OR admins table OR legacy fallback
+  let isAdmin = false;
+  if (user) {
+    if (user.user_metadata?.role === 'admin') {
+      isAdmin = true;
+    } else {
+      // Check admins table
+      const { data: adminRecord } = await supabase
+        .from("admins")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (adminRecord) {
+        isAdmin = true;
+      } else if (user.email === 'lenzify.in@gmail.com') {
+        // Legacy fallback — remove after migrating to DB
+        isAdmin = true;
+      }
+    }
+  }
 
   // 1. SESSION TIMEOUT: Administrative Inactivity Guard (30 Minutes)
   if (isAdmin && pathname.startsWith('/admin')) {

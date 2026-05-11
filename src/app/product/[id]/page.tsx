@@ -1,6 +1,49 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import ProductDetailsClient from "./ProductDetailsClient";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: product } = await supabase
+    .from("products")
+    .select("name, description, price, offer_price, brand, product_images(image_url)")
+    .eq("id", id)
+    .single();
+
+  if (!product) {
+    return { title: "Product Not Found" };
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lenzify.in';
+  const imageUrl = (product as any).product_images?.[0]?.image_url || `${siteUrl}/placeholder.jpg`;
+  const price = product.offer_price || product.price;
+
+  return {
+    title: `${product.name}${product.brand ? ` by ${product.brand}` : ''} — ₹${price}`,
+    description: product.description?.slice(0, 160) || `Shop ${product.name} at LENZIFY. Premium eyewear with free shipping.`,
+    openGraph: {
+      title: `${product.name} — LENZIFY`,
+      description: product.description?.slice(0, 160) || `Shop ${product.name} at LENZIFY.`,
+      images: [{ url: imageUrl, width: 800, height: 600, alt: product.name }],
+      url: `${siteUrl}/product/${id}`,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${product.name} — LENZIFY`,
+      images: [imageUrl],
+    },
+    alternates: {
+      canonical: `${siteUrl}/product/${id}`,
+    },
+    other: {
+      'product:price:amount': String(price),
+      'product:price:currency': 'INR',
+    },
+  };
+}
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

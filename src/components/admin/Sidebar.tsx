@@ -51,7 +51,7 @@ export default function Sidebar() {
   const { user } = useAuth();
 
   return (
-    <aside className="w-64 h-screen fixed left-0 top-0 bg-[#0F1115] border-r border-white/5 flex flex-col z-[100] overflow-hidden font-sans">
+    <aside className="w-64 h-screen fixed left-0 top-0 bg-[#0F1115] border-r border-white/5 hidden lg:flex flex-col z-[100] overflow-hidden font-sans">
       {/* Brand Header: High Contrast Terminal Style */}
       <div className="p-8 border-b border-white/5 bg-gradient-to-br from-white/[0.02] to-transparent">
         <Link href="/admin/dashboard" className="group block">

@@ -42,7 +42,7 @@ export async function placeOrder(data: {
       user_id: user.id,
       total_price: data.total_price,
       status: 'pending',
-      payment_status: 'paid', // Assuming Razorpay success if this is called
+      payment_status: data.payment.method === 'cod' ? 'pending' : 'paid',
       address_id: address.id
     })
     .select("id")

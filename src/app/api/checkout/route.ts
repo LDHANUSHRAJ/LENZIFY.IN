@@ -1,7 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
+import { rateLimit } from '@/lib/rateLimit';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  // Rate limit: max 10 requests per minute per IP
+  const rateLimitResponse = rateLimit(req, "/api/checkout");
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const { amount, currency = "INR" } = await req.json();
 

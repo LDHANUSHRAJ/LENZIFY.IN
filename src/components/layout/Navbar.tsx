@@ -55,7 +55,27 @@ export default function Navbar() {
   const [lenses, setLenses] = useState<{name: string, id: string}[]>([]);
   const [coatings, setCoatings] = useState<{name: string, id: string}[]>([]);
   
-  const totalItems = useCartStore((state) => state.getTotalItems());
+  const zustandTotal = useCartStore((state) => state.getTotalItems());
+  const [serverCartCount, setServerCartCount] = useState<number | null>(null);
+
+  // Sync cart count: use Supabase for logged-in users, Zustand for guests
+  useEffect(() => {
+    if (user) {
+      const supabase = createClient();
+      supabase
+        .from("cart")
+        .select("quantity")
+        .eq("user_id", user.id)
+        .then(({ data: cartData }: { data: any[] | null }) => {
+          const total = (cartData || []).reduce((acc: number, item: any) => acc + (item.quantity || 1), 0);
+          setServerCartCount(total);
+        });
+    } else {
+      setServerCartCount(null);
+    }
+  }, [user]);
+
+  const totalItems = user ? (serverCartCount ?? 0) : zustandTotal;
   const wishlistCount = useWishlistStore((state) => state.items.length);
   const supabase = createClient();
   const navRef = useRef<HTMLElement>(null);

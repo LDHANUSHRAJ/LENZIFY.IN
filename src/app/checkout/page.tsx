@@ -9,6 +9,9 @@ import { createClient } from "@/lib/supabase/client";
 import { getCart } from "@/lib/db/customer_actions";
 import { placeOrder } from "@/lib/db/order_actions";
 import { cn } from "@/lib/utils";
+import { validateCheckoutAddress, sanitizeErrorMessage } from "@/lib/validation";
+import { applyCoupon } from "@/lib/db/coupon_actions";
+import toast from "react-hot-toast";
 import { 
   Package, 
   ChevronRight, 
@@ -50,6 +53,27 @@ export default function CheckoutPage() {
     pd: string;
   }>({ left_eye: "", right_eye: "", pd: "" });
 
+  // Coupon state
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponApplied, setCouponApplied] = useState("");
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) { toast.error("Enter a coupon code."); return; }
+    setApplyingCoupon(true);
+    const subtotal = cartItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+    const result = await applyCoupon(couponCode.trim(), subtotal);
+    setApplyingCoupon(false);
+    if (result.error) {
+      toast.error(result.error);
+    } else if (result.success) {
+      setCouponDiscount(result.discount!);
+      setCouponApplied(result.description!);
+      toast.success(`Coupon applied! ${result.description}`);
+    }
+  };
+
   const supabase = createClient();
   const router = useRouter();
 
@@ -85,8 +109,10 @@ export default function CheckoutPage() {
   }, [user, authLoading, router]);
 
   const handlePayment = async () => {
-    if (!addressData.address || !addressData.pincode) {
-      alert("Delivery coordinates required for protocol execution.");
+    // Validate address fields
+    const validationErrors = validateCheckoutAddress(addressData);
+    if (validationErrors.length > 0) {
+      validationErrors.forEach(err => toast.error(err.message));
       return;
     }
     setOrderProcessing(true);
@@ -122,11 +148,11 @@ export default function CheckoutPage() {
         if (orderRes.success) {
           router.push(`/orders/success?id=${orderRes.order_id}`);
         } else {
-          alert("Database synchronization failure: " + orderRes.error);
+          toast.error(sanitizeErrorMessage(orderRes.error || ""));
         }
       } catch (e) {
         console.error("COD Error:", e);
-        alert("COD Protocol failed to initialize.");
+        toast.error("Failed to place your order. Please try again.");
       } finally {
         setOrderProcessing(false);
       }
@@ -178,6 +204,25 @@ export default function CheckoutPage() {
         },
         handler: async function (response: any) {
           try {
+            // STEP 1: Verify payment signature server-side
+            const verifyRes = await fetch("/api/razorpay/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+            const verifyData = await verifyRes.json();
+
+            if (!verifyData.verified) {
+              toast.error("Payment verification failed. Please contact support.");
+              setOrderProcessing(false);
+              return;
+            }
+
+            // STEP 2: Place order after verified payment
             const orderRes = await placeOrder({
               items: cartItems.map(item => ({
                   id: item.product_id,
@@ -202,12 +247,12 @@ export default function CheckoutPage() {
             if (orderRes.success) {
               router.push(`/orders/success?id=${orderRes.order_id}`);
             } else {
-              alert("Database synchronization failure. Please contact support.");
+              toast.error("Order placement failed. Please contact support.");
               setOrderProcessing(false);
             }
           } catch (err) {
             console.error("Fulfillment Error:", err);
-            alert("Database fulfillment protocol failed.");
+            toast.error("Order processing failed. Please contact support.");
             setOrderProcessing(false);
           }
         }
@@ -216,13 +261,13 @@ export default function CheckoutPage() {
       const rzp = new (window as any).Razorpay(options);
       rzp.on('payment.failed', function (response: any) {
           console.error("Payment Failed Callback:", response.error);
-          alert("Payment Failed: " + response.error.description);
+          toast.error("Payment failed: " + (response.error.description || "Please try again."));
           setOrderProcessing(false);
       });
       rzp.open();
     } catch (e: any) {
       console.error("Razorpay Init Error:", e);
-      alert("Payment Matrix Failure: " + (e.message || "Initialization error"));
+      toast.error("Payment initialization failed. Please try again.");
       setOrderProcessing(false);
     }
   };
@@ -425,21 +470,56 @@ export default function CheckoutPage() {
                             <h4 className="text-[11px] font-black uppercase tracking-widest text-brand-navy">{item.products.name}</h4>
                             <div className="flex justify-between items-baseline">
                                <p className="text-[9px] font-bold text-brand-navy/30 uppercase italic">Unit: {item.quantity}</p>
-                               <p className="text-[11px] font-black text-brand-navy italic">₹{(item.price || item.products.offer_price).toLocaleString()}</p>
+                               <p className="text-[11px] font-black text-brand-navy italic">₹{(item.price || item.products?.offer_price || 0).toLocaleString()}</p>
                             </div>
                          </div>
                       </div>
                     ))}
                  </div>
 
-                 <div className="space-y-6 pt-10 border-t border-brand-navy/5">
+                 {/* Coupon Code Input */}
+                 <div className="pt-10 border-t border-brand-navy/5 space-y-4">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-brand-navy/30 italic">Promotion Code</p>
+                    <div className="flex gap-2">
+                       <input
+                         value={couponCode}
+                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                         placeholder="ENTER CODE"
+                         disabled={!!couponApplied}
+                         className="flex-1 bg-transparent border border-brand-navy/10 py-3 px-4 text-[10px] font-bold text-brand-navy uppercase tracking-widest outline-none focus:border-secondary transition-all disabled:opacity-40"
+                       />
+                       {couponApplied ? (
+                         <button
+                           onClick={() => { setCouponDiscount(0); setCouponApplied(""); setCouponCode(""); }}
+                           className="px-4 py-3 bg-red-50 text-red-500 text-[9px] font-black uppercase tracking-widest border border-red-100 hover:bg-red-100 transition-all"
+                         >Remove</button>
+                       ) : (
+                         <button
+                           onClick={handleApplyCoupon}
+                           disabled={applyingCoupon}
+                           className="px-6 py-3 bg-brand-navy text-white text-[9px] font-black uppercase tracking-widest hover:bg-secondary hover:text-brand-navy transition-all disabled:opacity-50"
+                         >{applyingCoupon ? "..." : "Apply"}</button>
+                       )}
+                    </div>
+                    {couponApplied && (
+                       <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">✓ {couponApplied} applied</p>
+                    )}
+                 </div>
+
+                 <div className="space-y-6 pt-6">
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-brand-navy/40">
                        <span className="italic text-brand-navy/40">Archive Total</span>
-                       <span className="text-brand-navy">₹{cartItems.reduce((acc, i) => acc + (i.price * i.quantity), 0).toLocaleString()}</span>
+                       <span className="text-brand-navy">₹{cartItems.reduce((acc: number, i: any) => acc + (i.price * i.quantity), 0).toLocaleString()}</span>
                     </div>
+                    {couponDiscount > 0 && (
+                       <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-emerald-500">
+                          <span className="italic">Coupon Discount</span>
+                          <span>-₹{couponDiscount.toLocaleString()}</span>
+                       </div>
+                    )}
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-brand-navy/40">
                        <span className="italic text-brand-navy/40">Protocol Tax (18%)</span>
-                       <span className="text-brand-navy">₹{(cartItems.reduce((acc, i) => acc + (i.price * i.quantity), 0) * 0.18).toLocaleString()}</span>
+                       <span className="text-brand-navy">₹{((cartItems.reduce((acc: number, i: any) => acc + (i.price * i.quantity), 0) - couponDiscount) * 0.18).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                        <span className="text-secondary italic">Shipping Matrix</span>
@@ -447,7 +527,7 @@ export default function CheckoutPage() {
                     </div>
                     <div className="pt-8 flex justify-between items-baseline border-t border-brand-navy/5">
                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-navy/20 italic">Final Value</span>
-                       <span className="text-4xl font-serif italic text-brand-navy font-black italic">₹{(cartItems.reduce((acc, i) => acc + (i.price * i.quantity), 0) * 1.18).toLocaleString()}</span>
+                       <span className="text-4xl font-serif italic text-brand-navy font-black">₹{((cartItems.reduce((acc: number, i: any) => acc + (i.price * i.quantity), 0) - couponDiscount) * 1.18).toLocaleString()}</span>
                     </div>
                  </div>
 

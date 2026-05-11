@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 import { Star, ShoppingBag, Heart, Verified, RotateCw } from "lucide-react";
 import Product360Viewer from "./Product360Viewer";
 import LensSelectionFlow from "@/components/store/LensSelectionFlow";
+import ReviewForm from "@/components/shop/ReviewForm";
+import { ProductJsonLd } from "@/components/seo/JsonLd";
 
 interface ProductDetailsClientProps {
   product: any;
@@ -80,8 +82,11 @@ export default function ProductDetailsClient({
 
   const primaryImage = product.product_images?.find((img: any) => img.is_primary)?.image_url || product.product_images?.[0]?.image_url;
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lenzify.in';
+
   return (
     <div className="bg-surface text-primary min-h-screen pt-24 font-sans">
+      <ProductJsonLd product={product} url={`${siteUrl}/product/${product.id}`} />
       {/* Breadcrumbs */}
       <nav className="max-w-screen-2xl mx-auto px-8 md:px-12 py-8">
          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-primary/30">
@@ -182,8 +187,8 @@ export default function ProductDetailsClient({
                  <div className="space-y-2">
                     <p className="text-[10px] uppercase font-bold tracking-widest text-primary/30">Exchange Rate</p>
                     <div className="flex items-baseline gap-4">
-                       <span className="text-5xl font-serif text-primary italic">₹{product.discount_price?.toLocaleString() || product.price.toLocaleString()}</span>
-                       {product.discount_price && product.discount_price < product.price && <span className="text-lg line-through text-primary/20">₹{product.price.toLocaleString()}</span>}
+                       <span className="text-5xl font-serif text-primary italic">₹{(product.discount_price || product.price || 0).toLocaleString()}</span>
+                       {product.discount_price && product.discount_price < product.price && <span className="text-lg line-through text-primary/20">₹{(product.price || 0).toLocaleString()}</span>}
                     </div>
                  </div>
                  <div className="h-16 w-px bg-primary/5"></div>
@@ -381,8 +386,10 @@ export default function ProductDetailsClient({
                     <h2 className="text-2xl font-serif italic text-secondary">Public Feedback</h2>
                     <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-white/40 italic">Aggregate Nexus Score: {product.rating || '4.8'}/5.0</p>
                  </div>
-                 <button suppressHydrationWarning className="text-[10px] font-bold uppercase tracking-widest bg-secondary text-primary px-8 py-4 hover:shadow-[0_0_20px_rgba(var(--brand-gold-rgb),0.5)] transition-all">Submit Entry</button>
               </div>
+
+              {/* Review Submission Form */}
+              <ReviewForm productId={product.id} userId={currentUser?.id} />
 
               <div className="space-y-8">
                  {initialReviews.map(review => (

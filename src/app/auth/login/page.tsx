@@ -92,7 +92,7 @@ function LoginForm({ fallbackError, initialLoading }: { fallbackError: string | 
             <div className="space-y-3">
               <div className="flex justify-between items-center px-1">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40">Security Matrix</label>
-                <Link href="#" className="text-[9px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors italic">Recovery</Link>
+                <Link href="/auth/forgot-password" className="text-[9px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors italic">Recovery</Link>
               </div>
               <input
                 name="password"
