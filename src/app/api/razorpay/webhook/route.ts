@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
+import { sendEmail, getOrderConfirmationHtml } from "@/lib/mail";
 
 /**
  * Razorpay Webhook Handler
@@ -64,6 +65,51 @@ export async function POST(req: Request) {
             .from("payments")
             .update({ status: "Success" })
             .eq("transaction_id", paymentId);
+
+          // --- EMAIL NOTIFICATION LOGIC ---
+          try {
+            // 1. Fetch full order details including items and products
+            const { data: order, error: orderError } = await supabase
+              .from("orders")
+              .select(`
+                *,
+                order_items (
+                  *,
+                  products (*)
+                ),
+                profiles (*)
+              `)
+              .eq("id", orderId)
+              .single();
+
+            if (order && !orderError) {
+              // 2. Fetch user email from auth (since profiles might not have it)
+              const { data: userData, error: userError } = await supabase.auth.admin.getUserById(order.user_id);
+              const customerEmail = userData?.user?.email;
+              const customerName = order.profiles?.name || "Customer";
+
+              if (customerEmail) {
+                console.log(`[WEBHOOK] Sending confirmation email to ${customerEmail}`);
+                
+                // Send to Customer
+                await sendEmail({
+                  to: customerEmail,
+                  subject: `Order Confirmed - Lenzify #${orderId.slice(0, 8)}`,
+                  html: getOrderConfirmationHtml(order, customerName),
+                });
+
+                // Send to Admin (lenzify.in@gmail.com)
+                await sendEmail({
+                  to: process.env.SMTP_USER || "lenzify.in@gmail.com",
+                  subject: `New Order Received - #${orderId.slice(0, 8)}`,
+                  html: `<h3>New Order Received</h3><p>Order ID: ${orderId}</p><p>Customer: ${customerName} (${customerEmail})</p><p>Total: ₹${order.total}</p>`,
+                });
+              }
+            }
+          } catch (mailError) {
+            console.error("[WEBHOOK] Failed to send notification emails:", mailError);
+          }
+          // --- END EMAIL NOTIFICATION LOGIC ---
         }
         break;
       }
