@@ -25,6 +25,7 @@ interface ProductCardProps {
     rating?: number;
     slug?: string;
     discount_price?: number;
+    colors?: string[];
   };
 }
 
