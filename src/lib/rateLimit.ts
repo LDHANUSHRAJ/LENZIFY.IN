@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 
 /**
  * Simple in-memory rate limiter for API routes.
@@ -43,6 +44,27 @@ export function rateLimit(request: NextRequest, routeKey?: string): NextResponse
 
   entry.count++;
   return null; // Allow
+}
+
+/** Rate limiter for server actions. Returns true if the request should be blocked. */
+export async function rateLimitAction(key: string, maxPerMinute: number): Promise<boolean> {
+  const headersList = await headers();
+  const forwarded = headersList.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0].trim() : (headersList.get("x-real-ip") || "unknown");
+
+  const mapKey = `${ip}:${key}`;
+  const now = Date.now();
+  const entry = rateLimitMap.get(mapKey);
+
+  if (!entry || now - entry.timestamp > WINDOW_MS) {
+    rateLimitMap.set(mapKey, { count: 1, timestamp: now });
+    return false;
+  }
+
+  if (entry.count >= maxPerMinute) return true;
+
+  entry.count++;
+  return false;
 }
 
 // Cleanup stale entries periodically (runs every 5 minutes)

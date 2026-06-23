@@ -12,6 +12,7 @@ interface CartStore {
     removeItem: (productId: string) => void;
     updateQuantity: (productId: string, delta: number) => void;
     clearCart: () => void;
+    setItems: (items: CartItem[]) => void;
     getTotalItems: () => number;
     getTotalPrice: () => number;
 }
@@ -40,8 +41,9 @@ export const useCartStore = create<CartStore>()(
                 )
             })),
             clearCart: () => set({ items: [] }),
-            getTotalItems: () => get().items.reduce((acc, item) => acc + item.quantity, 0),
-            getTotalPrice: () => get().items.reduce((acc, item) => acc + (item.price * item.quantity), 0),
+            setItems: (items) => set({ items }),
+            getTotalItems: () => get().items.reduce((acc, item) => acc + Number(item.quantity || 0), 0),
+            getTotalPrice: () => get().items.reduce((acc, item) => acc + (Number(item.price || 0) * Number(item.quantity || 0)), 0),
         }),
         { name: 'lenzify-cart' }
     )

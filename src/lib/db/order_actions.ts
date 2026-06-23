@@ -1,7 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { sendEmail, getOrderConfirmationHtml } from "@/lib/mail";
 
 /**
  * CHECKOUT & ORDER ACTIONS
@@ -18,8 +19,11 @@ export async function placeOrder(data: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Security identity required." };
 
+  // Use Admin Client for database mutations to bypass RLS issues during checkout
+  const adminSupabase = await createAdminClient();
+
   // 1. Insert/Get Address ID
-  const { data: address, error: addrError } = await supabase
+  const { data: address, error: addrError } = await adminSupabase
     .from("addresses")
     .insert({
       user_id: user.id,
@@ -36,7 +40,7 @@ export async function placeOrder(data: {
   if (addrError) return { error: "Address synchronization failure: " + addrError.message };
 
   // 2. Create Order
-  const { data: order, error: orderError } = await supabase
+  const { data: order, error: orderError } = await adminSupabase
     .from("orders")
     .insert({
       user_id: user.id,
@@ -60,12 +64,28 @@ export async function placeOrder(data: {
     prescription_json: item.prescription_json
   }));
 
-  const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
+  const { error: itemsError } = await adminSupabase.from("order_items").insert(orderItems);
   if (itemsError) return { error: "Item batch insert failure: " + itemsError.message };
+
+  // 3b. Decrement stock at order creation using safe atomic function.
+  // decrement_inventory_safe returns false if stock < qty (prevents oversell).
+  // Requires launch_migrations.sql to be applied to the DB.
+  for (const item of data.items) {
+    const { data: decremented, error: stockErr } = await adminSupabase.rpc(
+      "decrement_inventory_safe",
+      { p_id: item.id, p_qty: item.quantity }
+    );
+    if (stockErr || decremented === false) {
+      // Roll back: delete the order we just created
+      await adminSupabase.from("order_items").delete().eq("order_id", order.id);
+      await adminSupabase.from("orders").delete().eq("id", order.id);
+      return { error: "One or more items in your cart are out of stock. Please refresh your cart." };
+    }
+  }
 
   // 4. Handle Prescription
   if (data.prescription) {
-      await supabase.from("prescriptions").insert({
+      const { error: prescError } = await adminSupabase.from("prescriptions").insert({
           user_id: user.id,
           order_id: order.id,
           left_eye: data.prescription.left_eye,
@@ -73,23 +93,62 @@ export async function placeOrder(data: {
           pd: parseFloat(data.prescription.pd) || 0,
           file_url: data.prescription.file_url
       });
+      if (prescError) {
+          console.error("Prescription Error:", prescError);
+      }
   }
-
+  
   // 5. Record Payment
-  await supabase.from("payments").insert({
+  const { error: payError } = await adminSupabase.from("payments").insert({
       order_id: order.id,
       payment_method: data.payment.method,
       transaction_id: data.payment.id,
       amount: data.total_price,
-      status: 'Success'
+      status: data.payment.method === 'cod' ? 'pending' : 'Success',
   });
 
+  if (payError) {
+      console.error("Payment Record Error:", payError);
+      return { error: "Order placed but payment record failed: " + payError.message, order_id: order.id };
+  }
+
   // 6. Clear Cart
-  await supabase.from("cart").delete().eq("user_id", user.id);
+  const { error: clearError } = await adminSupabase.from("cart").delete().eq("user_id", user.id);
+  if (clearError) console.error("Cart Clear Error:", clearError);
+
+  // 7. Send confirmation email for COD orders (Razorpay orders are emailed via webhook)
+  if (data.payment.method === 'cod') {
+    try {
+      const { data: fullOrder } = await adminSupabase
+        .from("orders")
+        .select("*, order_items(*, products(name))")
+        .eq("id", order.id)
+        .single();
+
+      const { data: userData } = await adminSupabase.auth.admin.getUserById(user.id);
+      const customerEmail = userData?.user?.email;
+      const customerName = data.address.name || "Customer";
+
+      if (customerEmail && fullOrder) {
+        await sendEmail({
+          to: customerEmail,
+          subject: `Order Confirmed - Lenzify #${order.id.slice(0, 8)}`,
+          html: getOrderConfirmationHtml(fullOrder, customerName),
+        });
+        await sendEmail({
+          to: process.env.SMTP_USER || "lenzify.in@gmail.com",
+          subject: `New COD Order - #${order.id.slice(0, 8)}`,
+          html: `<h3>New COD Order</h3><p>Order ID: ${order.id}</p><p>Customer: ${customerName} (${customerEmail})</p><p>Total: ₹${data.total_price}</p>`,
+        });
+      }
+    } catch (mailErr) {
+      console.error("[ORDER] COD confirmation email failed:", mailErr);
+    }
+  }
 
   revalidatePath("/admin/orders");
   revalidatePath("/profile/orders");
-  
+
   return { success: true, order_id: order.id };
 }
 
@@ -98,48 +157,56 @@ export async function placeOrder(data: {
  */
 
 export async function updateOrderStatus(
-  order_id: string, 
-  status?: string, 
-  payment_status?: string,
-  tracking_id?: string,
-  courier_partner?: string
+  orderId: string,
+  status: string,
+  paymentStatus?: string,
+  trackingId?: string,
+  courier?: string
 ) {
   const supabase = await createClient();
-  const updates: any = {};
-  
-  if (status) updates.status = status;
-  if (payment_status) updates.payment_status = payment_status;
-  if (tracking_id) updates.tracking_id = tracking_id;
-  if (courier_partner) updates.courier_partner = courier_partner;
-  
-  updates.updated_at = new Date().toISOString();
 
-  // Logic: If status is 'confirmed', reduce inventory
-  if (status === 'confirmed') {
-    const { data: items } = await supabase
-        .from("order_items")
-        .select("product_id, quantity")
-        .eq("order_id", order_id);
-    
-    if (items) {
-        for (const item of items) {
-           // Decrement stock in products table
-           await supabase.rpc('decrement_inventory', { 
-               p_id: item.product_id, 
-               p_qty: item.quantity 
-           });
-        }
+  const { data: order } = await supabase
+    .from("orders")
+    .select("*, order_items(*)")
+    .eq("id", orderId)
+    .single();
+
+  if (!order) return { error: "Order not found" };
+
+  const oldStatus = order.status;
+
+  // Stock was already decremented at order creation (placeOrder).
+  // Only restore it when an order is cancelled from a stock-holding state.
+  if (status === "cancelled" && ["pending", "confirmed", "shipped"].includes(oldStatus)) {
+    for (const item of order.order_items) {
+      await supabase.rpc("increment_stock", {
+        product_id: item.product_id,
+        quantity: item.quantity,
+      });
     }
   }
 
+  const updateData: any = { status, updated_at: new Date().toISOString() };
+  if (paymentStatus) updateData.payment_status = paymentStatus;
+  if (trackingId) updateData.tracking_id = trackingId;
+  if (courier) updateData.courier_partner = courier;
+
   const { error } = await supabase
     .from("orders")
-    .update(updates)
-    .eq("id", order_id);
+    .update(updateData)
+    .eq("id", orderId);
 
   if (error) return { error: error.message };
 
+  await supabase.from("notifications").insert({
+    user_id: order.user_id,
+    title: `Order Status: ${status.toUpperCase()}`,
+    message: `Your order #${orderId.slice(0, 8)} has been updated to ${status}.`,
+    type: "order_update",
+    metadata: { order_id: orderId, status },
+  });
+
   revalidatePath("/admin/orders");
-  revalidatePath(`/admin/orders/${order_id}`);
+  revalidatePath(`/admin/orders/${orderId}`);
   return { success: true };
 }

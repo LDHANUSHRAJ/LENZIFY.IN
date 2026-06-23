@@ -6,6 +6,7 @@ import { deleteProduct, duplicateProduct, toggleProductStatus } from "./actions"
 import { cn } from "@/lib/utils";
 
 import CSVManager from "./CSVManager";
+import SuccessToast from "./SuccessToast";
 
 export default async function AdminProductsPage({
   searchParams,
@@ -38,6 +39,7 @@ export default async function AdminProductsPage({
 
   return (
     <div className="space-y-12">
+      <SuccessToast />
       <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
         <div>
            <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-secondary italic mb-2">Inventory Management</p>

@@ -9,6 +9,8 @@ import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { createClient } from "@/lib/supabase/client";
 import UserMenu from "./UserMenu";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { getCart, getWishlist } from "@/lib/db/customer_actions";
 
 // Mega Menu Content
 const SHOP_CATEGORIES = [
@@ -49,34 +51,103 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
-  
-  const [user, setUser] = useState<any>(null);
+  const { user } = useAuth();
   const [brands, setBrands] = useState<{name: string, slug: string}[]>([]);
   const [lenses, setLenses] = useState<{name: string, id: string}[]>([]);
   const [coatings, setCoatings] = useState<{name: string, id: string}[]>([]);
   
-  const zustandTotal = useCartStore((state) => state.getTotalItems());
-  const [serverCartCount, setServerCartCount] = useState<number | null>(null);
+  const totalItems = useCartStore((state) => state.items.reduce((acc, item) => acc + Number(item.quantity || 0), 0));
+  const setItems = useCartStore((state) => state.setItems);
+  const setWishlistItems = useWishlistStore((state) => state.setItems);
 
-  // Sync cart count: use Supabase for logged-in users, Zustand for guests
+  // Sync cart count
   useEffect(() => {
-    if (user) {
-      const supabase = createClient();
-      supabase
-        .from("cart")
-        .select("quantity")
-        .eq("user_id", user.id)
-        .then(({ data: cartData }: { data: any[] | null }) => {
-          const total = (cartData || []).reduce((acc: number, item: any) => acc + (item.quantity || 1), 0);
-          setServerCartCount(total);
-        });
-    } else {
-      setServerCartCount(null);
-    }
-  }, [user]);
+    if (!user) return;
 
-  const totalItems = user ? (serverCartCount ?? 0) : zustandTotal;
-  const wishlistCount = useWishlistStore((state) => state.items.length);
+    const supabase = createClient();
+    
+    const syncCart = async () => {
+      const cartData = await getCart();
+      const mappedItems = (cartData || []).map((item: any) => ({
+        id: item.product_id,
+        name: item.products.name,
+        price: item.price || item.products.price,
+        image: item.products.product_images?.[0]?.image_url,
+        quantity: item.quantity
+      }));
+      setItems(mappedItems as any);
+    };
+
+    syncCart();
+
+    // Realtime subscription for instant updates
+    const channel = supabase
+      .channel(`cart_sync_global_${user.id}`)
+      .on(
+        "postgres_changes",
+        { 
+          event: "*", 
+          schema: "public", 
+          table: "cart",
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          syncCart();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, setItems]);
+
+  
+  const zustandWishlistCount = useWishlistStore((state) => state.items.length);
+
+  // Sync wishlist
+  useEffect(() => {
+    if (!user) return;
+
+    const supabase = createClient();
+    
+    const syncWishlist = async () => {
+      const { data: wishlistData } = await supabase
+        .from("wishlist")
+        .select("*, products(*, product_images(*))")
+        .eq("user_id", user.id);
+      
+      const mappedItems = (wishlistData || []).map((item: any) => ({
+        ...item.products,
+      }));
+      setWishlistItems(mappedItems);
+    };
+
+    syncWishlist();
+
+    const channel = supabase
+      .channel(`wishlist_sync_global_${user.id}`)
+      .on(
+        "postgres_changes",
+        { 
+          event: "*", 
+          schema: "public", 
+          table: "wishlist",
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          syncWishlist();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, setWishlistItems]);
+
+  const wishlistCount = zustandWishlistCount;
+
   const supabase = createClient();
   const navRef = useRef<HTMLElement>(null);
 
@@ -101,20 +172,6 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase.auth]);
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -198,7 +255,7 @@ export default function Navbar() {
       ref={navRef}
       className={cn(
         "fixed top-0 w-full z-50 transition-all duration-500 print:hidden",
-        (isScrolled || activeMenu) ? "bg-surface/95 backdrop-blur-md editorial-shadow py-4" : "bg-surface py-6"
+        (isScrolled || activeMenu) ? "bg-[#0A0A2E]/95 backdrop-blur-md editorial-shadow py-4" : "bg-gradient-to-r from-[#1FC8E8] via-[#0A0A2E] to-[#0080FF] py-6"
       )}
     >
       <nav className="flex justify-between items-center px-6 lg:px-12 max-w-screen-2xl mx-auto">
@@ -207,7 +264,7 @@ export default function Navbar() {
           {pathname !== '/' && (
             <button 
               onClick={() => router.back()}
-              className="text-primary hover:text-secondary transition-colors p-1 flex items-center gap-1 group"
+              className="text-white/70 hover:text-white transition-colors p-1 flex items-center gap-1 group"
               title="Go Back"
               suppressHydrationWarning
             >
@@ -219,7 +276,7 @@ export default function Navbar() {
           {/* Mobile Toggle */}
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden text-primary focus:outline-none p-1"
+            className="lg:hidden text-white focus:outline-none p-1"
             suppressHydrationWarning
           >
             <span className="material-symbols-outlined text-2xl">
@@ -230,7 +287,7 @@ export default function Navbar() {
           {/* 🔹 Left Side (Brand) */}
           <Link 
             href="/" 
-            className="text-2xl font-serif italic tracking-tighter text-primary hover:opacity-70 transition-opacity"
+            className="text-2xl font-serif italic tracking-tighter text-white hover:opacity-70 transition-opacity"
           >
             LENZIFY
           </Link>
@@ -243,7 +300,7 @@ export default function Navbar() {
             href="/"
             className={cn(
               "font-medium transition-colors duration-300 py-1",
-              pathname === '/' ? "text-secondary border-b border-secondary" : "text-primary hover:text-secondary"
+              pathname === '/' ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
             )}
           >
             Home
@@ -255,7 +312,7 @@ export default function Navbar() {
               onClick={() => toggleMenu('shop')}
               className={cn(
                 "font-medium transition-colors duration-300 py-1 flex items-center gap-1",
-                activeMenu === 'shop' || pathname.startsWith('/products') ? "text-secondary border-b border-secondary" : "text-primary hover:text-secondary"
+                activeMenu === 'shop' || pathname.startsWith('/products') ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
               )}
               suppressHydrationWarning
             >
@@ -270,7 +327,7 @@ export default function Navbar() {
               onClick={() => toggleMenu('lenses')}
               className={cn(
                 "font-medium transition-colors duration-300 py-1 flex items-center gap-1",
-                activeMenu === 'lenses' ? "text-secondary border-b border-secondary" : "text-primary hover:text-secondary"
+                activeMenu === 'lenses' ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
               )}
               suppressHydrationWarning
             >
@@ -284,7 +341,7 @@ export default function Navbar() {
             href="/replace-lenses"
             className={cn(
               "font-medium transition-colors duration-300 py-1",
-              pathname === '/replace-lenses' ? "text-secondary border-b border-secondary" : "text-primary hover:text-secondary"
+              pathname === '/replace-lenses' ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
             )}
           >
             Replace Lenses
@@ -296,7 +353,7 @@ export default function Navbar() {
               onClick={() => toggleMenu('offers')}
               className={cn(
                 "font-medium transition-colors duration-300 py-1 flex items-center gap-1",
-                activeMenu === 'offers' ? "text-secondary border-b border-secondary" : "text-primary hover:text-secondary"
+                activeMenu === 'offers' ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
               )}
               suppressHydrationWarning
             >
@@ -311,7 +368,7 @@ export default function Navbar() {
               onClick={() => toggleMenu('brands')}
               className={cn(
                 "font-medium transition-colors duration-300 py-1 flex items-center gap-1",
-                activeMenu === 'brands' ? "text-secondary border-b border-secondary" : "text-primary hover:text-secondary"
+                activeMenu === 'brands' ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
               )}
               suppressHydrationWarning
             >
@@ -326,11 +383,11 @@ export default function Navbar() {
           {/* Search */}
           <div className={cn(
             "hidden md:flex items-center border-b transition-all duration-500",
-            isSearchOpen ? "w-48 border-outline/30" : "w-8 border-transparent"
+            isSearchOpen ? "w-48 border-white/30" : "w-8 border-transparent"
           )}>
             <button 
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={cn("text-on-surface hover:text-secondary transition-colors p-1 flex items-center", isSearchOpen && "text-secondary")}
+              className={cn("text-white/80 hover:text-white transition-colors p-1 flex items-center", isSearchOpen && "text-secondary")}
               suppressHydrationWarning
             >
               <span className="material-symbols-outlined text-2xl">search</span>
@@ -341,24 +398,30 @@ export default function Navbar() {
                 placeholder="Product Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent border-none focus:ring-0 text-[10px] uppercase font-bold tracking-widest text-on-surface placeholder:text-outline/40 w-full px-2"
+                className="bg-transparent border-none focus:ring-0 text-[10px] uppercase font-bold tracking-widest text-white placeholder:text-white/30 w-full px-2"
               />
             </form>
           </div>
 
           <Link href="/wishlist" className="relative group p-1 transition-transform hover:scale-110">
-            <span className="material-symbols-outlined text-2xl text-primary hover:text-secondary transition-colors">favorite</span>
+            <span className="material-symbols-outlined text-2xl text-white/80 hover:text-secondary transition-colors">favorite</span>
             {mounted && wishlistCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[8px] font-bold text-white shadow-sm">
+              <span 
+                suppressHydrationWarning
+                className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[8px] font-bold text-white shadow-sm"
+              >
                 {wishlistCount}
               </span>
             )}
           </Link>
 
           <Link href="/cart" className="relative group p-1 transition-transform hover:scale-110">
-            <span className="material-symbols-outlined text-2xl text-primary hover:text-secondary transition-colors">shopping_cart</span>
+            <span className="material-symbols-outlined text-2xl text-white/80 hover:text-secondary transition-colors">shopping_cart</span>
             {mounted && totalItems > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-white shadow-sm">
+              <span 
+                suppressHydrationWarning
+                className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[8px] font-bold text-white shadow-sm"
+              >
                 {totalItems}
               </span>
             )}
@@ -372,7 +435,7 @@ export default function Navbar() {
               href="/auth/login"
               className="group p-1 transition-transform hover:scale-110"
             >
-              <span className="material-symbols-outlined text-2xl text-primary hover:text-secondary transition-colors">person</span>
+              <span className="material-symbols-outlined text-2xl text-white/80 hover:text-secondary transition-colors">person</span>
             </Link>
           )}
 
@@ -383,7 +446,7 @@ export default function Navbar() {
               className="group p-1 transition-transform hover:scale-110 flex items-center"
               suppressHydrationWarning
             >
-              <span className="material-symbols-outlined text-2xl text-primary hover:text-secondary transition-colors">support_agent</span>
+              <span className="material-symbols-outlined text-2xl text-white/80 hover:text-secondary transition-colors">support_agent</span>
             </button>
             
             <AnimatePresence>

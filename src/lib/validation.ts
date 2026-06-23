@@ -39,7 +39,7 @@ export function validateName(name: string): string | null {
 
 export function validateAddress(address: string): string | null {
   if (!address || !address.trim()) return "Address is required";
-  if (address.trim().length < 10) return "Please enter a complete address";
+  if (address.trim().length < 5) return "Please enter a more complete address";
   return null;
 }
 
@@ -60,6 +60,7 @@ export function validateCheckoutAddress(data: {
   phone: string;
   address: string;
   city: string;
+  state: string;
   pincode: string;
 }): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -75,6 +76,10 @@ export function validateCheckoutAddress(data: {
 
   const cityErr = validateCity(data.city);
   if (cityErr) errors.push({ field: "city", message: cityErr });
+
+  if (!data.state || !data.state.trim()) {
+    errors.push({ field: "state", message: "State is required" });
+  }
 
   const pincodeErr = validatePincode(data.pincode);
   if (pincodeErr) errors.push({ field: "pincode", message: pincodeErr });

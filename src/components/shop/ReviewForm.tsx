@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Star } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { submitReview } from "@/lib/db/review_actions";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
@@ -38,20 +38,11 @@ export default function ReviewForm({ productId, userId, onSubmit }: ReviewFormPr
     }
 
     setSubmitting(true);
-    const supabase = createClient();
-
-    const { error } = await supabase.from("reviews").insert({
-      user_id: userId,
-      product_id: productId,
-      rating,
-      review: review.trim(),
-      status: "pending", // Awaits admin approval
-    });
-
+    const result = await submitReview(productId, rating, review);
     setSubmitting(false);
 
-    if (error) {
-      toast.error("Failed to submit review. Please try again.");
+    if (result.error) {
+      toast.error(result.error);
       return;
     }
 

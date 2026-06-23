@@ -45,8 +45,8 @@ export default async function EditProductPage({
   const productLenses = (product.product_lenses || []).map((pl: any) => pl.lens_id);
   const productCategories = (product.product_categories || []).map((pc: any) => pc.category_id);
 
-  const { data: categories } = await supabase.from("categories").select("*").eq("is_active", true);
-  const { data: lenses } = await supabase.from("lenses").select("*").eq("is_active", true);
+  const { data: categories } = await supabase.from("categories").select("*");
+  const { data: lenses } = await supabase.from("lenses").select("*");
 
   return (
     <div className="space-y-12">

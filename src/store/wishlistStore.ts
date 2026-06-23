@@ -8,6 +8,7 @@ interface WishlistStore {
     removeItem: (productId: string) => void;
     isInWishlist: (productId: string) => boolean;
     clearWishlist: () => void;
+    setItems: (items: Product[]) => void;
 }
 
 export const useWishlistStore = create<WishlistStore>()(
@@ -24,6 +25,7 @@ export const useWishlistStore = create<WishlistStore>()(
             })),
             isInWishlist: (productId) => get().items.some(item => item.id === productId),
             clearWishlist: () => set({ items: [] }),
+            setItems: (items) => set({ items }),
         }),
         { name: 'lenzify-wishlist' }
     )

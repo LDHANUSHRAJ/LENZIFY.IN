@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import ProductDetailsClient from "./ProductDetailsClient";
 import type { Metadata } from "next";
 
+export const revalidate = 0;
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const supabase = await createClient();
@@ -64,16 +66,34 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     notFound();
   }
 
-  // 2. Fetch Similar Products (Based on categories junction table)
-  const categoryIds = (product.categories || []).map((c: any) => c.id);
-  const { data: similarProducts } = await supabase
-    .from("products")
-    .select("*, product_images(*)")
-    .neq("id", id)
-    .limit(4);
+  // 2. Fetch Similar Products — same brand first, then same product_type
+  let similarProducts: any[] = [];
   
-  // NOTE: Simple filtering for now, in a real app we'd join and filter by categoryIds
-  // and maybe prioritize products with matching categories.
+  // Try same brand first
+  if (product.brand) {
+    const { data: brandMatches } = await supabase
+      .from("products")
+      .select("*, product_images(*)")
+      .neq("id", id)
+      .eq("brand", product.brand)
+      .eq("is_enabled", true)
+      .limit(4);
+    similarProducts = brandMatches || [];
+  }
+  
+  // If not enough, fill up with same product_type
+  if (similarProducts.length < 4 && product.product_type) {
+    const existingIds = [id, ...similarProducts.map((p: any) => p.id)];
+    const { data: typeMatches } = await supabase
+      .from("products")
+      .select("*, product_images(*)")
+      .not("id", "in", `(${existingIds.join(",")})`)
+      .eq("product_type", product.product_type)
+      .eq("is_enabled", true)
+      .limit(4 - similarProducts.length);
+    similarProducts = [...similarProducts, ...(typeMatches || [])];
+  }
+
 
   // 3. Fetch Reviews
   const { data: reviews } = await supabase

@@ -1,8 +1,32 @@
 "use client";
 
-import { useState } from "react";
-import { Package, Tag, Maximize2, Info, Camera, Zap, Save, Layers } from "lucide-react";
+import { useState, useActionState } from "react";
+import { useFormStatus } from "react-dom";
+import { Package, Tag, Maximize2, Info, Camera, Zap, Save, Layers, Loader2, Cpu } from "lucide-react";
 import { updateProduct } from "../../actions";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button 
+      type="submit" 
+      disabled={pending}
+      className="w-full bg-brand-navy text-white px-10 py-6 text-[10px] font-bold uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:bg-secondary transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed group"
+    >
+      {pending ? (
+        <>
+          <Loader2 size={16} className="animate-spin" />
+          Synchronizing...
+        </>
+      ) : (
+        <>
+          <Save size={16} className="group-hover:scale-110 transition-transform" />
+          Finalize Changes
+        </>
+      )}
+    </button>
+  );
+}
 
 export default function EditProductForm({ 
   product, 
@@ -18,13 +42,48 @@ export default function EditProductForm({
   productCategories?: number[]
 }) {
   const [productType, setProductType] = useState(product.product_type || "frame");
+  const [primaryPreview, setPrimaryPreview] = useState<string | null>(null);
+  const [additionalPreviews, setAdditionalPreviews] = useState<string[]>([]);
+  const [state, formAction] = useActionState(async (prevState: any, formData: FormData) => {
+    return await updateProduct(product.id, formData);
+  }, null);
+
+  const handlePrimaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPrimaryPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAdditionalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const previews: string[] = [];
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        previews.push(reader.result as string);
+        if (previews.length === files.length) {
+          setAdditionalPreviews(previews);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
 
   const colorsList = product.colors ? product.colors.join(", ") : "";
   const sizesList = product.sizes ? product.sizes.join(", ") : "";
 
   return (
-    <form action={async (formData) => { await updateProduct(product.id, formData); }} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+    <form action={formAction} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
       <div className="lg:col-span-8 space-y-12">
+        {state?.error && (
+          <div className="bg-red-50 border border-red-200 p-6 flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+             <Cpu size={18} className="text-red-500" />
+             <p className="text-[10px] font-bold uppercase tracking-widest text-red-600">{state.error}</p>
+          </div>
+        )}
          {/* Product Type Selector */}
          <section className="bg-white border border-brand-navy/5 p-8 shadow-sm">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-navy mb-4">Product Type Designation</h3>
@@ -65,46 +124,8 @@ export default function EditProductForm({
               <textarea name="description" rows={4} required defaultValue={product.description} className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all resize-none" />
            </div>
 
-           {/* Deployment Sectors (Dynamic) */}
-           <div className="pt-6 border-t border-brand-navy/5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-brand-navy mb-6 block">Target Sectors (Multi-Alignment)</label>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                 {[
-                   { label: "Gender Profiles", type: "gender" },
-                   { label: "Product Groups", type: "product" },
-                   { label: "Usage Matrix", type: "usage" },
-                   { label: "Collection Series", type: "collection" },
-                   { label: "Display Protocol", type: "display" }
-                 ].map((sectorGroup) => {
-                   const options = categories.filter(c => c.type === sectorGroup.type);
-                   if (options.length === 0) return null;
-                   return (
-                     <div key={sectorGroup.type} className="space-y-3">
-                        <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">{sectorGroup.label}</label>
-                        <div className="space-y-2">
-                           {options.map((cat) => (
-                             <label key={cat.id} className="flex items-center gap-3 p-3 border border-brand-navy/5 hover:border-secondary/50 transition-all cursor-pointer bg-brand-background/50 group/check h-full">
-                               <input 
-                                 name="category_ids" 
-                                 type="checkbox" 
-                                 value={cat.id} 
-                                 className="accent-secondary w-4 h-4" 
-                                 defaultChecked={productCategories.includes(cat.id)}
-                               />
-                               <div className="flex flex-col">
-                                 <span className="text-[10px] font-black uppercase tracking-wider text-brand-navy/80 group-hover/check:text-brand-navy">{cat.name}</span>
-                                 <span className="text-[7px] uppercase tracking-widest text-brand-navy/30 font-bold">{cat.type}</span>
-                               </div>
-                             </label>
-                           ))}
-                        </div>
-                     </div>
-                   );
-                 })}
-              </div>
-           </div>
+           {/* Deployment Sectors moved to sidebar */}
         </section>
-
         {/* Pricing & Stock */}
         <section className="bg-white border border-brand-navy/5 p-8 lg:p-12 space-y-10 shadow-sm relative overflow-hidden">
            <div className="flex items-center gap-4 mb-2">
@@ -166,38 +187,120 @@ export default function EditProductForm({
       </div>
 
       <div className="lg:col-span-4 space-y-12">
-        {/* Compatible Lenses Options */}
-        {productType === "frame" && (
-           <section className="bg-[#000000] text-white p-8 lg:p-10 space-y-8 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 blur-3xl group-hover:bg-secondary/10 transition-all duration-1000"></div>
-              <div className="space-y-2 border-b border-white/5 pb-6 relative z-10">
-                 <div className="flex items-center gap-4 mb-1">
-                    <Layers size={16} className="text-secondary" />
-                    <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary">Optic Modules</h3>
-                 </div>
-                 <p className="text-[8px] text-white/30 uppercase tracking-widest font-bold italic">Compatible Lenses</p>
+        {/* Categorization & Compatibility Options */}
+        <section className="bg-[#000000] text-white p-8 lg:p-10 space-y-8 relative overflow-hidden group">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 blur-3xl group-hover:bg-secondary/10 transition-all duration-1000"></div>
+           <div className="space-y-2 border-b border-white/5 pb-6 bg-transparent relative z-10">
+              <div className="flex items-center gap-4 mb-1">
+                 <Layers size={16} className="text-secondary" />
+                 <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary">Deployment Matrix</h3>
               </div>
-              
-              <div className="space-y-4 relative z-10">
-                 {lenses.length > 0 ? lenses.map((lens: any) => (
-                   <label key={lens.id} className="flex items-center justify-between p-4 border border-white/5 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group/opt">
-                      <div>
-                         <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover/opt:text-white block">{lens.name}</span>
-                         <span className="text-[8px] font-bold tracking-wider text-secondary/70 italic">₹{lens.price}</span>
-                      </div>
-                      <input type="checkbox" name="compatible_lenses" value={lens.id} className="w-4 h-4 accent-secondary bg-black" defaultChecked={productLenses.includes(lens.id)} />
-                   </label>
-                 )) : (
-                   <p className="text-[9px] text-white/30 italic">No available modules.</p>
-                 )}
+              <p className="text-[8px] text-white/30 uppercase tracking-widest font-bold italic">Assign categories & modules</p>
+           </div>
+           
+           <div className="space-y-8 relative z-10">
+              {/* Categories Section */}
+              <div>
+                 <h4 className="text-[9px] font-bold uppercase tracking-widest text-white/40 mb-4">Target Categories</h4>
+                 <div className="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                    {(() => {
+                       const getTypes = () => {
+                          if (productType === "frame") {
+                             return [
+                               { label: "Gender Profiles", type: "gender" },
+                               { label: "Product Groups", type: "product" },
+                               { label: "Usage Matrix", type: "usage" },
+                               { label: "Collection Series", type: "collection" },
+                               { label: "Display Protocol", type: "display" },
+                               { label: "Material Type", type: "material" },
+                               { label: "Frame Style", type: "frame_style" }
+                             ];
+                          }
+                          if (productType === "lens") {
+                             return [
+                               { label: "Lens Type", type: "lens_type" },
+                               { label: "Features", type: "feature" },
+                               { label: "Material", type: "material" }
+                             ];
+                          }
+                          return [
+                             { label: "Product Groups", type: "product" },
+                             { label: "Collection Series", type: "collection" },
+                             { label: "Display Protocol", type: "display" }
+                          ];
+                       };
 
-                 <label className="flex items-center justify-between p-4 border border-secondary/20 bg-secondary/5 hover:bg-secondary/10 transition-all cursor-pointer group/opt mt-6">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-secondary">Mark as Featured</span>
-                      <input type="checkbox" name="is_featured" value="true" className="w-4 h-4 accent-secondary bg-black" defaultChecked={product.is_featured} />
-                 </label>
+                       return getTypes().map((sector) => {
+                          const options = categories.filter(c => c.type === sector.type);
+                          if (options.length === 0) return null;
+
+                          return (
+                            <div key={sector.type} className="space-y-2">
+                               <h5 className="text-[8px] font-bold uppercase tracking-widest text-secondary/70 italic border-b border-white/5 pb-1">{sector.label}</h5>
+                               <div className="grid grid-cols-1 gap-2">
+                                 {options.map(cat => (
+                                   <label key={cat.id} className="flex items-center justify-between p-3 border border-white/5 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group/opt">
+                                      <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover/opt:text-white block">{cat.name}</span>
+                                      <input type="checkbox" name="category_ids" value={cat.id} className="w-4 h-4 accent-secondary bg-black" defaultChecked={productCategories.includes(cat.id)} />
+                                   </label>
+                                 ))}
+                               </div>
+                            </div>
+                          );
+                       });
+                    })()}
+                 </div>
               </div>
-           </section>
-        )}
+
+              {/* Lens Assignment */}
+              {productType === "lens" && (
+                 <div className="pt-4 border-t border-white/5">
+                    <h4 className="text-[9px] font-bold uppercase tracking-widest text-white/40 mb-4">Lens Assignment</h4>
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                       {lenses.length > 0 ? lenses.map((lens: any) => (
+                         <label key={lens.id} className="flex items-center justify-between p-3 border border-white/5 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group/opt">
+                            <div className="flex flex-col">
+                               <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover/opt:text-white block">{lens.name}</span>
+                               <span className="text-[8px] font-bold tracking-wider text-secondary/70 italic">₹{lens.price}</span>
+                            </div>
+                            <input type="checkbox" name="compatible_lenses" value={lens.id} className="w-4 h-4 accent-secondary bg-black" defaultChecked={productLenses.includes(lens.id)} />
+                         </label>
+                       )) : (
+                         <p className="text-[9px] text-white/30 italic">No lenses available.</p>
+                       )}
+                    </div>
+                 </div>
+              )}
+
+              {/* Metadata Options */}
+              <div className="pt-4 border-t border-white/5 space-y-2">
+                  <label className="flex items-center justify-between p-4 border border-secondary/20 bg-secondary/5 hover:bg-secondary/10 transition-all cursor-pointer group/opt">
+                       <span className="text-[10px] font-bold uppercase tracking-widest text-secondary">Mark as Featured</span>
+                       <input type="checkbox" name="is_featured" value="true" className="w-4 h-4 accent-secondary bg-black" defaultChecked={product.is_featured} />
+                  </label>
+
+                  <label className="flex items-center justify-between p-4 border border-white/5 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group/opt">
+                       <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover/opt:text-white block">Trending Model</span>
+                       <input type="checkbox" name="is_trending" value="true" className="w-4 h-4 accent-secondary bg-black" defaultChecked={product.is_trending} />
+                  </label>
+
+                  <label className="flex items-center justify-between p-4 border border-white/5 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group/opt">
+                       <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover/opt:text-white block">New Arrival</span>
+                       <input type="checkbox" name="is_new_arrival" value="true" className="w-4 h-4 accent-secondary bg-black" defaultChecked={product.is_new_arrival} />
+                  </label>
+
+                  <label className="flex items-center justify-between p-4 border border-white/5 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group/opt">
+                       <span className="text-[10px] font-bold uppercase tracking-widest text-white/60 group-hover/opt:text-white block">Editor's Choice</span>
+                       <input type="checkbox" name="is_editors_choice" value="true" className="w-4 h-4 accent-secondary bg-black" defaultChecked={product.is_editors_choice} />
+                  </label>
+
+                  <label className="flex items-center justify-between p-4 border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 transition-all cursor-pointer group/opt mt-6">
+                       <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Live Status (Enabled)</span>
+                       <input type="checkbox" name="is_enabled" value="true" className="w-4 h-4 accent-emerald-500 bg-black" defaultChecked={product.is_enabled ?? true} />
+                  </label>
+              </div>
+           </div>
+        </section>
 
         {/* Visual Assets */}
         <section className="bg-white border border-brand-navy/5 p-8 lg:p-10 space-y-8 shadow-sm">
@@ -206,15 +309,39 @@ export default function EditProductForm({
               <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-navy">Visual Interface</h3>
            </div>
            
-           <div className="space-y-6">
-              <div className="space-y-2">
-                 <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Primary Model Image (Leave empty to keep current)</label>
-                 <input type="file" name="primary_image_file" accept="image/*" className="w-full bg-brand-background border border-brand-navy/10 px-4 py-3 text-[10px] font-medium tracking-wider outline-none cursor-pointer file:mr-4 file:py-2 file:px-4 file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-brand-navy file:text-white" />
-              </div>
-              <div className="space-y-2">
-                 <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Additional Views (Upload Multiple)</label>
-                 <input type="file" name="additional_images_files" accept="image/*" multiple className="w-full bg-brand-background border border-brand-navy/10 px-4 py-3 text-[10px] font-medium tracking-wider outline-none cursor-pointer file:mr-4 file:py-2 file:px-4 file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-brand-navy file:text-white" />
-              </div>
+           <div className="space-y-4">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Primary Model Image (Leave empty to keep current)</label>
+                  <div className="flex gap-6 items-start">
+                     <div className="flex-1">
+                        <input type="file" name="primary_image_file" accept="image/*" onChange={handlePrimaryChange} className="w-full bg-brand-background border border-brand-navy/10 px-4 py-3 text-[10px] font-medium tracking-wider outline-none cursor-pointer file:mr-4 file:py-2 file:px-4 file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-brand-navy file:text-white" />
+                        {!primaryPreview && product.primary_image && (
+                           <p className="text-[8px] text-brand-navy/40 mt-2 font-bold uppercase tracking-widest italic">Current Image active</p>
+                        )}
+                     </div>
+                     {(primaryPreview || product.primary_image) && (
+                        <div className="w-24 h-24 border border-brand-navy/10 bg-brand-background p-2 relative group">
+                           <img src={primaryPreview || product.primary_image} alt="Preview" className="w-full h-full object-contain" />
+                           <div className="absolute inset-0 bg-brand-navy/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="text-[8px] font-bold text-white uppercase tracking-widest">{primaryPreview ? 'New Selection' : 'Current'}</span>
+                           </div>
+                        </div>
+                     )}
+                  </div>
+               <div className="space-y-4">
+                  <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Additional Views (Upload Multiple)</label>
+                  <div className="space-y-4">
+                     <input type="file" name="additional_images_files" accept="image/*" multiple onChange={handleAdditionalChange} className="w-full bg-brand-background border border-brand-navy/10 px-4 py-3 text-[10px] font-medium tracking-wider outline-none cursor-pointer file:mr-4 file:py-2 file:px-4 file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-brand-navy file:text-white" />
+                     {additionalPreviews.length > 0 && (
+                        <div className="flex flex-wrap gap-3 p-4 border border-dashed border-brand-navy/10 bg-brand-background/50">
+                           {additionalPreviews.map((preview, idx) => (
+                              <div key={idx} className="w-16 h-16 border border-brand-navy/5 bg-white p-1">
+                                 <img src={preview} alt={`Preview ${idx}`} className="w-full h-full object-contain" />
+                              </div>
+                           ))}
+                        </div>
+                     )}
+                  </div>
+               </div>
               <div className="space-y-2 p-4 border border-brand-navy/10 bg-brand-background">
                  <label className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-brand-navy italic">
                    <Zap size={10} className="text-secondary" /> 360° Sequence Data (JSON URLs)
@@ -226,9 +353,7 @@ export default function EditProductForm({
 
         {/* Finalize */}
         <div className="pt-8">
-           <button type="submit" className="w-full bg-brand-navy text-white text-[10px] font-bold uppercase tracking-[0.4em] py-6 shadow-xl hover:bg-secondary hover:text-brand-navy transition-all duration-700 flex items-center justify-center gap-4 active:scale-95">
-              <Save size={18} /> UPDATE MODEL
-           </button>
+           <SubmitButton />
         </div>
       </div>
     </form>

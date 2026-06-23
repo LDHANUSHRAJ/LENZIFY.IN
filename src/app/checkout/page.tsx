@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -52,6 +52,44 @@ export default function CheckoutPage() {
     right_eye: string;
     pd: string;
   }>({ left_eye: "", right_eye: "", pd: "" });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPrescription, setUploadingPrescription] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingPrescription(true);
+    const toastId = toast.loading("Uploading clinical vision report...");
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `prescriptions/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from("product-images")
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(fileName);
+
+      setPrescription(prev => ({
+        ...prev,
+        file_url: publicUrl
+      }));
+
+      toast.success("Vision report uploaded successfully!", { id: toastId });
+    } catch (err: any) {
+      console.error("Prescription upload error:", err);
+      toast.error(err.message || "Failed to upload vision report.", { id: toastId });
+    } finally {
+      setUploadingPrescription(false);
+    }
+  };
 
   // Coupon state
   const [couponCode, setCouponCode] = useState("");
@@ -118,8 +156,9 @@ export default function CheckoutPage() {
     setOrderProcessing(true);
 
     const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const tax = subtotal * 0.18;
-    const totalAmount = subtotal + tax;
+    const discountedSubtotal = Math.max(0, subtotal - couponDiscount);
+    const tax = discountedSubtotal * 0.18;
+    const totalAmount = discountedSubtotal + tax;
 
     // CASE 1: Cash on Delivery
     if (paymentMethod === "cod") {
@@ -247,12 +286,13 @@ export default function CheckoutPage() {
             if (orderRes.success) {
               router.push(`/orders/success?id=${orderRes.order_id}`);
             } else {
-              toast.error("Order placement failed. Please contact support.");
+              console.error("Order Placement Error:", orderRes.error);
+              toast.error(orderRes.error || "Order placement failed. Please contact support.");
               setOrderProcessing(false);
             }
-          } catch (err) {
-            console.error("Fulfillment Error:", err);
-            toast.error("Order processing failed. Please contact support.");
+          } catch (err: any) {
+            console.error("Fulfillment Exception:", err);
+            toast.error(`Order processing failed: ${err.message || "Unknown error"}. Please contact support.`);
             setOrderProcessing(false);
           }
         }
@@ -278,27 +318,27 @@ export default function CheckoutPage() {
     <div className="bg-surface text-brand-navy min-h-screen pt-24 font-sans text-brand-navy">
       <main className="max-w-screen-2xl mx-auto px-8 md:px-12 py-12 lg:py-20 pb-32">
         <header className="mb-20 space-y-6">
-           <div className="flex items-center gap-6">
+           <div className="flex flex-wrap items-center gap-4 md:gap-6">
               {[1, 2, 3].map(step => (
-                <div key={step} className="flex items-center gap-3">
+                <div key={step} className="flex items-center gap-2 md:gap-3">
                    <div className={cn(
-                      "w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-black transition-all duration-700",
+                      "w-7 h-7 md:w-8 md:h-8 rounded-full border-2 flex items-center justify-center text-[9px] md:text-[10px] font-black transition-all duration-700",
                       activeStep === step ? "border-secondary bg-secondary text-brand-navy shadow-lg" : 
                       activeStep > step ? "border-emerald-500 bg-emerald-500 text-white" : "border-brand-navy/10 text-brand-navy/20"
                    )}>
-                      {activeStep > step ? <CheckCircle2 size={14} /> : step}
+                      {activeStep > step ? <CheckCircle2 size={12} /> : step}
                    </div>
                    <span className={cn(
-                      "text-[10px] font-bold uppercase tracking-widest italic",
+                      "text-[9px] md:text-[10px] font-bold uppercase tracking-widest italic",
                       activeStep === step ? "text-brand-navy" : "text-brand-navy/20"
                    )}>
-                      {step === 1 ? "COORDINATES" : step === 2 ? "CLINICAL DATA" : "FINALIZE"}
+                      {step === 1 ? "COORDINATES" : step === 2 ? "CLINICAL" : "FINALIZE"}
                    </span>
-                   {step < 3 && <div className="w-12 h-px bg-brand-navy/5"></div>}
+                   {step < 3 && <div className="hidden sm:block w-8 md:w-12 h-px bg-brand-navy/5"></div>}
                 </div>
               ))}
            </div>
-           <h1 className="text-6xl font-serif italic text-brand-navy font-black tracking-tight uppercase leading-none">
+           <h1 className="text-4xl md:text-6xl font-serif italic text-brand-navy font-black tracking-tight uppercase leading-none">
               Transaction <span className="text-secondary">Vault</span>
            </h1>
         </header>
@@ -317,38 +357,44 @@ export default function CheckoutPage() {
                              <MapPin className="text-brand-navy/10 group-hover:text-secondary transition-colors" size={32} />
                           </header>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                             <div className="space-y-8">
-                                <div className="space-y-4">
-                                   <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Consignee Name</label>
-                                   <input value={addressData.name} onChange={(e) => setAddressData({...addressData, name: e.target.value})} placeholder="ENTROPY RECIPIENT" className="w-full bg-transparent border-b border-brand-navy/10 py-4 px-2 text-sm font-bold text-brand-navy outline-none focus:border-secondary transition-all" />
-                                </div>
-                                <div className="space-y-4">
-                                   <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Secure Contact</label>
-                                   <input value={addressData.phone} onChange={(e) => setAddressData({...addressData, phone: e.target.value})} placeholder="+91 XXXXXXXXXX" className="w-full bg-transparent border-b border-brand-navy/10 py-4 px-2 text-sm font-bold text-brand-navy outline-none focus:border-secondary transition-all" />
-                                </div>
-                             </div>
-                             <div className="space-y-8">
-                                <div className="space-y-4">
-                                   <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Destination Pincode</label>
-                                   <input value={addressData.pincode} onChange={(e) => setAddressData({...addressData, pincode: e.target.value})} placeholder="XXXXXX" className="w-full bg-transparent border-b border-brand-navy/10 py-4 px-2 text-sm font-bold text-brand-navy outline-none focus:border-secondary transition-all" />
-                                </div>
-                                <div className="space-y-4">
-                                   <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Urban Sector (City)</label>
-                                   <input value={addressData.city} onChange={(e) => setAddressData({...addressData, city: e.target.value})} placeholder="METROPOLIS" className="w-full bg-transparent border-b border-brand-navy/10 py-4 px-2 text-sm font-bold text-brand-navy outline-none focus:border-secondary transition-all" />
-                                </div>
-                             </div>
-                             <div className="md:col-span-2 space-y-4">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Structural Address</label>
-                                <textarea value={addressData.address} onChange={(e) => setAddressData({...addressData, address: e.target.value})} rows={3} placeholder="STREET, BUILDING, SECTOR" className="w-full bg-transparent border-b border-brand-navy/10 py-4 px-2 text-sm font-bold text-brand-navy outline-none focus:border-secondary transition-all resize-none" />
-                             </div>
-                          </div>
-                       </section>
-                       <button onClick={() => setActiveStep(2)} className="flex items-center gap-6 py-6 px-12 bg-brand-navy text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-secondary hover:text-brand-navy transition-all shadow-xl group">
-                          <span>Proceed to Clinical Data</span>
-                          <ChevronRight size={14} className="group-hover:translate-x-2 transition-transform" />
-                       </button>
-                    </motion.div>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-12">
+                              <div className="space-y-4">
+                                 <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Consignee Name</label>
+                                 <input value={addressData.name} onChange={(e) => setAddressData({...addressData, name: e.target.value})} placeholder="ENTROPY RECIPIENT" className="w-full bg-transparent border-b border-brand-navy/10 py-4 px-2 text-sm font-bold text-brand-navy outline-none focus:border-secondary transition-all" />
+                              </div>
+                              <div className="space-y-4">
+                                 <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Secure Contact</label>
+                                 <input value={addressData.phone} onChange={(e) => setAddressData({...addressData, phone: e.target.value})} placeholder="+91 XXXXXXXXXX" className="w-full bg-transparent border-b border-brand-navy/10 py-4 px-2 text-sm font-bold text-brand-navy outline-none focus:border-secondary transition-all" />
+                              </div>
+                              <div className="space-y-4">
+                                 <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Destination Pincode</label>
+                                 <input value={addressData.pincode} onChange={(e) => setAddressData({...addressData, pincode: e.target.value})} placeholder="XXXXXX" className="w-full bg-transparent border-b border-brand-navy/10 py-4 px-2 text-sm font-bold text-brand-navy outline-none focus:border-secondary transition-all" />
+                              </div>
+                              <div className="space-y-4">
+                                 <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Urban Sector (City)</label>
+                                 <input value={addressData.city} onChange={(e) => setAddressData({...addressData, city: e.target.value})} placeholder="METROPOLIS" className="w-full bg-transparent border-b border-brand-navy/10 py-4 px-2 text-sm font-bold text-brand-navy outline-none focus:border-secondary transition-all" />
+                              </div>
+                              <div className="space-y-4">
+                                 <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Region (State)</label>
+                                 <input value={addressData.state} onChange={(e) => setAddressData({...addressData, state: e.target.value})} placeholder="STATE/PROVINCE" className="w-full bg-transparent border-b border-brand-navy/10 py-4 px-2 text-sm font-bold text-brand-navy outline-none focus:border-secondary transition-all" />
+                              </div>
+                              <div className="md:col-span-2 space-y-4 pt-4">
+                                 <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/40">Structural Address (House/Street)</label>
+                                 <textarea value={addressData.address} onChange={(e) => setAddressData({...addressData, address: e.target.value})} rows={3} placeholder="STREET, BUILDING, SECTOR" className="w-full bg-transparent border-b border-brand-navy/10 py-4 px-2 text-sm font-bold text-brand-navy outline-none focus:border-secondary transition-all resize-none" />
+                              </div>
+                           </div>
+                        </section>
+                        {/* Check if ALL items are frame only */}
+                        {(() => {
+                           const isFrameOnly = cartItems.length > 0 && cartItems.every(item => !item.lens_id && !item.prescription_json);
+                           return (
+                              <button onClick={() => setActiveStep(isFrameOnly ? 3 : 2)} className="w-full md:w-auto flex items-center justify-center gap-6 py-6 px-12 bg-brand-navy text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-secondary hover:text-brand-navy transition-all shadow-xl group">
+                                 <span>{isFrameOnly ? "Proceed to Finalize" : "Proceed to Clinical Data"}</span>
+                                 <ChevronRight size={14} className="group-hover:translate-x-2 transition-transform" />
+                              </button>
+                           );
+                        })()}
+                     </motion.div>
                   )}
 
                   {activeStep === 2 && (
@@ -373,14 +419,31 @@ export default function CheckoutPage() {
                                 <input value={prescription.pd} onChange={(e) => setPrescription({...prescription, pd: e.target.value})} placeholder="STANDARD 62mm" className="w-full bg-brand-background border-b border-brand-navy/10 py-4 px-2 text-sm font-bold text-brand-navy outline-none focus:border-secondary transition-all" />
                              </div>
                           </div>
-                          <div className="border border-dashed border-brand-navy/10 p-12 text-center space-y-4 group/upload cursor-pointer hover:border-secondary transition-colors bg-brand-background/30">
-                             <Upload size={32} className="mx-auto text-brand-navy/20 group-hover/upload:text-secondary group-hover/upload:scale-110 transition-all" />
-                             <p className="text-[10px] font-bold uppercase tracking-widest text-brand-navy/30 italic">Upload Clinical Vision Report (Image/PDF)</p>
-                          </div>
+                           <div 
+                              onClick={() => fileInputRef.current?.click()}
+                              className="border border-dashed border-brand-navy/10 p-12 text-center space-y-4 group/upload cursor-pointer hover:border-secondary transition-colors bg-brand-background/30 relative"
+                           >
+                              <input 
+                                 type="file" 
+                                 ref={fileInputRef} 
+                                 className="hidden" 
+                                 onChange={handleFileUpload} 
+                                 accept="image/*,application/pdf"
+                                 disabled={uploadingPrescription}
+                              />
+                              <Upload size={32} className="mx-auto text-brand-navy/20 group-hover/upload:text-secondary group-hover/upload:scale-110 transition-all" />
+                              {uploadingPrescription ? (
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-secondary italic animate-pulse">Uploading...</p>
+                              ) : prescription.file_url ? (
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 italic">Report Linked ✓</p>
+                              ) : (
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-brand-navy/30 italic">Upload Clinical Vision Report (Image/PDF)</p>
+                              )}
+                           </div>
                        </div>
-                       <div className="flex gap-4">
+                       <div className="flex flex-col sm:flex-row gap-4">
                           <button onClick={() => setActiveStep(1)} className="py-6 px-12 border border-brand-navy/10 text-brand-navy text-[10px] font-black uppercase tracking-[0.4em] hover:bg-brand-background transition-all">Back</button>
-                          <button onClick={() => setActiveStep(3)} className="flex items-center gap-6 py-6 px-12 bg-brand-navy text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-secondary hover:text-brand-navy transition-all shadow-xl group">
+                          <button onClick={() => setActiveStep(3)} className="flex-grow flex items-center justify-center gap-6 py-6 px-12 bg-brand-navy text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-secondary hover:text-brand-navy transition-all shadow-xl group">
                             <span>Proceed to Finalize</span>
                             <ChevronRight size={14} className="group-hover:translate-x-2 transition-transform" />
                           </button>
@@ -436,8 +499,11 @@ export default function CheckoutPage() {
                              </p>
                           </div>
                        </section>
-                       <div className="flex gap-4">
-                          <button onClick={() => setActiveStep(2)} className="py-6 px-12 border border-brand-navy/10 text-brand-navy text-[10px] font-black uppercase tracking-[0.4em] hover:bg-brand-background transition-all">Back</button>
+                       <div className="flex flex-col sm:flex-row gap-4">
+                          <button onClick={() => {
+                             const isFrameOnly = cartItems.length > 0 && cartItems.every(item => !item.lens_id && !item.prescription_json);
+                             setActiveStep(isFrameOnly ? 1 : 2);
+                          }} className="py-6 px-12 border border-brand-navy/10 text-brand-navy text-[10px] font-black uppercase tracking-[0.4em] hover:bg-brand-background transition-all">Back</button>
                           <button 
                             disabled={orderProcessing}
                             onClick={handlePayment} 

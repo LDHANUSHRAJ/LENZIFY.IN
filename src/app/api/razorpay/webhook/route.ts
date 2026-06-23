@@ -55,6 +55,20 @@ export async function POST(req: Request) {
         const paymentId = event.payload.payment.entity.id;
         const orderId = event.payload.payment.entity.notes?.order_id;
 
+        // Idempotency: if this payment was already processed, skip to avoid
+        // duplicate DB writes and duplicate confirmation emails on Razorpay retries.
+        const { data: existingPayment } = await supabase
+          .from("payments")
+          .select("id")
+          .eq("transaction_id", paymentId)
+          .eq("status", "Success")
+          .maybeSingle();
+
+        if (existingPayment) {
+          console.log(`[WEBHOOK] payment.captured already processed for ${paymentId}, skipping`);
+          return NextResponse.json({ received: true });
+        }
+
         if (orderId) {
           await supabase
             .from("orders")

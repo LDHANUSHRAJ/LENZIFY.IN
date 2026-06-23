@@ -1,11 +1,16 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { rateLimitAction } from "@/lib/rateLimit";
 
 /**
  * Validate and apply a coupon code
  */
 export async function applyCoupon(code: string, subtotal: number) {
+  if (await rateLimitAction('coupon', 10)) {
+    return { error: "Too many coupon attempts. Please wait a minute." };
+  }
+
   if (!code || !code.trim()) {
     return { error: "Please enter a coupon code." };
   }

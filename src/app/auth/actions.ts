@@ -3,8 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { rateLimitAction } from '@/lib/rateLimit'
 
 export async function login(formData: FormData) {
+  if (await rateLimitAction('login', 10)) {
+    return { error: 'Too many login attempts. Please wait a minute and try again.' }
+  }
+
   const supabase = await createClient()
 
   const data = {
@@ -37,6 +42,10 @@ export async function login(formData: FormData) {
 }
 
 export async function signup(formData: FormData) {
+  if (await rateLimitAction('signup', 5)) {
+    return { error: 'Too many signup attempts. Please wait a minute and try again.' }
+  }
+
   const supabase = await createClient()
   const adminClient = await createAdminClient()
   

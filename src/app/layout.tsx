@@ -82,12 +82,16 @@ import VirtualTryOnModal from "@/components/try-on/VirtualTryOnModal";
 import GoogleAnalytics from "@/components/seo/GoogleAnalytics";
 import CookieConsent from "@/components/layout/CookieConsent";
 import { OrganizationJsonLd } from "@/components/seo/JsonLd";
+import { createClient } from "@/lib/supabase/server";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <html lang="en" className={cn(inter.variable, interLabel.variable, notoSerif.variable)} suppressHydrationWarning>
       <head>
@@ -110,7 +114,7 @@ export default function RootLayout({
             letterSpacing: '0.1em'
           }
         }} />
-        <AuthProvider>
+        <AuthProvider initialUser={user}>
           <ConditionalWrapper>
             <DynamicThemeProvider>
                {children}

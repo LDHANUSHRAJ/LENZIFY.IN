@@ -19,20 +19,27 @@ export interface SendEmailOptions {
   html: string;
 }
 
-export async function sendEmail({ to, subject, html }: SendEmailOptions) {
-  try {
-    const info = await transporter.sendMail({
-      from: `"Lenzify" <${process.env.SMTP_USER || "lenzify.in@gmail.com"}>`,
-      to,
-      subject,
-      html,
-    });
-    console.log("[MAIL] Message sent: %s", info.messageId);
-    return { success: true, messageId: info.messageId };
-  } catch (error: any) {
-    console.error("[MAIL] Error sending email:", error);
-    return { success: false, error: error.message };
+export async function sendEmail({ to, subject, html }: SendEmailOptions, retries = 2) {
+  for (let attempt = 1; attempt <= retries + 1; attempt++) {
+    try {
+      const info = await transporter.sendMail({
+        from: `"Lenzify" <${process.env.SMTP_USER || "lenzify.in@gmail.com"}>`,
+        to,
+        subject,
+        html,
+      });
+      console.log("[MAIL] Message sent: %s", info.messageId);
+      return { success: true, messageId: info.messageId };
+    } catch (error: any) {
+      console.error(`[MAIL] Attempt ${attempt} failed:`, error.message);
+      if (attempt <= retries) {
+        await new Promise(r => setTimeout(r, attempt * 1000));
+      } else {
+        return { success: false, error: error.message };
+      }
+    }
   }
+  return { success: false, error: "Max retries exceeded" };
 }
 
 /**

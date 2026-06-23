@@ -93,7 +93,6 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                const payment_status = formData.get("payment_status") as string;
                const tracking_id = formData.get("tracking_id") as string;
                const courier = formData.get("courier") as string;
-               const { updateOrderStatus } = await import("@/app/admin/orders/actions");
                await updateOrderStatus(id, status, payment_status, tracking_id, courier);
            }} className="flex flex-wrap items-center gap-4 bg-white border border-brand-navy/10 p-4 shadow-sm">
                <div className="flex flex-col gap-1">

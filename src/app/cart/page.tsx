@@ -6,74 +6,114 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getCart, removeFromCart, addToCart, updateCartQuantity } from "@/lib/db/customer_actions";
+import { useCartStore } from "@/store/cartStore";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { toast } from "react-hot-toast";
 
 const supabaseInstance = createClient();
 
 export default function CartPage() {
-  const [items, setItems] = useState<any[]>([]);
+  const { items, setItems, removeItem, updateQuantity } = useCartStore();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const buyNow = searchParams.get("buyNow");
 
   // Stable supabase reference
   const supabase = useMemo(() => supabaseInstance, []);
 
-  useEffect(() => {
-    const init = async () => {
-      if (user) return; // Prevent concurrent/redundant auth calls
-      try {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        setUser(authUser);
-        
-        const cartData = await getCart();
+  const syncCartData = async () => {
+    try {
+      const cartData = await getCart();
       const mappedItems = (cartData || []).map((item: any) => ({
-        id: item.id,
+        id: item.product_id,
         database_id: item.id,
         product_id: item.product_id,
         name: item.products.name,
-        brand: "LENZIFY",
+        brand: item.products.brand || "LENZIFY",
         price: item.price || item.products.offer_price || item.products.price,
         image: item.products.product_images?.[0]?.image_url || "/placeholder.jpg",
         category: "Optic Archive",
         quantity: item.quantity,
+        stock: item.products.stock ?? 99,
         lens_name: item.lenses?.name,
         lens_config: item.lens_config,
         prescription: item.prescription_json,
       }));
-      setItems(mappedItems);
+      setItems(mappedItems as any);
       setLoading(false);
-      } catch (err) {
-        console.error("Cart Init Error:", err);
-        setLoading(false);
+
+      if (buyNow === "true" && mappedItems.length > 0) {
+        const { data: { user: authUser } } = await supabaseInstance.auth.getUser();
+        if (!authUser) {
+          router.push("/auth/login?redirect=/checkout");
+        } else {
+          router.push("/checkout");
+        }
+      }
+    } catch (err) {
+      console.error("Cart Sync Error:", err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let channel: any;
+
+    const setupSubscription = async () => {
+      await syncCartData();
+
+      if (user) {
+        channel = supabaseInstance
+          .channel(`cart_page_sync_${user.id}`)
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "cart", filter: `user_id=eq.${user.id}` },
+            () => syncCartData()
+          )
+          .subscribe();
       }
     };
-    init();
-  }, [supabase]);
+
+    setupSubscription();
+
+    return () => {
+      if (channel) supabaseInstance.removeChannel(channel);
+    };
+  }, [user]);
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const tax = subtotal * 0.18; 
   const total = subtotal + tax;
 
-  const handleRemove = async (id: number) => {
-    await removeFromCart(id);
-    setItems(prev => prev.filter(i => i.id !== id));
+  const handleRemove = async (dbId: number, productId: string) => {
+    // Optimistic update
+    removeItem(productId);
+    await removeFromCart(dbId);
   };
 
-  const handleUpdateQty = async (id: number, delta: number) => {
-    const item = items.find(i => i.id === id);
+  const handleUpdateQty = async (dbId: number, productId: string, delta: number) => {
+    const item = items.find(i => i.id === productId) as any;
     if (!item) return;
     const newQty = item.quantity + delta;
     
     if (newQty < 1) {
-      await handleRemove(id);
+      await handleRemove(dbId, productId);
+      return;
+    }
+
+    if (delta > 0 && newQty > (item.stock ?? 99)) {
+      toast.error(`Only ${item.stock} items available in stock.`);
       return;
     }
     
-    setItems(prev => prev.map(i => i.id === id ? { ...i, quantity: newQty } : i));
-    await updateCartQuantity(id, newQty);
+    // Optimistic update
+    updateQuantity(productId, delta);
+    await updateCartQuantity(dbId, newQty);
   };
 
   const handleCheckout = () => {
@@ -103,17 +143,17 @@ export default function CartPage() {
           <div className="lg:col-span-8 space-y-6">
             <AnimatePresence mode="popLayout">
               {items.length > 0 ? (
-                items.map((item, i) => (
+                items.map((item: any, i) => (
                   <motion.div 
                     layout
-                    key={item.id}
+                    key={item.database_id || item.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="group relative p-8 rounded-sm bg-white border border-brand-navy/5 flex flex-col sm:flex-row gap-10 hover:border-secondary/20 transition-all shadow-sm"
                   >
                     <div className="relative w-full sm:w-56 aspect-square bg-brand-background p-8 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-700">
-                      <img src={item.image} alt={item.name} className="object-contain w-full h-full mix-blend-multiply" />
+                      <Image src={item.image} alt={item.name} fill className="object-contain p-4 mix-blend-multiply" />
                     </div>
                     
                     <div className="flex-grow flex flex-col justify-between py-2">
@@ -128,7 +168,7 @@ export default function CartPage() {
                                </div>
                             )}
                           </div>
-                          <p className="text-3xl font-serif italic font-black text-brand-navy italic tracking-tighter">₹{(item.price || 0).toLocaleString()}</p>
+                          <p className="text-3xl font-serif italic font-black text-brand-navy tracking-tighter">₹{(item.price || 0).toLocaleString()}</p>
                         </div>
                         
                         <div className="flex flex-wrap gap-x-10 gap-y-4">
@@ -150,12 +190,6 @@ export default function CartPage() {
                                    <p className="text-[10px] text-brand-navy font-black uppercase tracking-widest italic">+{item.lens_config.coatings.length} Layers</p>
                                 </div>
                               )}
-                              {(item.lens_config.material || item.lens_config.thickness) && (
-                                <div className="space-y-1">
-                                   <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Materials</p>
-                                   <p className="text-[10px] text-brand-navy font-black uppercase tracking-widest italic">{item.lens_config.thickness?.name} | {item.lens_config.material?.name}</p>
-                                </div>
-                              )}
                             </>
                           )}
                           {item.prescription && (
@@ -164,22 +198,26 @@ export default function CartPage() {
                                <p className="text-[11px] text-brand-navy font-black uppercase tracking-widest italic">OD: {item.prescription.od_sph} | OS: {item.prescription.os_sph}</p>
                             </div>
                           )}
-                          <div className="space-y-1">
-                            <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Availability</p>
-                            <p className="text-[11px] text-emerald-500 font-black uppercase tracking-widest italic">In Stock</p>
-                          </div>
+                           <div className="space-y-1">
+                             <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Availability</p>
+                             {item.stock > 0 ? (
+                               <p className="text-[11px] text-emerald-500 font-black uppercase tracking-widest italic">In Stock ({item.stock})</p>
+                             ) : (
+                               <p className="text-[11px] text-red-500 font-black uppercase tracking-widest italic">Out of Stock</p>
+                             )}
+                           </div>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between mt-8">
                         <div className="flex items-center bg-brand-background border border-brand-navy/5 p-1 px-6 gap-8">
-                          <button onClick={() => handleUpdateQty(item.id, -1)} className="text-brand-navy/30 hover:text-brand-navy transition-colors font-black">-</button>
+                          <button onClick={() => handleUpdateQty(item.database_id, item.id, -1)} className="text-brand-navy/30 hover:text-brand-navy transition-colors font-black">-</button>
                           <span className="text-sm font-black text-brand-navy w-4 text-center">{item.quantity}</span>
-                          <button onClick={() => handleUpdateQty(item.id, 1)} className="text-brand-navy/30 hover:text-brand-navy transition-colors font-black">+</button>
+                          <button onClick={() => handleUpdateQty(item.database_id, item.id, 1)} className="text-brand-navy/30 hover:text-brand-navy transition-colors font-black">+</button>
                         </div>
                         
                         <button 
-                          onClick={() => handleRemove(item.id)}
+                          onClick={() => handleRemove(item.database_id, item.id)}
                           className="flex items-center gap-2 text-[10px] font-black text-brand-navy/20 uppercase tracking-[0.2em] hover:text-secondary transition-colors italic"
                         >
                           Eject Item

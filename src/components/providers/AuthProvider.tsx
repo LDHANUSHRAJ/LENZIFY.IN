@@ -16,16 +16,22 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+interface AuthProviderProps {
+  children: React.ReactNode;
+  initialUser?: User | null;
+}
+
+export function AuthProvider({ children, initialUser = null }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(initialUser);
+  const [loading, setLoading] = useState(!initialUser);
   const supabase = createClient();
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const initAuth = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
+        // use getSession for faster local-first access
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
       } catch (error) {
         console.error("Auth initialization error:", error);
       } finally {
@@ -33,15 +39,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    fetchUser();
+    initAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       setUser(session?.user ?? null);
       setLoading(false);
-      
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        // Optional: Perform any additional logic on sign in/out
-      }
     });
 
     return () => {

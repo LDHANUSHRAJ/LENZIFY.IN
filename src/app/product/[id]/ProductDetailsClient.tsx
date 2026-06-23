@@ -9,10 +9,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { addToCart, toggleWishlist } from "@/lib/db/customer_actions";
 import { cn } from "@/lib/utils";
 import { Star, ShoppingBag, Heart, Verified, RotateCw } from "lucide-react";
+import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
+import { useAuth } from "@/components/providers/AuthProvider";
 import Product360Viewer from "./Product360Viewer";
 import LensSelectionFlow from "@/components/store/LensSelectionFlow";
 import ReviewForm from "@/components/shop/ReviewForm";
 import { ProductJsonLd } from "@/components/seo/JsonLd";
+import toast from "react-hot-toast";
 
 interface ProductDetailsClientProps {
   product: any;
@@ -33,41 +37,84 @@ export default function ProductDetailsClient({
 }: ProductDetailsClientProps) {
   const router = useRouter();
   const supabase = createClient();
-  const [currentUser, setCurrentUser] = useState(user);
+  const { user: currentUser } = useAuth();
+  const addItem = useCartStore((state) => state.addItem);
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist: isItemInWishlist } = useWishlistStore();
   const [isInWish, setIsInWish] = useState(isInWishlist);
   
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      setCurrentUser(session?.user ?? null);
-    });
-    return () => subscription.unsubscribe();
-  }, [supabase.auth]);
   const [activeTab, setActiveTab] = useState<"craftsmanship" | "specs" | "heritage">("specs");
   const [selectedColor, setSelectedColor] = useState<string>(product.colors?.[0] || "");
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] || "");
   const [viewMode, setViewMode] = useState<"static" | "360">("static");
   const [showLensFlow, setShowLensFlow] = useState(false);
 
-  const initialPrimaryImage = product.product_images?.find((img: any) => img.is_primary)?.image_url || product.product_images?.[0]?.image_url || "/placeholder.jpg";
+  const initialPrimaryImage = product.primary_image || product.product_images?.find((img: any) => img.is_primary)?.image_url || product.product_images?.[0]?.image_url || "/placeholder.jpg";
   const [mainImageSrc, setMainImageSrc] = useState(initialPrimaryImage);
 
-  const handleAddToCart = async (lensData?: any) => {
+  const handleAddToCart = async (lensData?: any, isBuyNow: boolean = false) => {
     if (!currentUser) {
       router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
-    const res = await addToCart(product.id, { 
-        quantity: 1, 
-        color: selectedColor,
-        size: selectedSize,
-        price: (product.discount_price || product.price) + (lensData?.lens_price || 0),
-        lens_id: lensData?.lens_id || null,
-        lens_config: lensData?.lens_config || null,
-        prescription_json: lensData?.prescription_json || null
+    const displayPrice = (product.discount_price || product.price) + (lensData?.lens_price || 0);
+    
+    // 1. Optimistic Update
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: displayPrice,
+      image: mainImageSrc,
+      quantity: 1
+    } as any);
+
+    const toastId = toast.loading('ADDING TO CART...', {
+      style: {
+        background: '#000000',
+        color: '#fff',
+        borderRadius: '2px',
+        fontSize: '10px',
+        fontWeight: '700',
+        letterSpacing: '0.3em',
+        padding: '20px',
+        border: '1px solid rgba(255,255,255,0.1)'
+      }
     });
-    if (res.success) {
-      setShowLensFlow(false);
-      router.push("/cart");
+
+    try {
+      const res = await addToCart(product.id, { 
+          quantity: 1, 
+          color: selectedColor,
+          size: selectedSize,
+          price: displayPrice,
+          lens_id: lensData?.lens_id || null,
+          lens_config: lensData?.lens_config || null,
+          prescription_json: lensData?.prescription_json || null
+      });
+
+      if (res.success) {
+        toast.success(`ADDED TO CART: ${product.name}`, {
+          id: toastId,
+          style: {
+            background: '#000000',
+            color: '#fff',
+            borderRadius: '2px',
+            fontSize: '10px',
+            fontWeight: '700',
+            letterSpacing: '0.3em',
+            padding: '20px',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }
+        });
+        setShowLensFlow(false);
+        router.push(isBuyNow ? "/cart?buyNow=true" : "/cart");
+      } else {
+        throw new Error("Failed to add to cart");
+      }
+    } catch (err) {
+      // Rollback
+      const { removeItem } = useCartStore.getState();
+      removeItem(product.id);
+      toast.error("COULD NOT ADD TO CART", { id: toastId });
     }
   };
 
@@ -77,7 +124,15 @@ export default function ProductDetailsClient({
       return;
     }
     const res = await toggleWishlist(product.id);
-    setIsInWish(!!res.success);
+    if (res.success) {
+        if (isItemInWishlist(product.id)) {
+            removeFromWishlist(product.id);
+            setIsInWish(false);
+        } else {
+            addToWishlist(product as any);
+            setIsInWish(true);
+        }
+    }
   };
 
   const primaryImage = product.product_images?.find((img: any) => img.is_primary)?.image_url || product.product_images?.[0]?.image_url;
@@ -90,7 +145,7 @@ export default function ProductDetailsClient({
       {/* Breadcrumbs */}
       <nav className="max-w-screen-2xl mx-auto px-8 md:px-12 py-8">
          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-primary/30">
-            <Link href="/" className="hover:text-secondary transition-colors">Nexus</Link>
+            <Link href="/" className="hover:text-secondary transition-colors">Home</Link>
             <span className="w-1 h-1 bg-primary/30 rounded-full"></span>
             <Link href="/products" className="hover:text-secondary transition-colors">Archive</Link>
             {product.categories && product.categories.length > 0 && (
@@ -163,8 +218,14 @@ export default function ProductDetailsClient({
             
             <div className="grid grid-cols-4 gap-6">
               {product.product_images?.map((img: any) => (
-                <div key={img.id} className="aspect-square bg-white border border-primary/5 cursor-pointer hover:border-secondary transition-all p-4 group">
-                  <Image src={img.image_url} alt="Perspective" width={100} height={100} className="object-contain w-full h-full mix-blend-multiply opacity-40 group-hover:opacity-100 transition-opacity" />
+                <div
+                  key={img.id}
+                  onClick={() => setMainImageSrc(img.image_url)}
+                  className={`aspect-square bg-white border cursor-pointer hover:border-secondary transition-all p-4 group ${
+                    mainImageSrc === img.image_url ? 'border-secondary' : 'border-primary/5'
+                  }`}
+                >
+                  <Image src={img.image_url} alt="Perspective" width={100} height={100} className="object-contain w-full h-full mix-blend-multiply opacity-70 group-hover:opacity-100 transition-opacity" />
                 </div>
               ))}
             </div>
@@ -229,7 +290,7 @@ export default function ProductDetailsClient({
                          <span>BUY WITH LENS</span>
                        </button>
                        <button 
-                         onClick={() => handleAddToCart()}
+                         onClick={() => handleAddToCart(undefined, true)}
                          disabled={product.stock <= 0}
                          suppressHydrationWarning
                          className="w-full py-4 border border-brand-navy/10 bg-white text-brand-navy font-bold text-[10px] uppercase tracking-[0.4em] hover:border-brand-navy transition-all duration-500 disabled:opacity-30 disabled:grayscale"
@@ -238,15 +299,26 @@ export default function ProductDetailsClient({
                        </button>
                     </div>
                  ) : (
-                    <button 
-                      onClick={() => handleAddToCart()}
-                      disabled={product.stock <= 0}
-                      suppressHydrationWarning
-                      className="flex-grow py-8 bg-brand-navy text-white font-black text-[12px] uppercase tracking-[0.5em] hover:bg-secondary transition-all duration-700 active:scale-95 flex items-center justify-center gap-6 shadow-2xl disabled:opacity-30 disabled:grayscale"
-                    >
-                      <ShoppingBag size={20} />
-                      <span>{product.stock > 0 ? "ADD TO CART" : "Waitlist Protocol"}</span>
-                    </button>
+                    <div className="flex flex-col gap-4 flex-grow">
+                      <button 
+                        onClick={() => handleAddToCart(undefined, false)}
+                        disabled={product.stock <= 0}
+                        suppressHydrationWarning
+                        className="w-full py-8 bg-brand-navy text-white font-black text-[12px] uppercase tracking-[0.5em] hover:bg-secondary transition-all duration-700 active:scale-95 flex items-center justify-center gap-6 shadow-2xl disabled:opacity-30 disabled:grayscale"
+                      >
+                        <ShoppingBag size={20} />
+                        <span>{product.stock > 0 ? "ADD TO CART" : "Waitlist Protocol"}</span>
+                      </button>
+                      {product.stock > 0 && (
+                        <button 
+                          onClick={() => handleAddToCart(undefined, true)}
+                          suppressHydrationWarning
+                          className="w-full py-4 border border-brand-navy/10 bg-white text-brand-navy font-bold text-[10px] uppercase tracking-[0.4em] hover:border-brand-navy transition-all duration-500"
+                        >
+                          BUY NOW
+                        </button>
+                      )}
+                    </div>
                  )}
                 
                 <button 

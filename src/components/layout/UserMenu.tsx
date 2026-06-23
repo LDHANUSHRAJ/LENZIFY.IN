@@ -39,6 +39,7 @@ export default function UserMenu({ user }: UserMenuProps) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-3 group focus:outline-none"
+        suppressHydrationWarning
       >
         <div className="flex flex-col items-end hidden sm:flex">
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary group-hover:text-secondary transition-colors">

@@ -36,22 +36,30 @@ const getCachedHomeData = unstable_cache(
 
     
     // Run queries in parallel
-    const [configRes, featuredRes, trendingRes, categoriesRes, brandsRes, collectionsRes] = await Promise.all([
+    const [configRes, featuredRes, trendingRes, newArrivalsRes, categoriesRes, brandsRes, collectionsRes] = await Promise.all([
       supabase.from("homepage_config").select("*").eq("is_active", true).order("sort_order", { ascending: true }),
-      supabase.from("products").select("*").eq("is_enabled", true).eq("is_featured", true).limit(4),
-      supabase.from("products").select("*").eq("is_enabled", true).contains("collection", ["Trending"]).limit(4),
-      supabase.from("categories").select("*").eq("is_active", true).order("sort_order", { ascending: true }),
+      supabase.from("products").select("*, product_images(image_url, is_primary)").eq("is_enabled", true).eq("is_featured", true).order('created_at', { ascending: false }).limit(4),
+      supabase.from("products").select("*, product_images(image_url, is_primary)").eq("is_enabled", true).eq("is_trending", true).order('created_at', { ascending: false }).limit(4),
+      supabase.from("products").select("*, product_images(image_url, is_primary)").eq("is_enabled", true).eq("is_new_arrival", true).order('created_at', { ascending: false }).limit(4),
+      supabase.from("categories").select("*").order("sort_order", { ascending: true }),
       supabase.from("brands").select("*").eq("is_featured", true).limit(10),
       supabase.from("collections").select("*").limit(10)
     ]);
+
+    const defaultCollections = [
+      { id: 'col1', name: 'Vanguard Series', type: 'PREMIUM', banner_url: '/images/editorial/lifestyle_woman_sunglasses.png' },
+      { id: 'col2', name: 'Essence Collection', type: 'MINIMALIST', banner_url: '/images/editorial/hero_woman_reading.png' },
+      { id: 'col3', name: 'Horizon Line', type: 'TRENDING', banner_url: '/images/editorial/lifestyle_laughing.png' }
+    ];
 
     return {
       config: configRes.data,
       featuredProducts: featuredRes.data || [],
       trendingProducts: trendingRes.data || [],
+      newArrivals: newArrivalsRes.data || [],
       categories: categoriesRes.data || [],
       brands: brandsRes.data || [],
-      collections: collectionsRes.data || []
+      collections: (collectionsRes.data && collectionsRes.data.length > 0) ? collectionsRes.data : defaultCollections
     };
   },
   ['home-data'],
@@ -59,20 +67,22 @@ const getCachedHomeData = unstable_cache(
 );
 
 export default async function Home() {
-  const { config, featuredProducts, trendingProducts, categories, brands, collections } = await getCachedHomeData();
+  const { config, featuredProducts, trendingProducts, newArrivals, categories, brands, collections } = await getCachedHomeData();
 
-  const dynamicCategories = categories.map((c: any) => {
-     let href = `/products?type=${c.name}`;
-     if (c.type === 'gender') href = `/products?gender=${c.name}`;
-     else if (c.type === 'collection') href = `/products?collection=${c.name}`;
-     
-     return {
-       name: c.name,
-       image_url: c.image_url || "/images/categories/men.png",
-       href,
-       type: c.type
-     };
-  });
+  // Only show display-worthy categories — exclude internal collection/display tags
+  const dynamicCategories = categories
+    .filter((c: any) => c.type === 'gender' || c.type === 'product')
+    .map((c: any) => {
+      const href = c.type === 'gender'
+        ? `/products?gender=${c.name}`
+        : `/products?type=${c.name}`;
+
+      const staticInfo = CATEGORY_CARDS.find(item => item.name === c.name);
+      // DB column is `image`, not `image_url`
+      const image = c.image || staticInfo?.image_url || `/images/categories/${c.slug}.png`;
+
+      return { name: c.name, image_url: image, href, type: c.type };
+    });
 
   let initialSections = config && config.length > 0 ? config : [
   { id: "default-hero", section_key: "hero", content: { subtitle: "The Visionary Editorial", title: "Visionary Excellence. Timeless Style.", description: "Curated eyewear for those who view the world through a lens of sophistication and clarity.", button_text: "Explore Collection", button_link: "/products", image_url: "/images/editorial/hero_home_right.png" } },
@@ -85,16 +95,20 @@ export default async function Home() {
     { id: "default-brands", section_key: "brand_section", content: { title: "Premium Brands", subtitle: "Top tier craftsmanship.", items: brands } },
   ];
 
+  // Always replace categories items with fresh DB data (or static fallback).
+  // Prevents stale CMS-saved items from duplicating with dynamicCategories.
   initialSections = initialSections.map(sec => {
-     if (sec.section_key === 'categories' && (!sec.content.items || sec.content.items.length === 0)) {
-         return { ...sec, content: { ...sec.content, items: dynamicCategories } };
-     }
-     return sec;
+    if (sec.section_key === 'categories') {
+      const items = dynamicCategories.length > 0 ? dynamicCategories : CATEGORY_CARDS;
+      return { ...sec, content: { ...sec.content, items } };
+    }
+    return sec;
   });
 
   const initialProducts = {
     featured: featuredProducts,
-    trending: trendingProducts
+    trending: trendingProducts,
+    new_arrivals: newArrivals
   };
 
   return <HomeClient initialSections={initialSections} initialProducts={initialProducts} />;

@@ -18,6 +18,7 @@ interface HomeClientProps {
   initialProducts?: {
     featured: any[];
     trending: any[];
+    new_arrivals: any[];
   };
 }
 
@@ -28,14 +29,24 @@ function ProductRow({ title, subtitle, filterField, filterValue, initialData }: 
 
   useEffect(() => {
     const fetchProducts = async () => {
-      let query = supabase.from("products").select("*, categories(slug)").eq("is_enabled", true).limit(4);
+      // If we have initialData, we don't need to fetch
+      if (initialData && initialData.length > 0) return;
+
+      let query = supabase
+        .from("products")
+        .select("*")
+        .eq("is_enabled", true)
+        .order("created_at", { ascending: false })
+        .limit(4);
       
-      if (filterField === 'is_featured') {
-          query = query.eq('is_featured', filterValue);
-      } else if (filterField === 'collection' && filterValue) {
-          query = query.contains("collection", [filterValue]);
-      } else {
-          query = query.order('created_at', { ascending: false });
+      if (filterField === 'featured') {
+          query = query.eq('is_featured', true);
+      } else if (filterField === 'trending') {
+          query = query.eq('is_trending', true);
+      } else if (filterField === 'new_arrival') {
+          query = query.eq('is_new_arrival', true);
+      } else if (filterField === 'best_seller') {
+          query = query.eq('is_editors_choice', true);
       }
 
       const { data } = await query;
@@ -43,13 +54,13 @@ function ProductRow({ title, subtitle, filterField, filterValue, initialData }: 
       setLoading(false);
     };
     fetchProducts();
-  }, [supabase, filterField, filterValue]);
+  }, [supabase, filterField, filterValue, initialData]);
 
   if (loading) {
     return (
       <section className="py-24 bg-surface-container">
         <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[1, 2, 3, 4].map((p) => (
                     <div key={p} className="aspect-[4/5] bg-surface-container-high animate-pulse rounded-lg" />
                 ))}
@@ -71,7 +82,7 @@ function ProductRow({ title, subtitle, filterField, filterValue, initialData }: 
             View All
           </Link>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {products.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
@@ -139,11 +150,13 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
                       </Link>
                     </div>
                     <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-6">
-                      {content.items?.map((cat: any, i: number) => (
-                        <Link href={cat.href || "/products"} key={cat.name} className="group relative overflow-hidden bg-surface aspect-[3/4] md:aspect-[4/5] rounded-lg">
-                          <Image 
-                            src={cat.image_url || "/placeholder.png"} 
-                            alt={cat.name} 
+                      {(content.items as any[] | undefined)
+                        ?.filter((cat: any, idx: number, arr: any[]) => arr.findIndex((c: any) => c.name === cat.name) === idx)
+                        .map((cat: any) => (
+                        <Link href={cat.href || "/products"} key={cat.name} className="group relative overflow-hidden bg-surface aspect-[3/4] md:aspect-[4/5] rounded-[14px]">
+                          <Image
+                            src={cat.image_url || "/images/categories/men.png"}
+                            alt={cat.name}
                             fill
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                           />
@@ -161,18 +174,18 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
 
 
             case "featured_products":
-              return <ProductRow key={section.id} title={content.title || "Featured"} subtitle={content.subtitle} filterField="is_featured" filterValue={true} initialData={initialProducts?.featured} />;
+              return <ProductRow key={section.id} title={content.title || "Featured"} subtitle={content.subtitle} filterField="featured" filterValue="Featured" initialData={initialProducts?.featured} />;
 
 
             
             case "trending_products":
-              return <ProductRow key={section.id} title={content.title || "Trending"} subtitle={content.subtitle} filterField="collection" filterValue="Trending" initialData={initialProducts?.trending} />;
+              return <ProductRow key={section.id} title={content.title || "Trending"} subtitle={content.subtitle} filterField="trending" filterValue="Trending" initialData={initialProducts?.trending} />;
 
             case "new_arrivals":
               return (
                 <div key={section.id}>
                   <SectionBanner title={content.title || "New Arrivals"} image="/images/editorial/lifestyle_laughing.png" />
-                  <ProductRow title={content.title || "New Arrivals"} subtitle={content.subtitle} filterField="collection" filterValue="New Arrivals" />
+                  <ProductRow title={content.title || "New Arrivals"} subtitle={content.subtitle} filterField="new_arrival" filterValue="New Arrivals" initialData={initialProducts?.new_arrivals} />
                 </div>
               );
 
@@ -223,7 +236,7 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
               return (
                 <div key={section.id}>
                   <SectionBanner title={content.title || "Best Sellers"} image="/images/editorial/featured_woman.png" />
-                  <ProductRow title={content.title || "Best Sellers"} subtitle={content.subtitle} filterField="collection" filterValue="Best Sellers" />
+                  <ProductRow title={content.title || "Best Sellers"} subtitle={content.subtitle} filterField="best_seller" filterValue="Best Sellers" />
                 </div>
               );
 
