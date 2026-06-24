@@ -347,6 +347,17 @@ export default function Navbar() {
             Replace Lenses
           </Link>
 
+          {/* Try at Home */}
+          <Link
+            href="/try-at-home"
+            className={cn(
+              "font-medium transition-colors duration-300 py-1",
+              pathname === '/try-at-home' ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
+            )}
+          >
+            Try at Home
+          </Link>
+
           {/* Offers */}
           <div className="relative">
             <button 
@@ -709,6 +720,21 @@ export default function Navbar() {
                   </div>
                 </div>
                 
+                {/* Try at Home */}
+                <div>
+                  <Link
+                    href="/try-at-home"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={cn(
+                      "text-xs font-black uppercase tracking-[0.2em] flex items-center gap-3 transition-colors",
+                      pathname === '/try-at-home' ? "text-secondary" : "text-primary hover:text-secondary"
+                    )}
+                  >
+                    <span className="material-symbols-outlined text-xl">home_work</span>
+                    Try at Home
+                  </Link>
+                </div>
+
                 {/* Support */}
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-on-surface/40 mb-4 border-b border-outline/10 pb-2">Support</h3>

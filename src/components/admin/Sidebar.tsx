@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  Package, 
-  Layers, 
-  Users, 
-  Warehouse, 
-  Ticket, 
-  MessageSquare, 
-  BarChart3, 
-  Settings, 
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Package,
+  Layers,
+  Users,
+  Warehouse,
+  Ticket,
+  MessageSquare,
+  BarChart3,
+  Settings,
   ChevronRight,
   LogOut,
   Zap,
@@ -22,7 +22,8 @@ import {
   PlusCircle,
   FolderTree,
   Tag,
-  Star
+  Star,
+  Home
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/auth/actions";
@@ -37,6 +38,7 @@ const menuItems = [
   { name: "Lens Coatings", icon: Shield, href: "/admin/coatings" },
   { name: "Categories", icon: FolderTree, href: "/admin/categories" },
   { name: "Orders", icon: ShoppingCart, href: "/admin/orders" },
+  { name: "Try at Home", icon: Home, href: "/admin/try-at-home" },
   { name: "Replacements", icon: Settings, href: "/admin/replacements" },
   { name: "Customers", icon: Users, href: "/admin/customers" },
   { name: "Reports", icon: BarChart3, href: "/admin/reports" },
