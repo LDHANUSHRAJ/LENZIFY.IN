@@ -33,12 +33,11 @@ export async function login(formData: FormData) {
 
   revalidatePath('/', 'layout')
 
-  // If the admin email is used in the general login, redirect to dashboard
-  if (data.email.toLowerCase() === 'lenzify.in@gmail.com') {
-    redirect('/admin/dashboard')
-  }
+  const destination = data.email.toLowerCase() === 'lenzify.in@gmail.com'
+    ? '/admin/dashboard'
+    : data.redirectTo
 
-  redirect(data.redirectTo)
+  return { redirectTo: destination }
 }
 
 export async function signup(formData: FormData) {
@@ -85,9 +84,8 @@ export async function signup(formData: FormData) {
     return { error: `Account created, but login synchronization failed: ${loginError.message}` }
   }
 
-  // Use revalidatePath sparingly - only for the root to update the header
   revalidatePath('/', 'layout')
-  redirect(data.redirectTo)
+  return { redirectTo: data.redirectTo }
 }
 
 export async function adminLogin(formData: FormData): Promise<void> {

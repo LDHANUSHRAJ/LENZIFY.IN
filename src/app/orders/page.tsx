@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Package, Clock, ShoppingBag, Truck, CheckCircle2, RefreshCcw } from "lucide-react";
+import { Package, ShoppingBag, RefreshCcw, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -7,7 +7,18 @@ export default async function OrdersPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) return <div className="py-20 text-center uppercase tracking-widest text-brand-navy/30">Unauthorized Access Protocol</div>;
+  if (!user) {
+    return (
+      <div className="bg-[#F8F9FC] min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-[#666666] mb-4">Please log in to view your orders.</p>
+          <Link href="/auth/login" className="bg-[#03173D] text-white rounded-full px-6 py-3 font-semibold hover:bg-[#004AAD] transition-all">
+            Log In
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const { data: standardOrders } = await supabase
     .from("orders")
@@ -21,126 +32,142 @@ export default async function OrdersPage() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  const mappedRep = (replacementOrders || []).map(r => ({...r, isReplacement: true}));
-  const orders = [...(standardOrders || []), ...mappedRep].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const mappedRep = (replacementOrders || []).map(r => ({ ...r, isReplacement: true }));
+  const orders = [...(standardOrders || []), ...mappedRep].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  const statusBadge = (status: string) => {
+    if (status === "delivered")
+      return "bg-green-50 text-green-700 border border-green-200";
+    if (status === "processing" || status === "confirmed" || status === "shipped")
+      return "bg-blue-50 text-[#004AAD] border border-blue-200";
+    return "bg-amber-50 text-amber-700 border border-amber-200";
+  };
 
   return (
-    <div className="bg-surface text-brand-navy min-h-screen pt-24 font-sans">
-      <main className="max-w-7xl mx-auto px-8 md:px-12 py-20 pb-32 space-y-16">
-        <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-10 border-b border-brand-navy/5 pb-12">
-            <div className="space-y-4">
-                <h1 className="text-5xl md:text-7xl font-serif italic tracking-tight text-brand-navy uppercase leading-none">Acquisition <span className="text-secondary">History</span></h1>
-                <p className="text-[10px] uppercase font-bold tracking-[0.4em] text-brand-navy/30 italic">Registry of all Visionary Deployments</p>
-            </div>
-            <Link href="/products" className="px-10 py-5 bg-brand-navy text-white text-[9px] font-black uppercase tracking-[0.4em] hover:bg-secondary transition-all shadow-xl">New Acquisition</Link>
-        </header>
-
-        <div className="space-y-12">
-           {orders && orders.length > 0 ? (
-             <div className="grid grid-cols-1 gap-10">
-                {orders.map((order) => (
-                  <div key={order.id} className="bg-white border border-brand-navy/5 overflow-hidden group hover:border-secondary/20 transition-all duration-700">
-                    <div className="p-10 lg:p-14 space-y-10">
-                       <div className="flex flex-col md:flex-row justify-between gap-8 items-start md:items-center">
-                          <div className="flex gap-12 items-center">
-                             <div className="space-y-1">
-                                <p className="text-[9px] font-black uppercase tracking-widest text-brand-navy/20">Protocol Hash</p>
-                                <p className="text-xs font-black text-brand-navy uppercase tracking-widest italic">#{order.id.slice(0, 12)}</p>
-                             </div>
-                             <div className="space-y-1">
-                                <p className="text-[9px] font-black uppercase tracking-widest text-brand-navy/20">Timestamp</p>
-                                <p className="text-xs font-bold text-brand-navy uppercase tracking-widest italic">{new Date(order.created_at).toLocaleDateString()}</p>
-                             </div>
-                             {order.isReplacement && (
-                               <div className="space-y-1">
-                                  <p className="text-[9px] font-black uppercase tracking-widest text-brand-navy/20">Type</p>
-                                  <p className="text-[10px] font-bold text-secondary uppercase tracking-widest italic bg-secondary/10 px-2 py-0.5">Replacement</p>
-                               </div>
-                             )}
-                          </div>
-                          
-                          <div className={cn(
-                            "flex items-center gap-3 px-6 py-3 border text-[9px] font-black uppercase tracking-[0.3em] italic",
-                            order.status === 'delivered' ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/20" : 
-                            "bg-brand-navy/5 text-brand-navy/30 border-brand-navy/5"
-                          )}>
-                             <span className={cn("w-1.5 h-1.5 rounded-full", order.status === 'delivered' ? "bg-emerald-500 animate-pulse" : "bg-brand-navy/20")}></span>
-                             {order.status}
-                          </div>
-                       </div>
-
-                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 pt-4">
-                          <div className="space-y-6">
-                             {!order.isReplacement ? (
-                                order.order_items?.map((item: any) => (
-                                   <div key={item.id} className="flex gap-6 items-center">
-                                      <div className="w-20 h-20 bg-brand-background border border-brand-navy/5 p-4 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-1000">
-                                         <img src={item.products?.product_images?.[0]?.image_url || "/placeholder.jpg"} className="w-full h-full object-contain mix-blend-multiply" />
-                                      </div>
-                                      <div className="flex-1 space-y-1">
-                                         <p className="text-xs font-black uppercase tracking-widest text-brand-navy">{item.products?.name}</p>
-                                         <p className="text-[9px] font-bold text-secondary uppercase tracking-[0.2em] italic">Quantity: {item.quantity}</p>
-                                      </div>
-                                      <p className="text-sm font-serif italic text-brand-navy font-black tracking-tight">₹{item.price?.toLocaleString() || 0}</p>
-                                   </div>
-                                ))
-                             ) : (
-                                <div className="flex gap-6 items-center">
-                                   <div className="w-20 h-20 bg-brand-background border border-brand-navy/5 p-4 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-1000">
-                                      <Package size={32} className="text-brand-navy/20" />
-                                   </div>
-                                   <div className="flex-1 space-y-1">
-                                      <p className="text-xs font-black uppercase tracking-widest text-brand-navy">Lens Replacement Service</p>
-                                      <p className="text-[9px] font-bold text-secondary uppercase tracking-[0.2em] italic">Frame: {order.frame_type}</p>
-                                   </div>
-                                   <p className="text-sm font-serif italic text-brand-navy font-black tracking-tight">₹{order.total_price?.toLocaleString() || 0}</p>
-                                </div>
-                             )}
-                          </div>
-
-                          <div className="bg-brand-background/50 border border-brand-navy/5 p-10 space-y-8 flex flex-col justify-center">
-                             <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-navy/30 italic">
-                                <span>Logistic Routing</span>
-                                <span className="text-brand-navy">Standard Matrix</span>
-                             </div>
-                             <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-brand-navy/30 italic">
-                                <span>Financial Settlement</span>
-                                <span className="text-brand-navy">{order.payment_method || 'System Authorized'}</span>
-                             </div>
-                             <div className="pt-6 border-t border-brand-navy/5 flex justify-between items-center">
-                                <span className="text-sm font-serif italic text-brand-navy uppercase font-black">Total Acquisition Cost</span>
-                                <span className="text-2xl font-serif italic text-brand-navy font-black">₹{order.total_price?.toLocaleString() || 0}</span>
-                             </div>
-                          </div>
-                       </div>
-
-                       <div className="flex justify-start gap-10 pt-4">
-                          <Link href={`/orders/${order.id}`} className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] text-secondary hover:text-brand-navy transition-all">
-                             <Clock size={14} /> Track Timeline
-                          </Link>
-                          <button className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] text-brand-navy/30 hover:text-brand-navy transition-all">
-                             <RefreshCcw size={14} /> Request Support
-                          </button>
-                       </div>
-                    </div>
-                  </div>
-                ))}
-             </div>
-           ) : (
-             <div className="py-40 text-center space-y-12">
-                <div className="w-32 h-32 bg-brand-background border border-brand-navy/5 rounded-full flex items-center justify-center mx-auto relative overflow-hidden group">
-                   <Package size={48} className="text-brand-navy/10 relative z-10 group-hover:scale-125 transition-transform duration-1000" />
-                   <div className="absolute inset-0 bg-secondary/5 translate-y-full group-hover:translate-y-0 transition-transform duration-700"></div>
-                </div>
-                <div className="space-y-4">
-                   <h3 className="text-2xl font-serif italic text-brand-navy/40 uppercase tracking-widest">Archive History Empty</h3>
-                   <p className="text-[10px] font-black uppercase tracking-[0.5em] text-brand-navy/20 italic">No acquisitions found in the persistent data matrix.</p>
-                </div>
-                <Link href="/products" className="inline-block border-b-2 border-secondary pb-1 text-[10px] font-black uppercase tracking-[0.5em] text-brand-navy hover:text-secondary transition-colors">Start Archive Acquisition</Link>
-             </div>
-           )}
+    <div className="bg-[#F8F9FC] min-h-screen">
+      {/* Header */}
+      <div className="bg-white border-b border-[#ECECEC] pt-28 pb-8 px-6 lg:px-12">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-2">Account</p>
+            <h1 className="text-4xl font-[var(--font-hero)] italic text-[#111111]">Your Orders</h1>
+          </div>
+          <Link
+            href="/products"
+            className="bg-[#03173D] text-white rounded-full px-6 py-3 font-semibold hover:bg-[#004AAD] transition-all text-sm self-start sm:self-auto"
+          >
+            Continue Shopping
+          </Link>
         </div>
-      </main>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6 lg:px-12 py-10">
+        {orders.length === 0 ? (
+          /* Empty state */
+          <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-16 text-center max-w-lg mx-auto">
+            <div className="w-20 h-20 bg-[#F8F9FC] rounded-full flex items-center justify-center mx-auto mb-6 border border-[#ECECEC]">
+              <ShoppingBag size={32} className="text-[#004AAD]/30" />
+            </div>
+            <h2 className="text-2xl font-[var(--font-hero)] italic text-[#111111] mb-3">No orders yet</h2>
+            <p className="text-[#666666] text-sm mb-8 leading-relaxed">
+              When you place your first order, it will appear here.
+            </p>
+            <Link
+              href="/products"
+              className="inline-block bg-[#03173D] text-white rounded-full px-8 py-3 font-semibold hover:bg-[#004AAD] transition-all"
+            >
+              Start Shopping
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {orders.map((order) => (
+              <div
+                key={order.id}
+                className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-6 mb-4 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(0,0,0,0.10)] transition-all duration-300"
+              >
+                {/* Order header row */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div>
+                      <p className="text-xs text-[#666666] uppercase tracking-widest font-semibold">Order #</p>
+                      <p className="font-bold text-[#111111] text-sm">{order.id.slice(0, 12).toUpperCase()}</p>
+                    </div>
+                    <div className="w-px h-8 bg-[#ECECEC] hidden sm:block" />
+                    <div>
+                      <p className="text-xs text-[#666666] uppercase tracking-widest font-semibold">Date</p>
+                      <p className="text-[#111111] text-sm font-medium">
+                        {new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
+                    </div>
+                    {order.isReplacement && (
+                      <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#004AAD]/10 text-[#004AAD]">
+                        Lens Replacement
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={cn("text-xs font-semibold px-3 py-1.5 rounded-full capitalize", statusBadge(order.status))}>
+                      {order.status}
+                    </span>
+                    <span className="font-bold text-[#111111]">₹{(order.total_price || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {/* Order items */}
+                <div className="border-t border-[#ECECEC] pt-4 space-y-3">
+                  {!order.isReplacement ? (
+                    order.order_items?.map((item: any) => (
+                      <div key={item.id} className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-[#F8F9FC] border border-[#ECECEC] rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0">
+                          <img
+                            src={item.products?.product_images?.[0]?.image_url || "/placeholder.jpg"}
+                            className="w-full h-full object-contain"
+                            alt={item.products?.name}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-[#111111] text-sm truncate">{item.products?.name}</p>
+                          <p className="text-[#666666] text-xs">Qty: {item.quantity}</p>
+                        </div>
+                        <p className="font-semibold text-[#111111] text-sm flex-shrink-0">
+                          ₹{(item.price || 0).toLocaleString()}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-[#F8F9FC] border border-[#ECECEC] rounded-xl flex items-center justify-center flex-shrink-0">
+                        <Package size={22} className="text-[#004AAD]" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-[#111111] text-sm">Lens Replacement Service</p>
+                        <p className="text-[#666666] text-xs">Frame: {order.frame_type}</p>
+                      </div>
+                      <p className="font-semibold text-[#111111] text-sm">₹{(order.total_price || 0).toLocaleString()}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer actions */}
+                <div className="flex items-center gap-4 mt-5 pt-4 border-t border-[#ECECEC]">
+                  <Link
+                    href={`/orders/${order.id}`}
+                    className="flex items-center gap-1.5 text-[#004AAD] text-sm font-semibold hover:underline"
+                  >
+                    View Details <ChevronRight size={14} />
+                  </Link>
+                  <button className="flex items-center gap-1.5 text-[#666666] text-sm hover:text-[#111111] transition-colors">
+                    <RefreshCcw size={13} /> Request Support
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

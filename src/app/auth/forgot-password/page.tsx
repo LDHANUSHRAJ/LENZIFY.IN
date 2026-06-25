@@ -76,21 +76,22 @@ export default function ForgotPasswordPage() {
    };
 
    return (
-      <main className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden">
-         {/* Background Elements */}
+      <main className="min-h-screen bg-[#F8F9FC] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+         {/* Background blur shapes */}
          <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-            <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-gold/5 rounded-full blur-[120px]" />
-            <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-navy/5 rounded-full blur-[120px]" />
+            <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#004AAD]/5 rounded-full blur-[120px]" />
+            <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#03173D]/5 rounded-full blur-[120px]" />
          </div>
 
-         <motion.div 
+         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-md bg-white border border-slate-200 rounded-[32px] p-8 md:p-12 shadow-2xl relative z-10"
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full max-w-md bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-10 relative z-10"
          >
-            <Link href="/auth/login" className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-brand-navy transition-colors mb-8 group">
-               <ArrowLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
-               Back to Login
+            <Link href="/auth/login" className="inline-flex items-center gap-2 text-xs font-medium text-[#666666] hover:text-[#004AAD] transition-colors mb-8 group">
+               <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
+               Back to login
             </Link>
 
             <AnimatePresence mode="wait">
@@ -100,40 +101,38 @@ export default function ForgotPasswordPage() {
                      initial={{ opacity: 0, x: 20 }}
                      animate={{ opacity: 1, x: 0 }}
                      exit={{ opacity: 0, x: -20 }}
+                     transition={{ duration: 0.3 }}
                   >
-                     <div className="mb-8">
-                        <h1 className="text-3xl font-black text-brand-navy uppercase tracking-tight mb-2">Forgot</h1>
-                        <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest">Password?</h2>
-                        <div className="w-12 h-1 bg-brand-gold mt-4" />
+                     <div className="mb-8 space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD]">Password recovery</p>
+                        <h1 className="text-3xl font-[var(--font-hero)] italic text-[#111111]">Forgot your password?</h1>
+                        <p className="text-sm text-[#666666] leading-relaxed pt-1">
+                           Enter your email address and we'll send you a verification code to reset your password.
+                        </p>
                      </div>
-
-                     <p className="text-sm text-slate-500 mb-8 leading-relaxed">
-                        Enter your email address and we'll send you a professional verification code to reset your account credentials.
-                     </p>
 
                      <form onSubmit={handleSendOTP} className="space-y-6">
                         <div className="space-y-2">
-                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Email Identity</label>
+                           <label className="text-[#111111] text-sm font-medium block">Email address</label>
                            <div className="relative">
-                              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                              <input 
-                                 type="email" 
+                              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
+                              <input
+                                 type="email"
                                  required
                                  value={email}
                                  onChange={(e) => setEmail(e.target.value)}
-                                 placeholder="NAME@DOMAIN.COM"
-                                 className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-brand-navy focus:bg-white focus:border-brand-gold outline-none transition-all"
+                                 placeholder="your@email.com"
+                                 className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-xl py-3 pl-12 pr-4 text-sm text-[#111111] focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 outline-none transition-all w-full placeholder:text-[#999999]"
                               />
                            </div>
                         </div>
 
-                        <button 
+                        <button
                            disabled={loading}
                            type="submit"
-                           className="w-full bg-brand-navy text-white rounded-2xl py-5 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-secondary hover:text-brand-navy transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-3"
+                           className="w-full bg-[#03173D] text-white rounded-full py-4 font-semibold hover:bg-gradient-to-r hover:from-[#03173D] hover:to-[#004AAD] transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3"
                         >
-                           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Request Access Code"}
-                           {!loading && <ArrowRight className="w-4 h-4" />}
+                           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Send verification code <ArrowRight className="w-4 h-4" /></>}
                         </button>
                      </form>
                   </motion.div>
@@ -145,47 +144,47 @@ export default function ForgotPasswordPage() {
                      initial={{ opacity: 0, x: 20 }}
                      animate={{ opacity: 1, x: 0 }}
                      exit={{ opacity: 0, x: -20 }}
+                     transition={{ duration: 0.3 }}
                   >
-                     <div className="mb-8">
-                        <div className="w-12 h-12 bg-brand-gold/10 rounded-2xl flex items-center justify-center mb-6">
-                           <ShieldCheck className="w-6 h-6 text-brand-gold" />
+                     <div className="mb-8 space-y-2">
+                        <div className="w-12 h-12 bg-[#004AAD]/10 rounded-2xl flex items-center justify-center mb-6">
+                           <ShieldCheck className="w-6 h-6 text-[#004AAD]" />
                         </div>
-                        <h1 className="text-3xl font-black text-brand-navy uppercase tracking-tight mb-2">Verify</h1>
-                        <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest">Identity</h2>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD]">Verification</p>
+                        <h1 className="text-3xl font-[var(--font-hero)] italic text-[#111111]">Enter your code</h1>
+                        <p className="text-sm text-[#666666] leading-relaxed pt-1">
+                           A 6-digit code was sent to <span className="text-[#111111] font-medium">{email}</span>.
+                        </p>
                      </div>
-
-                     <p className="text-sm text-slate-500 mb-8 leading-relaxed">
-                        A 6-digit verification code has been dispatched to <span className="text-brand-navy font-bold">{email}</span>. Please enter it below.
-                     </p>
 
                      <form onSubmit={handleVerifyOTP} className="space-y-6">
                         <div className="space-y-2">
-                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Verification Code</label>
-                           <input 
-                              type="text" 
+                           <label className="text-[#111111] text-sm font-medium block">Verification code</label>
+                           <input
+                              type="text"
                               required
                               maxLength={6}
                               value={otp}
                               onChange={(e) => setOtp(e.target.value)}
-                              placeholder="XXXXXX"
-                              className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-6 text-center text-3xl font-black tracking-[0.5em] text-brand-navy focus:bg-white focus:border-brand-gold outline-none transition-all"
+                              placeholder="000000"
+                              className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-xl py-5 text-center text-3xl font-bold tracking-[0.5em] text-[#111111] focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 outline-none transition-all w-full placeholder:text-[#CCCCCC]"
                            />
                         </div>
 
-                        <button 
+                        <button
                            disabled={loading}
                            type="submit"
-                           className="w-full bg-brand-navy text-white rounded-2xl py-5 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-secondary hover:text-brand-navy transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-3"
+                           className="w-full bg-[#03173D] text-white rounded-full py-4 font-semibold hover:bg-gradient-to-r hover:from-[#03173D] hover:to-[#004AAD] transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3"
                         >
-                           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify Identity"}
+                           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify code"}
                         </button>
 
-                        <button 
+                        <button
                            type="button"
                            onClick={() => setStep(1)}
-                           className="w-full text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-brand-gold transition-colors"
+                           className="w-full text-sm text-[#666666] hover:text-[#004AAD] transition-colors"
                         >
-                           Resend Code or Change Email
+                           Resend code or change email
                         </button>
                      </form>
                   </motion.div>
@@ -197,47 +196,48 @@ export default function ForgotPasswordPage() {
                      initial={{ opacity: 0, x: 20 }}
                      animate={{ opacity: 1, x: 0 }}
                      exit={{ opacity: 0, x: -20 }}
+                     transition={{ duration: 0.3 }}
                   >
-                     <div className="mb-8">
-                        <div className="w-12 h-12 bg-brand-navy/10 rounded-2xl flex items-center justify-center mb-6">
-                           <KeyRound className="w-6 h-6 text-brand-navy" />
+                     <div className="mb-8 space-y-2">
+                        <div className="w-12 h-12 bg-[#03173D]/10 rounded-2xl flex items-center justify-center mb-6">
+                           <KeyRound className="w-6 h-6 text-[#03173D]" />
                         </div>
-                        <h1 className="text-3xl font-black text-brand-navy uppercase tracking-tight mb-2">Reset</h1>
-                        <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest">Credentials</h2>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD]">New password</p>
+                        <h1 className="text-3xl font-[var(--font-hero)] italic text-[#111111]">Reset your password</h1>
                      </div>
 
                      <form onSubmit={handleResetPassword} className="space-y-6">
                         <div className="space-y-4">
                            <div className="space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">New Secure Password</label>
-                              <input 
-                                 type="password" 
+                              <label className="text-[#111111] text-sm font-medium block">New password</label>
+                              <input
+                                 type="password"
                                  required
                                  value={newPassword}
                                  onChange={(e) => setNewPassword(e.target.value)}
                                  placeholder="••••••••"
-                                 className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 px-4 text-sm font-bold text-brand-navy focus:bg-white focus:border-brand-gold outline-none transition-all"
+                                 className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-xl py-3 px-4 text-sm text-[#111111] focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 outline-none transition-all w-full placeholder:text-[#999999]"
                               />
                            </div>
                            <div className="space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Confirm Identity Key</label>
-                              <input 
-                                 type="password" 
+                              <label className="text-[#111111] text-sm font-medium block">Confirm new password</label>
+                              <input
+                                 type="password"
                                  required
                                  value={confirmPassword}
                                  onChange={(e) => setConfirmPassword(e.target.value)}
                                  placeholder="••••••••"
-                                 className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 px-4 text-sm font-bold text-brand-navy focus:bg-white focus:border-brand-gold outline-none transition-all"
+                                 className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-xl py-3 px-4 text-sm text-[#111111] focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 outline-none transition-all w-full placeholder:text-[#999999]"
                               />
                            </div>
                         </div>
 
-                        <button 
+                        <button
                            disabled={loading}
                            type="submit"
-                           className="w-full bg-brand-navy text-white rounded-2xl py-5 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-secondary hover:text-brand-navy transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-3"
+                           className="w-full bg-[#03173D] text-white rounded-full py-4 font-semibold hover:bg-gradient-to-r hover:from-[#03173D] hover:to-[#004AAD] transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3"
                         >
-                           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Update Credentials"}
+                           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Update password"}
                         </button>
                      </form>
                   </motion.div>
@@ -248,20 +248,22 @@ export default function ForgotPasswordPage() {
                      key="step4"
                      initial={{ opacity: 0, scale: 0.9 }}
                      animate={{ opacity: 1, scale: 1 }}
+                     transition={{ duration: 0.4 }}
                      className="text-center py-8"
                   >
                      <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-8">
                         <CheckCircle2 className="w-10 h-10 text-green-500" />
                      </div>
-                     <h1 className="text-3xl font-black text-brand-navy uppercase tracking-tight mb-2">Success</h1>
-                     <p className="text-sm text-slate-500 mb-12 leading-relaxed">
-                        Your security credentials have been updated successfully. You may now proceed to access your archive.
+                     <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-2">All done</p>
+                     <h1 className="text-3xl font-[var(--font-hero)] italic text-[#111111] mb-4">Password updated!</h1>
+                     <p className="text-sm text-[#666666] mb-10 leading-relaxed">
+                        Your password has been updated successfully. You can now sign in with your new password.
                      </p>
-                     <Link 
+                     <Link
                         href="/auth/login"
-                        className="inline-block w-full bg-brand-navy text-white rounded-2xl py-5 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-secondary hover:text-brand-navy transition-all shadow-xl"
+                        className="inline-block w-full bg-[#03173D] text-white rounded-full py-4 font-semibold hover:bg-gradient-to-r hover:from-[#03173D] hover:to-[#004AAD] transition-all duration-300 text-center"
                      >
-                        Enter Archive
+                        Sign in
                      </Link>
                   </motion.div>
                )}
@@ -269,8 +271,8 @@ export default function ForgotPasswordPage() {
          </motion.div>
 
          <div className="mt-8 relative z-10">
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-               Lenzify.in <span className="mx-2 text-slate-200">|</span> Encrypted Verification System
+            <p className="text-xs text-[#666666] tracking-widest">
+               Lenzify.in &nbsp;|&nbsp; Secure Verification
             </p>
          </div>
       </main>

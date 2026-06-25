@@ -5,11 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
-import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
-import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { addToCart, toggleWishlist } from "@/lib/db/customer_actions";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { Heart, ShoppingBag } from "lucide-react";
 
 interface ProductCardProps {
   product: {
@@ -17,7 +17,7 @@ interface ProductCardProps {
     name: string;
     price: number | string;
     primary_image?: string;
-    image?: string; // Fallback
+    image?: string;
     product_images?: Array<{ image_url: string; is_primary: boolean }>;
     category?: string;
     categories?: { name: string; slug: string };
@@ -28,8 +28,6 @@ interface ProductCardProps {
     colors?: string[];
   };
 }
-
-import { useAuth } from "@/components/providers/AuthProvider";
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { addItem, removeItem } = useCartStore();
@@ -57,7 +55,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const rawPrice = Number(product.price) || 0;
   const rawDiscount = product.discount_price ? Number(product.discount_price) : null;
-  
+
   const hasValidDiscount = rawDiscount !== null && rawDiscount < rawPrice;
   const displayPrice = hasValidDiscount ? rawDiscount : rawPrice;
   const originalPrice = rawPrice;
@@ -72,59 +70,61 @@ export default function ProductCard({ product }: ProductCardProps) {
       return;
     }
 
-    // 1. Sync local store FIRST for instant Navbar feedback (Optimistic Update)
     const tempItem = {
       id: product.id,
       name: product.name,
       price: displayPrice,
       image: imgSrc,
-      quantity: 1
+      quantity: 1,
     };
-    
+
     addItem(tempItem as any);
 
-    const toastId = toast.loading('ADDING TO CART...', {
+    const toastId = toast.loading("Adding to cart...", {
       style: {
-        background: '#000000',
-        color: '#fff',
-        borderRadius: '2px',
-        fontSize: '10px',
-        fontWeight: '700',
-        letterSpacing: '0.3em',
-        padding: '20px',
-        border: '1px solid rgba(255,255,255,0.1)'
-      }
+        background: "#ffffff",
+        color: "#111111",
+        border: "1px solid #E8EAF2",
+        borderRadius: "12px",
+        fontSize: "12px",
+        fontWeight: "600",
+      },
     });
 
     try {
-      // 2. Add to database (The source of truth)
       const result = await addToCart(product.id, {
         quantity: 1,
-        price: displayPrice
+        price: displayPrice,
       });
 
       if (result.success) {
-        toast.success(`ADDED TO CART: ${product.name}`, {
+        toast.success(`Added: ${product.name}`, {
           id: toastId,
           style: {
-            background: '#000000',
-            color: '#fff',
-            borderRadius: '2px',
-            fontSize: '10px',
-            fontWeight: '700',
-            letterSpacing: '0.3em',
-            padding: '20px',
-            border: '1px solid rgba(255,255,255,0.1)'
+            background: "#ffffff",
+            color: "#111111",
+            border: "1px solid #E8EAF2",
+            borderRadius: "12px",
+            fontSize: "12px",
+            fontWeight: "600",
           },
-          icon: <span className="material-symbols-outlined text-secondary">shopping_cart</span>
         });
       } else {
         throw new Error("Failed to add to database");
       }
     } catch (err) {
-      // Rollback local state if database fails
       removeItem(product.id);
-      toast.error("COULD NOT ADD TO CART", { id: toastId });
+      toast.error("Could not add to cart", {
+        id: toastId,
+        style: {
+          background: "#ffffff",
+          color: "#111111",
+          border: "1px solid #E8EAF2",
+          borderRadius: "12px",
+          fontSize: "12px",
+          fontWeight: "600",
+        },
+      });
     }
   };
 
@@ -140,116 +140,130 @@ export default function ProductCard({ product }: ProductCardProps) {
     try {
       const result = await toggleWishlist(product.id);
       if (result.success) {
-        // Sync local store
         if (isInWishlist(product.id)) {
           removeFromWishlist(product.id);
         } else {
           addToWishlist(product as any);
         }
 
-        toast.success("WISHLIST UPDATED", {
+        toast.success("Wishlist updated", {
           style: {
-            background: '#000000',
-            color: '#fff',
-            borderRadius: '2px',
-            fontSize: '10px',
-            fontWeight: '700',
-            letterSpacing: '0.3em',
-            padding: '20px',
-            border: '1px solid rgba(255,255,255,0.1)'
-          }
+            background: "#ffffff",
+            color: "#111111",
+            border: "1px solid #E8EAF2",
+            borderRadius: "12px",
+            fontSize: "12px",
+            fontWeight: "600",
+          },
         });
       }
     } catch (err) {
-      toast.error("WISHLIST ERROR");
+      toast.error("Wishlist error", {
+        style: {
+          background: "#ffffff",
+          color: "#111111",
+          border: "1px solid #E8EAF2",
+          borderRadius: "12px",
+          fontSize: "12px",
+          fontWeight: "600",
+        },
+      });
     }
   };
 
+  const wishlisted = isInWishlist(product.id);
+
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.4, ease: "easeOut" } as any}
-      className="group flex flex-col bg-white border border-black/[0.06] overflow-hidden rounded-[14px] transition-all duration-300 hover:shadow-md editorial-shadow"
-    >
-      {/* Product Image Area */}
-      <div className="relative aspect-square overflow-hidden bg-[#F5F2EE]">
-        <Link href={`/product/${product.slug || product.id}`} className="absolute inset-0 z-10" aria-label={`View ${product.name}`}>
-          <Image 
-            src={imgSrc} 
-            alt={product.name} 
-            fill 
+    <div className="group relative bg-white border border-[#ECECEC] rounded-3xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+      {/* Image Area */}
+      <div className="relative aspect-square bg-[#F8F9FC] overflow-hidden rounded-2xl m-3">
+        <Link
+          href={`/product/${product.slug || product.id}`}
+          className="absolute inset-0 z-10"
+          aria-label={`View ${product.name}`}
+        >
+          <Image
+            src={imgSrc}
+            alt={product.name}
+            fill
             onError={() => setImgSrc("/placeholder.jpg")}
-            className="object-contain p-3 grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-[1.2s] ease-out" 
+            onLoad={() => setIsLoaded(true)}
+            className="object-contain p-4 group-hover:scale-105 transition-transform duration-500"
           />
-          
-          {/* Subtle Overlay */}
-          <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/[0.02] transition-colors duration-700" />
         </Link>
-        
-        {/* Discount Badge */}
+
+        {/* Sale Badge */}
         {hasDiscount && (
-          <div className="absolute top-4 left-4 bg-red-600 text-white text-[10px] uppercase tracking-widest font-bold px-3 py-1 z-20 pointer-events-none">
+          <div className="absolute top-3 left-3 bg-[#004AAD] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full z-20 pointer-events-none">
             Sale
           </div>
         )}
 
-        {/* Action Triggers */}
-        <button 
-           suppressHydrationWarning
-           onClick={handleWishlist}
-           className="absolute top-6 right-6 w-12 h-12 bg-surface flex items-center justify-center translate-x-12 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 border border-outline/10 transition-all duration-500 z-20 hover:text-secondary hover:border-secondary shadow-lg"
+        {/* Wishlist Button */}
+        <button
+          suppressHydrationWarning
+          onClick={handleWishlist}
+          className={`absolute top-3 right-3 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 z-20 ${
+            wishlisted ? "text-red-500" : "text-[#666666] hover:text-red-500"
+          }`}
+          aria-label="Toggle wishlist"
         >
-           <span className="material-symbols-outlined text-lg">favorite</span>
+          <Heart size={16} fill={wishlisted ? "currentColor" : "none"} />
         </button>
 
-        {/* Acquisition Deployment */}
-        <button 
+        {/* Quick Add Button */}
+        <button
           suppressHydrationWarning
           onClick={handleQuickAdd}
-          className="absolute bottom-0 left-0 right-0 bg-primary text-on-primary text-[10px] font-bold uppercase tracking-[0.4em] py-6 translate-y-full group-hover:translate-y-0 transition-all duration-700 z-20 hover:bg-secondary transition-colors flex items-center justify-center gap-4 italic"
+          className="absolute bottom-0 left-0 right-0 bg-[#03173D] text-white text-xs font-semibold py-3 translate-y-full group-hover:translate-y-0 transition-all duration-300 z-20 flex items-center justify-center gap-2 rounded-b-2xl hover:bg-[#004AAD]"
         >
-           Add to Cart <span className="material-symbols-outlined text-sm">shopping_cart</span>
+          <ShoppingBag size={14} />
+          Quick Add
         </button>
       </div>
 
-      {/* Product Details Area */}
-      <div className="px-4 py-3 flex flex-col gap-1">
-        <p className="text-[9px] font-black uppercase tracking-[0.25em] text-on-surface/40">
+      {/* Info Area */}
+      <div className="px-4 pb-4 pt-2 space-y-1">
+        <p className="text-xs font-semibold text-[#004AAD] uppercase tracking-wider">
           {product.brand || "Lenzify"}
         </p>
-        <h4 className="text-sm font-serif italic text-primary leading-tight group-hover:text-secondary transition-colors duration-500 line-clamp-1">
+        <h4 className="text-sm font-medium text-[#111111] leading-snug line-clamp-1">
           {product.name}
         </h4>
-        <div className="flex items-center justify-between mt-1">
-          <p className="text-sm font-bold text-primary flex items-center gap-1">
-            {hasDiscount ? (
-              <>
-                <span className="text-xs font-sans opacity-40 line-through">₹{originalPrice.toLocaleString()}</span>
-                <span className="text-red-600">₹{displayPrice.toLocaleString()}</span>
-              </>
-            ) : (
-              <span>₹{displayPrice.toLocaleString()}</span>
+        <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center gap-1.5">
+            {hasDiscount && (
+              <span className="text-xs text-[#666666] line-through">
+                ₹{originalPrice.toLocaleString()}
+              </span>
             )}
-          </p>
+            <span className="text-base font-bold text-[#111111]">
+              ₹{displayPrice.toLocaleString()}
+            </span>
+          </div>
+
           {product.colors && product.colors.length > 0 && (
             <div className="flex items-center gap-1">
               {(product.colors as string[]).slice(0, 4).map((color: string, i: number) => (
                 <span
                   key={i}
                   title={color}
-                  className="w-3 h-3 rounded-full border border-black/10 inline-block"
-                  style={{ backgroundColor: color.startsWith('#') ? color : undefined, background: !color.startsWith('#') ? color : undefined }}
+                  className="w-3.5 h-3.5 rounded-full border border-black/10 inline-block flex-shrink-0"
+                  style={{
+                    backgroundColor: color.startsWith("#") ? color : undefined,
+                    background: !color.startsWith("#") ? color : undefined,
+                  }}
                 />
               ))}
               {product.colors.length > 4 && (
-                <span className="text-[9px] text-on-surface/30 font-bold">+{product.colors.length - 4}</span>
+                <span className="text-[9px] text-[#666666] font-bold">
+                  +{product.colors.length - 4}
+                </span>
               )}
             </div>
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

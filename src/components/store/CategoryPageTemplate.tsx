@@ -19,7 +19,7 @@ export default function CategoryPageTemplate({ category, title, description }: C
     const [sortBy, setSortBy] = useState("featured");
     const [searchQuery, setSearchQuery] = useState("");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    
+
     const supabase = createClient();
 
     useEffect(() => {
@@ -35,13 +35,13 @@ export default function CategoryPageTemplate({ category, title, description }: C
             }
 
             const { data, error } = await query;
-            
+
             if (data) {
                 let result = [...data];
-                
+
                 if (searchQuery) {
-                    result = result.filter(p => 
-                        p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                    result = result.filter(p =>
+                        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         p.brand?.toLowerCase().includes(searchQuery.toLowerCase())
                     );
                 }
@@ -62,115 +62,181 @@ export default function CategoryPageTemplate({ category, title, description }: C
         fetchProducts();
     }, [category, sortBy, searchQuery]);
 
-    const fadeInUp = {
-        initial: { opacity: 0, y: 20 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } as any
-    };
-
     return (
-        <div className="bg-surface min-h-screen pt-32 pb-32">
+        <div className="bg-white min-h-screen pb-32">
             {/* Category Hero */}
-            <section className="max-w-screen-2xl mx-auto px-8 md:px-12 mb-24">
-                <div className="relative p-12 md:p-24 bg-[#000000] overflow-hidden rounded-sm">
-                    {/* Abstract background elements */}
-                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/5 blur-[100px] rounded-full translate-x-1/4 -translate-y-1/4" />
-                    
-                    <div className="relative z-10 max-w-3xl space-y-8">
-                        <div className="space-y-4">
-                            <span className="text-secondary text-[10px] font-bold uppercase tracking-[0.5em] block italic">
-                                Archival Collection
+            <section className="relative bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] pt-40 pb-20 overflow-hidden">
+                {/* Floating white blur shapes */}
+                <div className="absolute top-10 right-10 w-96 h-96 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 left-1/4 w-64 h-64 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-white/3 blur-3xl pointer-events-none" />
+
+                <div className="relative z-10 max-w-screen-2xl mx-auto px-8 md:px-12">
+                    <div className="max-w-3xl space-y-8">
+                        {/* Breadcrumb */}
+                        <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#00AEEF]">
+                                Lenzify
                             </span>
-                            <h1 className="text-5xl md:text-8xl font-serif text-white italic leading-none tracking-tight">
+                            <span className="text-white/40 text-[10px]">/</span>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#00AEEF]">
+                                {title}
+                            </span>
+                        </div>
+
+                        <div className="space-y-4">
+                            <span className="text-xs font-semibold uppercase tracking-widest text-[#00AEEF] block">
+                                Collection
+                            </span>
+                            <h1 className="text-5xl md:text-8xl font-[var(--font-hero)] italic text-white leading-none">
                                 {title}
                             </h1>
                         </div>
-                        <p className="text-white/40 text-sm md:text-lg leading-relaxed max-w-xl font-medium italic">
+                        <p className="text-white/60 text-sm md:text-lg leading-relaxed max-w-xl">
                             {description}
                         </p>
                         <div className="pt-4">
-                            <div className="h-px w-24 bg-secondary/30"></div>
+                            <div className="h-px w-24 bg-white/20" />
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* Filter Bar */}
-            <section className="max-w-screen-2xl mx-auto px-8 md:px-12 mb-16">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 border-y border-outline/10 py-10">
-                    <div className="flex flex-wrap items-center gap-6">
-                        <button 
-                            onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className="flex items-center gap-3 px-8 py-4 bg-primary text-white text-[10px] font-bold uppercase tracking-widest hover:opacity-80 transition-all"
-                        >
-                            <SlidersHorizontal size={14} />
-                            Refine Access
-                        </button>
-                        
-                        <div className="relative w-full md:w-80">
-                            <Search size={14} className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface/30" />
-                            <input 
-                                type="text" 
-                                placeholder="SEARCH ARCHIVE..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-surface-container border border-outline/10 pl-14 pr-6 py-4 text-[10px] font-bold tracking-widest outline-none focus:border-secondary transition-all uppercase placeholder:text-on-surface/20"
-                            />
+            <section className="bg-white border-y border-[#E8EAF2] sticky top-0 z-30 shadow-sm">
+                <div className="max-w-screen-2xl mx-auto px-8 md:px-12">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 py-6">
+                        <div className="flex flex-wrap items-center gap-4">
+                            <button
+                                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                                className="flex items-center gap-3 px-6 py-3 bg-[#03173D] text-white text-xs font-semibold uppercase tracking-widest rounded-full hover:bg-gradient-to-r hover:from-[#03173D] hover:to-[#004AAD] transition-all duration-300"
+                            >
+                                <SlidersHorizontal size={14} />
+                                Filters
+                            </button>
+
+                            <div className="relative w-full md:w-80">
+                                <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#666666]" />
+                                <input
+                                    type="text"
+                                    placeholder="Search products..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full bg-[#F8F9FC] border border-[#E8EAF2] rounded-full pl-12 pr-6 py-3 text-sm outline-none focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 transition-all text-[#111111] placeholder:text-[#666666]"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-6 justify-between lg:justify-end">
+                            <p className="text-xs text-[#666666] uppercase tracking-widest font-medium">
+                                {filteredProducts.length} products
+                            </p>
+
+                            <div className="relative">
+                                <select
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="appearance-none bg-[#F8F9FC] border border-[#E8EAF2] rounded-full pl-5 pr-10 py-3 text-xs font-medium text-[#111111] outline-none focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 cursor-pointer transition-all"
+                                >
+                                    <option value="featured">Sort: Featured</option>
+                                    <option value="price-low">Price: Low to High</option>
+                                    <option value="price-high">Price: High to Low</option>
+                                    <option value="rating">Rating: High to Low</option>
+                                </select>
+                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#666666]" />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-8 justify-between lg:justify-end">
-                        <p className="text-[10px] text-on-surface/40 uppercase tracking-widest font-bold italic">
-                            Showing {filteredProducts.length} entries
-                        </p>
-                        
-                        <div className="relative">
-                            <select 
-                                onChange={(e) => setSortBy(e.target.value)}
-                                className="appearance-none bg-surface-container border border-outline/10 pl-8 pr-14 py-4 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-secondary cursor-pointer italic"
+                    {/* Filter Panel */}
+                    <AnimatePresence>
+                        {isFilterOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="overflow-hidden"
                             >
-                                <option value="featured">Sort: Featured</option>
-                                <option value="price-low">Price: Low to High</option>
-                                <option value="price-high">Price: High to Low</option>
-                                <option value="rating">Rating: High to Low</option>
-                            </select>
-                            <ChevronDown size={14} className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface/40" />
-                        </div>
-                    </div>
+                                <div className="bg-white border border-[#E8EAF2] rounded-2xl shadow-xl p-8 mb-4">
+                                    <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-4">
+                                        Filter Options
+                                    </p>
+                                    <p className="text-[#666666] text-sm">
+                                        Additional filters coming soon.
+                                    </p>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </section>
 
             {/* Product Grid */}
-            <section className="max-w-screen-2xl mx-auto px-8 md:px-12">
+            <section className="bg-white max-w-screen-2xl mx-auto px-8 md:px-12 pt-16">
                 <AnimatePresence mode="wait">
-                    {filteredProducts.length > 0 ? (
-                        <motion.div 
+                    {loading ? (
+                        <motion.div
+                            key="skeleton"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
+                        >
+                            {Array.from({ length: 8 }).map((_, i) => (
+                                <div key={i} className="bg-[#F8F9FC] rounded-3xl animate-pulse border border-[#E8EAF2]">
+                                    <div className="aspect-square rounded-t-3xl bg-[#ECECEC]" />
+                                    <div className="p-6 space-y-3">
+                                        <div className="h-3 bg-[#E8EAF2] rounded w-1/3" />
+                                        <div className="h-5 bg-[#E8EAF2] rounded w-2/3" />
+                                        <div className="h-4 bg-[#E8EAF2] rounded w-1/2" />
+                                    </div>
+                                </div>
+                            ))}
+                        </motion.div>
+                    ) : filteredProducts.length > 0 ? (
+                        <motion.div
                             key="grid"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-20"
+                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
                         >
                             {filteredProducts.map((p, i) => (
-                                <motion.div key={p.id} {...fadeInUp} transition={{  } as any}>
+                                <motion.div
+                                    key={p.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: i * 0.05 }}
+                                >
                                     <ProductCard product={p} />
                                 </motion.div>
                             ))}
                         </motion.div>
                     ) : (
-                        <motion.div 
+                        <motion.div
                             key="empty"
-                            {...fadeInUp}
-                            className="py-48 text-center space-y-6"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                            className="py-48 text-center space-y-8 bg-white border border-[#ECECEC] rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
                         >
-                            <h3 className="font-serif text-5xl text-on-surface/10 uppercase italic tracking-tighter">
-                                No Vision Found
-                            </h3>
-                            <button 
-                                onClick={() => {setSearchQuery(""); setSortBy("featured")}}
-                                className="text-secondary hover:text-primary font-bold uppercase text-[10px] tracking-widest transition-colors underline underline-offset-8 decoration-secondary/30"
+                            <div className="space-y-4">
+                                <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD]">
+                                    No Results
+                                </p>
+                                <h3 className="text-5xl font-[var(--font-hero)] italic text-[#111111]/10 uppercase">
+                                    Nothing Found
+                                </h3>
+                                <p className="text-[#666666] text-sm leading-relaxed max-w-sm mx-auto">
+                                    No products match your current filters. Try adjusting your search.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => { setSearchQuery(""); setSortBy("featured"); }}
+                                className="bg-[#03173D] text-white rounded-full px-8 py-4 font-semibold hover:bg-gradient-to-r hover:from-[#03173D] hover:to-[#004AAD] transition-all duration-300"
                             >
-                                Reset Search Parameters
+                                Reset Filters
                             </button>
                         </motion.div>
                     )}

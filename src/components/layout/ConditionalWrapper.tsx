@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import MobileBottomNav from "./MobileBottomNav";
 import SmoothScroll from "@/components/lenis/SmoothScroll";
 
 /**
@@ -27,10 +28,11 @@ export default function ConditionalWrapper({ children }: { children: React.React
   return (
     <SmoothScroll>
       <Navbar />
-      <main className="min-h-screen">
+      <main className="min-h-screen pb-[72px] lg:pb-0">
         {children}
       </main>
       <Footer />
+      <MobileBottomNav />
     </SmoothScroll>
   );
 }

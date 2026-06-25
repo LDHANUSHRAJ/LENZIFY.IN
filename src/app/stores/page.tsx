@@ -1,76 +1,94 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+
 export default function StoresPage() {
   const outlets = [
-    { name: "Lenzify Neo-City", address: "Alpha Sector 4, Silicon Valley", status: "Operational", lat: "12.9716", lng: "77.5946" },
-    { name: "The Vault - Mumbai", address: "Marine Drive Promenade", status: "Operational", lat: "18.9220", lng: "72.8347" },
-    { name: "Quantum Optics - Delhi", address: "Connaught Outer Ring", status: "Maintenance", lat: "28.6139", lng: "77.2090" },
+    { name: "Lenzify Bangalore", address: "Alpha Sector 4, Silicon Valley", status: "Operational", lat: "12.9716", lng: "77.5946" },
+    { name: "Lenzify Mumbai", address: "Marine Drive Promenade", status: "Operational", lat: "18.9220", lng: "72.8347" },
+    { name: "Lenzify Delhi", address: "Connaught Outer Ring", status: "Coming Soon", lat: "28.6139", lng: "77.2090" },
   ];
 
   return (
-    <div className="bg-background text-on-background min-h-screen">
-      <main className="max-w-screen-2xl mx-auto px-8 py-20">
-        <header className="mb-20 text-center">
+    <div className="min-h-screen bg-white">
+      {/* Hero */}
+      <section className="bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] pt-40 pb-20">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 text-center">
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-block px-4 py-1.5 mb-6 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black tracking-[0.4em] uppercase"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="space-y-5"
           >
-            Physical Protocol
+            <p className="text-white/70 text-xs font-semibold uppercase tracking-widest">Visit Us</p>
+            <h1 className="font-[var(--font-hero)] italic text-white text-5xl md:text-8xl leading-none">
+              Find A Store
+            </h1>
+            <p className="text-white/70 text-base leading-relaxed max-w-xl mx-auto">
+              Experience Lenzify in person at one of our flagship locations for personalized optical care.
+            </p>
           </motion.div>
-          <h1 className="text-6xl md:text-8xl font-headline font-bold text-white tracking-tighter uppercase italic leading-[0.8] mb-8">
-            Global <br/><span className="text-secondary">Nodes</span>
-          </h1>
-          <p className="text-slate-500 uppercase tracking-[0.2em] font-black text-sm max-w-2xl mx-auto">
-            Tactile verification centers for high-fidelity optics and personalized ocular calibration.
-          </p>
-        </header>
+        </div>
+      </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
-          {outlets.map((outlet, i) => (
-            <motion.div 
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="glass-card p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl group hover:border-primary/20 transition-all"
-            >
-              <div className="flex justify-between items-start mb-10">
-                <div className={cn(
-                  "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border",
-                  outlet.status === "Operational" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                )}>
-                  {outlet.status}
+      {/* Store Cards */}
+      <section className="py-20 md:py-28 bg-white">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {outlets.map((outlet, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                className="bg-white border border-[#ECECEC] rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] hover:-translate-y-2 hover:shadow-[0_25px_60px_rgba(0,0,0,0.12)] transition-all duration-300 p-8 group"
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <div className={cn(
+                    "px-3 py-1.5 text-xs font-semibold rounded-full border",
+                    outlet.status === "Operational"
+                      ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                      : "bg-amber-50 text-amber-600 border-amber-200"
+                  )}>
+                    {outlet.status}
+                  </div>
+                  <MapPin size={20} className="text-[#CCCCCC] group-hover:text-[#004AAD] transition-colors" />
                 </div>
-                <span className="material-symbols-outlined text-white/20 group-hover:text-primary transition-colors">location_on</span>
+
+                <h3 className="text-2xl font-serif italic text-[#111111] mb-2">{outlet.name}</h3>
+                <p className="text-[#666666] text-sm leading-relaxed mb-8">{outlet.address}</p>
+
+                <button className="w-full py-3 bg-[#03173D] text-white rounded-full font-semibold text-sm hover:bg-gradient-to-r hover:from-[#03173D] hover:to-[#004AAD] transition-all duration-300">
+                  Get Directions
+                </button>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Map Placeholder */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="h-[400px] w-full bg-[#F8F9FC] rounded-2xl border border-[#ECECEC] relative flex items-center justify-center overflow-hidden"
+          >
+            <div className="text-center space-y-4">
+              <MapPin size={40} className="text-[#004AAD]/30 mx-auto" />
+              <h2 className="text-2xl font-serif italic text-[#111111]">Store Map</h2>
+              <p className="text-[#666666] text-sm">Interactive map coming soon</p>
+              <div className="mt-6 flex justify-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-[#004AAD] animate-ping" />
+                <div className="w-2 h-2 rounded-full bg-[#004AAD] animate-ping delay-200" />
+                <div className="w-2 h-2 rounded-full bg-[#004AAD] animate-ping delay-500" />
               </div>
-              
-              <h3 className="text-3xl font-headline font-bold text-white uppercase italic tracking-tighter mb-4">{outlet.name}</h3>
-              <p className="text-slate-500 text-xs uppercase tracking-widest font-black leading-relaxed mb-8">{outlet.address}</p>
-              
-              <button className="w-full py-4 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-slate-900 transition-all duration-500">
-                Synchronize Path (Get Directions)
-              </button>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="h-[400px] w-full rounded-[4rem] overflow-hidden border border-white/5 bg-slate-900/60 relative flex items-center justify-center p-12">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
-            <div className="text-center relative z-10">
-                <h2 className="text-2xl font-headline font-bold text-white uppercase italic mb-4 tracking-tighter">Ocular Map Initializing...</h2>
-                <p className="text-slate-500 text-[10px] uppercase tracking-widest font-black">Satellite verification in progress</p>
-                <div className="mt-8 flex justify-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
-                    <div className="w-2 h-2 rounded-full bg-primary animate-ping delay-200" />
-                    <div className="w-2 h-2 rounded-full bg-primary animate-ping delay-500" />
-                </div>
             </div>
+          </motion.div>
         </div>
-      </main>
+      </section>
     </div>
   );
 }
-

@@ -1,16 +1,16 @@
-"use client";
-
 import ProductGrid from "@/components/shop/ProductGrid";
 import { Suspense } from "react";
 
 export default function ProductsPage() {
   return (
-    <div className="bg-surface pt-24 min-h-screen">
-      <Suspense fallback={
-        <div className="min-h-screen bg-surface flex items-center justify-center text-primary font-serif italic text-2xl tracking-tighter">
-          Accessing Archive...
-        </div>
-      }>
+    <div className="bg-white min-h-screen">
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-[#004AAD] border-t-transparent rounded-full animate-spin" />
+          </div>
+        }
+      >
         <ProductGrid />
       </Suspense>
     </div>

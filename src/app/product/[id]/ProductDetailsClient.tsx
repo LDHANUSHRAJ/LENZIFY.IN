@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { addToCart, toggleWishlist } from "@/lib/db/customer_actions";
 import { cn } from "@/lib/utils";
-import { Star, ShoppingBag, Heart, Verified, RotateCw } from "lucide-react";
+import { Star, ShoppingBag, Heart, Verified, RotateCw, ChevronRight, Truck, Shield, RefreshCw, BadgeCheck } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -16,6 +16,7 @@ import Product360Viewer from "./Product360Viewer";
 import LensSelectionFlow from "@/components/store/LensSelectionFlow";
 import ReviewForm from "@/components/shop/ReviewForm";
 import { ProductJsonLd } from "@/components/seo/JsonLd";
+import ProductCard from "@/components/store/ProductCard";
 import toast from "react-hot-toast";
 
 interface ProductDetailsClientProps {
@@ -27,11 +28,11 @@ interface ProductDetailsClientProps {
   availableLenses?: any[];
 }
 
-export default function ProductDetailsClient({ 
-  product, 
-  user, 
-  similarProducts, 
-  initialReviews, 
+export default function ProductDetailsClient({
+  product,
+  user,
+  similarProducts,
+  initialReviews,
   isInWishlist,
   availableLenses = []
 }: ProductDetailsClientProps) {
@@ -41,8 +42,8 @@ export default function ProductDetailsClient({
   const addItem = useCartStore((state) => state.addItem);
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist: isItemInWishlist } = useWishlistStore();
   const [isInWish, setIsInWish] = useState(isInWishlist);
-  
-  const [activeTab, setActiveTab] = useState<"craftsmanship" | "specs" | "heritage">("specs");
+
+  const [activeTab, setActiveTab] = useState<"description" | "specs" | "reviews">("description");
   const [selectedColor, setSelectedColor] = useState<string>(product.colors?.[0] || "");
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] || "");
   const [viewMode, setViewMode] = useState<"static" | "360">("static");
@@ -57,7 +58,7 @@ export default function ProductDetailsClient({
       return;
     }
     const displayPrice = (product.discount_price || product.price) + (lensData?.lens_price || 0);
-    
+
     // 1. Optimistic Update
     addItem({
       id: product.id,
@@ -67,22 +68,20 @@ export default function ProductDetailsClient({
       quantity: 1
     } as any);
 
-    const toastId = toast.loading('ADDING TO CART...', {
+    const toastId = toast.loading('Adding to cart...', {
       style: {
-        background: '#000000',
-        color: '#fff',
-        borderRadius: '2px',
-        fontSize: '10px',
-        fontWeight: '700',
-        letterSpacing: '0.3em',
-        padding: '20px',
-        border: '1px solid rgba(255,255,255,0.1)'
+        background: '#ffffff',
+        color: '#111111',
+        border: '1px solid #E8EAF2',
+        borderRadius: '12px',
+        fontSize: '12px',
+        fontWeight: '600',
       }
     });
 
     try {
-      const res = await addToCart(product.id, { 
-          quantity: 1, 
+      const res = await addToCart(product.id, {
+          quantity: 1,
           color: selectedColor,
           size: selectedSize,
           price: displayPrice,
@@ -92,17 +91,15 @@ export default function ProductDetailsClient({
       });
 
       if (res.success) {
-        toast.success(`ADDED TO CART: ${product.name}`, {
+        toast.success(`Added to cart: ${product.name}`, {
           id: toastId,
           style: {
-            background: '#000000',
-            color: '#fff',
-            borderRadius: '2px',
-            fontSize: '10px',
-            fontWeight: '700',
-            letterSpacing: '0.3em',
-            padding: '20px',
-            border: '1px solid rgba(255,255,255,0.1)'
+            background: '#ffffff',
+            color: '#111111',
+            border: '1px solid #E8EAF2',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: '600',
           }
         });
         setShowLensFlow(false);
@@ -114,7 +111,17 @@ export default function ProductDetailsClient({
       // Rollback
       const { removeItem } = useCartStore.getState();
       removeItem(product.id);
-      toast.error("COULD NOT ADD TO CART", { id: toastId });
+      toast.error("Could not add to cart", {
+        id: toastId,
+        style: {
+          background: '#ffffff',
+          color: '#111111',
+          border: '1px solid #E8EAF2',
+          borderRadius: '12px',
+          fontSize: '12px',
+          fontWeight: '600',
+        }
+      });
     }
   };
 
@@ -139,348 +146,516 @@ export default function ProductDetailsClient({
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lenzify.in';
 
+  // Price logic
+  const hasDiscount = product.discount_price && product.discount_price < product.price;
+  const displayPrice = product.discount_price || product.price || 0;
+  const originalPrice = product.price || 0;
+  const savingsAmount = hasDiscount ? originalPrice - displayPrice : 0;
+  const savingsPercent = hasDiscount ? Math.round((savingsAmount / originalPrice) * 100) : 0;
+
+  // Average rating
+  const avgRating = initialReviews.length > 0
+    ? initialReviews.reduce((acc: number, r: any) => acc + (r.rating || 0), 0) / initialReviews.length
+    : product.rating || 0;
+
+  // Delivery estimate
+  const deliveryDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 5);
+    return d.toLocaleDateString("en-IN", { weekday: "long", month: "long", day: "numeric" });
+  }, []);
+
+  // Specs for the Specifications tab
+  const specs = [
+    { label: "Frame Type", value: product.frame_type },
+    { label: "Shape", value: product.shape },
+    { label: "Material", value: product.material },
+    { label: "Gender", value: product.gender },
+    { label: "Color", value: product.color },
+    { label: "Size", value: product.size },
+  ].filter(s => s.value);
+
   return (
-    <div className="bg-surface text-primary min-h-screen pt-24 font-sans">
+    <div className="bg-white text-[#111111] min-h-screen">
       <ProductJsonLd product={product} url={`${siteUrl}/product/${product.id}`} />
-      {/* Breadcrumbs */}
-      <nav className="max-w-screen-2xl mx-auto px-8 md:px-12 py-8">
-         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-primary/30">
-            <Link href="/" className="hover:text-secondary transition-colors">Home</Link>
-            <span className="w-1 h-1 bg-primary/30 rounded-full"></span>
-            <Link href="/products" className="hover:text-secondary transition-colors">Archive</Link>
-            {product.categories && product.categories.length > 0 && (
-              <>
-                <span className="w-1 h-1 bg-primary/30 rounded-full"></span>
-                <Link href={`/products?category=${product.categories[0].slug}`} className="hover:text-secondary transition-colors">{product.categories[0].name}</Link>
-              </>
-            )}
-            <span className="w-1 h-1 bg-primary/30 rounded-full"></span>
-            <span className="text-secondary italic">{product.name}</span>
-         </div>
+
+      {/* Breadcrumb */}
+      <nav className="bg-white pt-24 pb-0 px-6 lg:px-16 max-w-screen-2xl mx-auto">
+        <div className="flex items-center gap-2 text-sm text-[#666666] py-4">
+          <Link href="/" className="hover:text-[#004AAD] transition-colors">Home</Link>
+          <span className="text-[#ECECEC]">/</span>
+          <Link href="/products" className="hover:text-[#004AAD] transition-colors">Products</Link>
+          {product.categories && product.categories.length > 0 && (
+            <>
+              <span className="text-[#ECECEC]">/</span>
+              <Link
+                href={`/products?category=${product.categories[0].slug}`}
+                className="hover:text-[#004AAD] transition-colors"
+              >
+                {product.categories[0].name}
+              </Link>
+            </>
+          )}
+          <span className="text-[#ECECEC]">/</span>
+          <span className="text-[#111111] font-medium truncate max-w-[200px]">{product.name}</span>
+        </div>
       </nav>
 
-      <main className="max-w-screen-2xl mx-auto px-8 md:px-12 pb-32">
-        <div className="flex flex-col lg:flex-row gap-20 lg:gap-32 items-start">
-          {/* Left: Visualization */}
-          <div className="w-full lg:w-[55%] lg:sticky lg:top-32 space-y-12">
+      {/* Main product section */}
+      <main className="max-w-screen-2xl mx-auto px-6 lg:px-16 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
+
+          {/* ── Left column (sticky image viewer) ── */}
+          <div className="lg:sticky lg:top-24 space-y-6">
+            {/* Main image / 360 toggle */}
             <AnimatePresence mode="wait">
               {viewMode === "static" ? (
-                <motion.div 
+                <motion.div
                   key="static"
-                  initial={{ opacity: 0, scale: 1.05 }}
+                  initial={{ opacity: 0, scale: 1.02 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="relative aspect-[4/5] bg-white border border-primary/5 overflow-hidden group shadow-sm flex items-center justify-center p-12"
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.3 }}
+                  className="relative bg-[#F8F9FC] rounded-3xl aspect-square overflow-hidden flex items-center justify-center p-8 group"
                 >
-                  <Image 
-                    src={mainImageSrc} 
-                    alt={product.name} 
-                    fill 
+                  <Image
+                    src={mainImageSrc}
+                    alt={product.name}
+                    fill
                     priority
                     onError={() => setMainImageSrc("/placeholder.jpg")}
-                    className="object-contain p-12 mix-blend-multiply opacity-80 group-hover:opacity-100 transition-all duration-1000 group-hover:scale-110" 
+                    className="object-contain w-full h-full group-hover:scale-105 transition-transform duration-700"
                   />
-                  <div className="absolute top-10 left-10">
-                     <p className="text-[10px] font-bold uppercase tracking-[0.5em] text-secondary/50 italic">Visual Simulation v2.0</p>
-                  </div>
-                  
+
+                  {/* 360 trigger */}
                   {product.images_360?.length > 0 && (
-                    <button 
+                    <button
                       onClick={() => setViewMode("360")}
                       suppressHydrationWarning
-                      className="absolute bottom-10 right-10 bg-primary text-white px-8 py-4 text-[9px] font-bold uppercase tracking-widest flex items-center gap-3 hover:bg-secondary transition-all shadow-xl"
+                      className="absolute bottom-4 right-4 bg-white text-[#03173D] border border-[#E8EAF2] rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 shadow-md hover:bg-[#03173D] hover:text-white transition-all"
                     >
-                      <RotateCw size={14} className="animate-spin-slow" />
-                      Initialize 360-View
+                      <RotateCw size={13} />
+                      360° View
                     </button>
                   )}
-
-
                 </motion.div>
               ) : (
                 <motion.div
                   key="360"
-                  initial={{ opacity: 0, scale: 1.05 }}
+                  initial={{ opacity: 0, scale: 1.02 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.3 }}
+                  className="rounded-3xl overflow-hidden"
                 >
                   <Product360Viewer images={product.images_360} />
-                  <button 
+                  <button
                     onClick={() => setViewMode("static")}
                     suppressHydrationWarning
-                    className="mt-6 text-[9px] font-bold uppercase tracking-widest text-secondary hover:text-primary border-b border-secondary/20 pb-1"
+                    className="mt-4 text-xs font-semibold text-[#666666] hover:text-[#111111] underline underline-offset-2 transition-colors"
                   >
-                    Return to Blueprint View
+                    Back to photo view
                   </button>
                 </motion.div>
               )}
             </AnimatePresence>
-            
-            <div className="grid grid-cols-4 gap-6">
-              {product.product_images?.map((img: any) => (
-                <div
-                  key={img.id}
-                  onClick={() => setMainImageSrc(img.image_url)}
-                  className={`aspect-square bg-white border cursor-pointer hover:border-secondary transition-all p-4 group ${
-                    mainImageSrc === img.image_url ? 'border-secondary' : 'border-primary/5'
-                  }`}
+
+            {/* Thumbnail strip */}
+            {product.product_images && product.product_images.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {product.product_images.map((img: any) => (
+                  <button
+                    key={img.id}
+                    onClick={() => { setMainImageSrc(img.image_url); setViewMode("static"); }}
+                    suppressHydrationWarning
+                    className={cn(
+                      "flex-shrink-0 w-20 h-20 rounded-2xl bg-[#F8F9FC] border-2 cursor-pointer overflow-hidden transition-all duration-200",
+                      mainImageSrc === img.image_url
+                        ? "border-[#03173D]"
+                        : "border-transparent hover:border-[#004AAD]/30"
+                    )}
+                  >
+                    <Image
+                      src={img.image_url}
+                      alt="Product thumbnail"
+                      width={80}
+                      height={80}
+                      className="object-contain w-full h-full p-2"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── Right column ── */}
+          <div className="space-y-8">
+
+            {/* Brand */}
+            <p className="text-sm font-semibold text-[#004AAD] uppercase tracking-widest">
+              {product.brand || "Lenzify"}
+            </p>
+
+            {/* Name */}
+            <h1 className="text-4xl md:text-5xl font-[var(--font-hero)] italic text-[#111111] leading-tight -mt-4">
+              {product.name}
+            </h1>
+
+            {/* Rating row */}
+            {avgRating > 0 && (
+              <div className="flex items-center gap-3 -mt-2">
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      size={15}
+                      className={cn(
+                        star <= Math.round(avgRating)
+                          ? "fill-amber-400 text-amber-400"
+                          : "fill-[#E8EAF2] text-[#E8EAF2]"
+                      )}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm text-[#666666]">
+                  {avgRating.toFixed(1)} ({initialReviews.length} {initialReviews.length === 1 ? "review" : "reviews"})
+                </span>
+                <button
+                  onClick={() => setActiveTab("reviews")}
+                  suppressHydrationWarning
+                  className="text-sm text-[#004AAD] hover:underline"
                 >
-                  <Image src={img.image_url} alt="Perspective" width={100} height={100} className="object-contain w-full h-full mix-blend-multiply opacity-70 group-hover:opacity-100 transition-opacity" />
+                  See all
+                </button>
+              </div>
+            )}
+
+            {/* Price */}
+            <div className="flex items-baseline gap-3 flex-wrap">
+              {hasDiscount && (
+                <span className="text-lg text-[#999999] line-through">
+                  ₹{originalPrice.toLocaleString()}
+                </span>
+              )}
+              <span className="text-3xl font-bold text-[#111111]">
+                ₹{displayPrice.toLocaleString()}
+              </span>
+              {hasDiscount && savingsPercent > 0 && (
+                <span className="bg-[#004AAD]/10 text-[#004AAD] text-sm font-semibold rounded-full px-3 py-1">
+                  {savingsPercent}% off
+                </span>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-[#E8EAF2]" />
+
+            {/* Color selector */}
+            {product.colors && product.colors.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-[#111111]">
+                  Color — <span className="font-semibold">{selectedColor}</span>
+                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {product.colors.map((color: string) => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      suppressHydrationWarning
+                      title={color}
+                      className={cn(
+                        "w-8 h-8 rounded-full border-2 cursor-pointer transition-all",
+                        selectedColor === color
+                          ? "border-[#03173D] ring-2 ring-[#03173D]/20"
+                          : "border-transparent hover:border-[#004AAD]"
+                      )}
+                      style={{
+                        backgroundColor: color.startsWith("#") ? color : undefined,
+                        background: !color.startsWith("#") ? color : undefined,
+                        boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.1)"
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Size selector */}
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-[#111111]">Size</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {product.sizes.map((size: string) => (
+                    <button
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      suppressHydrationWarning
+                      className={cn(
+                        "border rounded-full px-4 py-2 text-sm cursor-pointer transition-all",
+                        selectedSize === size
+                          ? "bg-[#03173D] text-white border-[#03173D]"
+                          : "border-[#E8EAF2] text-[#666666] hover:border-[#004AAD] hover:text-[#004AAD]"
+                      )}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Lens customization CTA */}
+            {product.product_type === "frame" && (
+              <div className="bg-[#F8F9FC] rounded-2xl p-4 border border-[#ECECEC]">
+                <button
+                  onClick={() => setShowLensFlow(true)}
+                  suppressHydrationWarning
+                  className="w-full flex items-center justify-between text-left"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-[#111111]">Customize Your Lenses</p>
+                    <p className="text-xs text-[#666666] mt-0.5">Add prescription or tinted lenses</p>
+                  </div>
+                  <ChevronRight size={18} className="text-[#004AAD] flex-shrink-0" />
+                </button>
+              </div>
+            )}
+
+            {/* LensSelectionFlow modal */}
+            {showLensFlow && (
+              <LensSelectionFlow
+                product={product}
+                availableLenses={availableLenses}
+                onClose={() => setShowLensFlow(false)}
+                onAddToCart={handleAddToCart}
+              />
+            )}
+
+            {/* Action buttons */}
+            <div className="space-y-3">
+              {product.product_type === "frame" ? (
+                <>
+                  <button
+                    onClick={() => setShowLensFlow(true)}
+                    disabled={product.stock <= 0}
+                    suppressHydrationWarning
+                    className="w-full bg-[#03173D] text-white rounded-full py-4 font-semibold flex items-center justify-center gap-2 hover:bg-[#004AAD] transition-all disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    <ShoppingBag size={18} />
+                    Buy with Lenses
+                  </button>
+                  <button
+                    onClick={() => handleAddToCart(undefined, false)}
+                    disabled={product.stock <= 0}
+                    suppressHydrationWarning
+                    className="w-full border border-[#03173D] text-[#03173D] rounded-full py-4 font-semibold hover:bg-[#03173D] hover:text-white transition-all disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    {product.stock > 0 ? "Add Frame Only" : "Out of Stock"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleAddToCart(undefined, false)}
+                    disabled={product.stock <= 0}
+                    suppressHydrationWarning
+                    className="w-full bg-[#03173D] text-white rounded-full py-4 font-semibold flex items-center justify-center gap-2 hover:bg-[#004AAD] transition-all disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    <ShoppingBag size={18} />
+                    {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                  </button>
+                  {product.stock > 0 && (
+                    <button
+                      onClick={() => handleAddToCart(undefined, true)}
+                      suppressHydrationWarning
+                      className="w-full border border-[#03173D] text-[#03173D] rounded-full py-4 font-semibold hover:bg-[#03173D] hover:text-white transition-all"
+                    >
+                      Buy Now
+                    </button>
+                  )}
+                </>
+              )}
+
+              {/* Wishlist */}
+              <button
+                onClick={handleWishlist}
+                suppressHydrationWarning
+                className={cn(
+                  "w-full flex items-center justify-center gap-2 py-3 rounded-full text-sm font-semibold transition-all",
+                  isInWish
+                    ? "text-red-500 bg-red-50"
+                    : "text-[#666666] hover:text-red-500 hover:bg-red-50"
+                )}
+              >
+                <Heart size={16} className={cn(isInWish && "fill-red-500")} />
+                {isInWish ? "Saved to Wishlist" : "Save to Wishlist"}
+              </button>
+            </div>
+
+            {/* Trust badges */}
+            <div className="grid grid-cols-4 gap-2 py-2">
+              {[
+                { icon: <Truck size={16} />, label: "Free Shipping" },
+                { icon: <Shield size={16} />, label: "2-Year Warranty" },
+                { icon: <RefreshCw size={16} />, label: "Free Returns" },
+                { icon: <BadgeCheck size={16} />, label: "Authentic" },
+              ].map(({ icon, label }) => (
+                <div key={label} className="flex flex-col items-center gap-1.5 text-center">
+                  <span className="text-[#004AAD]">{icon}</span>
+                  <span className="text-[10px] text-[#666666] leading-tight">{label}</span>
                 </div>
               ))}
             </div>
-          </div>
 
-          {/* Right: Info Components */}
-          <div className="w-full lg:w-[45%] space-y-16">
-            <header className="space-y-8">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                   <p className="text-xs font-bold uppercase tracking-[0.4em] text-secondary italic">{product.brand}</p>
-                   <span className="h-px flex-1 bg-primary/5"></span>
-                </div>
-                <h1 className="text-5xl md:text-8xl font-serif italic tracking-tight text-primary leading-none uppercase pr-10">
-                  {product.name}
-                </h1>
-              </div>
-              
-              <div className="flex items-center gap-12 pt-8">
-                 <div className="space-y-2">
-                    <p className="text-[10px] uppercase font-bold tracking-widest text-primary/30">Exchange Rate</p>
-                    <div className="flex items-baseline gap-4">
-                       <span className="text-5xl font-serif text-primary italic">₹{(product.discount_price || product.price || 0).toLocaleString()}</span>
-                       {product.discount_price && product.discount_price < product.price && <span className="text-lg line-through text-primary/20">₹{(product.price || 0).toLocaleString()}</span>}
-                    </div>
-                 </div>
-                 <div className="h-16 w-px bg-primary/5"></div>
-                 <div className="space-y-2">
-                    <p className="text-[10px] uppercase font-bold tracking-widest text-primary/30 italic">Availability Protocol</p>
-                    <span className={cn(
-                        "text-[10px] font-bold tracking-[0.3em] uppercase flex items-center gap-3",
-                        product.stock > 0 ? "text-emerald-500" : "text-red-500"
-                    )}>
-                       <span className={cn("w-2 h-2 rounded-full", product.stock > 0 ? "bg-emerald-500 animate-pulse" : "bg-red-500")}></span>
-                       {product.stock > 0 ? `${product.stock} Units Sync'd` : "Archive Locked"}
-                    </span>
-                 </div>
-              </div>
-            </header>
-
-            {showLensFlow && (
-               <LensSelectionFlow 
-                  product={product}
-                  availableLenses={availableLenses}
-                  onClose={() => setShowLensFlow(false)}
-                  onAddToCart={handleAddToCart}
-               />
-            )}
-
-            {/* Action Matrix */}
-            <div className="flex flex-col gap-6 pt-4">
-              <div className="flex gap-4">
-                 {product.product_type === "frame" ? (
-                    <div className="flex flex-col gap-4 flex-grow">
-                       <button 
-                         onClick={() => setShowLensFlow(true)}
-                         disabled={product.stock <= 0}
-                         suppressHydrationWarning
-                         className="w-full py-6 bg-brand-navy text-white font-black text-[12px] uppercase tracking-[0.5em] hover:bg-secondary transition-all duration-700 active:scale-95 flex items-center justify-center gap-6 shadow-2xl disabled:opacity-30 disabled:grayscale"
-                       >
-                         <ShoppingBag size={20} />
-                         <span>BUY WITH LENS</span>
-                       </button>
-                       <button 
-                         onClick={() => handleAddToCart(undefined, true)}
-                         disabled={product.stock <= 0}
-                         suppressHydrationWarning
-                         className="w-full py-4 border border-brand-navy/10 bg-white text-brand-navy font-bold text-[10px] uppercase tracking-[0.4em] hover:border-brand-navy transition-all duration-500 disabled:opacity-30 disabled:grayscale"
-                       >
-                         BUY FRAME ONLY
-                       </button>
-                    </div>
-                 ) : (
-                    <div className="flex flex-col gap-4 flex-grow">
-                      <button 
-                        onClick={() => handleAddToCart(undefined, false)}
-                        disabled={product.stock <= 0}
-                        suppressHydrationWarning
-                        className="w-full py-8 bg-brand-navy text-white font-black text-[12px] uppercase tracking-[0.5em] hover:bg-secondary transition-all duration-700 active:scale-95 flex items-center justify-center gap-6 shadow-2xl disabled:opacity-30 disabled:grayscale"
-                      >
-                        <ShoppingBag size={20} />
-                        <span>{product.stock > 0 ? "ADD TO CART" : "Waitlist Protocol"}</span>
-                      </button>
-                      {product.stock > 0 && (
-                        <button 
-                          onClick={() => handleAddToCart(undefined, true)}
-                          suppressHydrationWarning
-                          className="w-full py-4 border border-brand-navy/10 bg-white text-brand-navy font-bold text-[10px] uppercase tracking-[0.4em] hover:border-brand-navy transition-all duration-500"
-                        >
-                          BUY NOW
-                        </button>
-                      )}
-                    </div>
-                 )}
-                
-                <button 
-                  onClick={handleWishlist}
-                  suppressHydrationWarning
-                  className={cn(
-                    "w-28 border flex items-center justify-center transition-all duration-700 active:rotate-12",
-                    isInWish ? "bg-secondary/10 border-secondary text-secondary" : "bg-white border-primary/5 text-primary/10 hover:text-secondary hover:border-secondary/20"
-                  )}
-                >
-                  <Heart size={32} className={cn(isInWish && "fill-secondary")} />
-                </button>
-              </div>
-
-              <div className="py-6 border-y border-primary/5 flex items-center justify-center gap-4 group/vto">
-                <span className="text-[10px] font-bold uppercase tracking-[0.5em] text-secondary animate-pulse">VIRTUAL TRY ON COMING SOON</span>
-                <span className="text-secondary opacity-30 group-hover:opacity-100 transition-opacity">👓</span>
-              </div>
-
-              <p className="text-[9px] uppercase font-bold text-center tracking-[0.3em] text-primary/10 italic">Secured via encrypted checkout protocol v4.2</p>
-            </div>
-
-            {/* Technical Matrix Tabs */}
-            <div className="space-y-10 pt-16 border-t border-primary/5">
-               <div className="flex items-center gap-10 border-b border-primary/5">
-                  {[
-                    { id: "specs", label: "Spec Sheet" },
-                    { id: "craftsmanship", label: "Build Quality" },
-                    { id: "heritage", label: "Design Log" }
-                  ].map(tab => (
-                    <button 
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id as any)}
-                      suppressHydrationWarning
-                      className={cn(
-                        "pb-6 text-[10px] font-bold uppercase tracking-[0.4em] transition-all relative",
-                        activeTab === tab.id ? "text-secondary" : "text-primary/30 hover:text-primary"
-                      )}
-                    >
-                      {tab.label}
-                      {activeTab === tab.id && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-secondary" />}
-                    </button>
-                  ))}
-               </div>
-
-               <div className="min-h-[200px]">
-                  <AnimatePresence mode="wait">
-                    {activeTab === "specs" && (
-                      <motion.div 
-                        key="specs"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="grid grid-cols-2 lg:grid-cols-3 gap-y-10 gap-x-12"
-                      >
-                         {[
-                           { label: "Frame Protocol", value: product.frame_type },
-                           { label: "Geometry", value: product.shape },
-                           { label: "Componentry", value: product.material },
-                           { label: "Identity", value: product.gender },
-                           { label: "Chroma", value: product.color },
-                           { label: "Scale", value: product.size }
-                         ].map(item => (
-                           <div key={item.label} className="space-y-2">
-                              <p className="text-[9px] font-bold uppercase tracking-widest text-primary/30 italic">{item.label}</p>
-                              <p className="text-xs font-serif italic text-primary uppercase tracking-tight">{item.value || 'Unspecified'}</p>
-                           </div>
-                         ))}
-                      </motion.div>
-                    )}
-
-                    {activeTab === "craftsmanship" && (
-                       <motion.div 
-                         key="craftsmanship"
-                         initial={{ opacity: 0, y: 10 }}
-                         animate={{ opacity: 1, y: 0 }}
-                         className="space-y-6"
-                       >
-                          <p className="text-xs font-serif text-primary/60 leading-loose italic max-w-2xl">
-                             {product.description || "No craftsmanship details provided for this archive entry."}
-                          </p>
-                          <div className="flex gap-4">
-                             <div className="px-6 py-3 bg-brand-background border border-primary/5 text-[8px] font-bold uppercase tracking-widest text-primary">ISO-9002 Certified</div>
-                             <div className="px-6 py-3 bg-brand-background border border-primary/5 text-[8px] font-bold uppercase tracking-widest text-primary">Hand-Finished</div>
-                          </div>
-                       </motion.div>
-                    )}
-
-                     {activeTab === "heritage" && (
-                        <motion.div 
-                          key="heritage"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="space-y-6"
-                        >
-                           <p className="text-xs font-serif text-primary/60 leading-loose italic max-w-2xl">
-                              The {product.name} is a curated addition to the Lenzify Archive. {product.brand && `A signature piece from ${product.brand}, it continues the legacy of vision and form.`}
-                           </p>
-                           <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-secondary italic">Serial Hash: {product.id.slice(0, 16)}</p>
-                        </motion.div>
-                     )}
-                  </AnimatePresence>
-               </div>
-            </div>
-
-            {/* Similar Products */}
-            {similarProducts.length > 0 && (
-              <section className="space-y-10 pt-16 border-t border-primary/5">
-                <div className="flex justify-between items-end">
-                   <h2 className="text-2xl font-serif italic text-primary">Relational <span className="text-secondary">Aesthetics</span></h2>
-                   <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-primary/30">AI Recommendation Engine</p>
-                </div>
-                <div className="grid grid-cols-2 gap-8">
-                  {similarProducts.map((p) => {
-                    const img = p.product_images?.find((i: any) => i.is_primary)?.image_url || p.product_images?.[0]?.image_url;
-                    return (
-                      <Link key={p.id} href={`/product/${p.id}`} className="group space-y-4">
-                         <div className="aspect-[4/5] bg-white border border-primary/5 p-8 overflow-hidden flex items-center justify-center relative">
-                            <Image src={img || "/placeholder.jpg"} alt={p.name} fill className="object-contain p-8 grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-40 group-hover:opacity-100" />
-                            <div className="absolute top-4 left-4 p-2 bg-primary text-white text-[8px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">View Design</div>
-                         </div>
-                         <div className="space-y-1">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-primary/30 italic">{p.brand}</p>
-                            <h3 className="text-sm font-serif italic text-primary font-black tracking-tight">{p.name}</h3>
-                         </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            {/* Sentimental Analysis */}
-            <section className="space-y-10 pt-16 border-t border-primary/5">
-              <div className="flex justify-between items-center bg-primary text-white p-10 shadow-xl">
-                 <div className="space-y-2">
-                    <h2 className="text-2xl font-serif italic text-secondary">Public Feedback</h2>
-                    <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-white/40 italic">Aggregate Nexus Score: {product.rating || '4.8'}/5.0</p>
-                 </div>
-              </div>
-
-              {/* Review Submission Form */}
-              <ReviewForm productId={product.id} userId={currentUser?.id} />
-
-              <div className="space-y-8">
-                 {initialReviews.map(review => (
-                   <div key={review.id} className="p-8 border border-primary/5 bg-white space-y-4 italic">
-                      <div className="flex justify-between items-center italic">
-                         <p className="text-[10px] font-black uppercase tracking-widest text-primary">{review.users?.name}</p>
-                         <div className="flex gap-1">
-                            {[...Array(review.rating)].map((_, i) => <Star key={i} size={10} className="fill-secondary text-secondary" />)}
-                         </div>
-                      </div>
-                      <p className="text-xs font-serif text-primary/60 leading-relaxed italic pr-12">"{review.review}"</p>
-                      <p className="text-[8px] font-bold text-primary/10 uppercase tracking-widest">{new Date(review.created_at).toLocaleDateString()}</p>
-                   </div>
-                 ))}
-                 {initialReviews.length === 0 && <p className="text-[10px] text-center text-primary/20 uppercase tracking-[0.4em] font-bold py-12">Awaiting first feedback transmission...</p>}
-              </div>
-            </section>
+            {/* Delivery estimate */}
+            <p className="text-sm text-[#666666]">
+              Estimated delivery: <span className="font-medium text-[#111111]">{deliveryDate}</span>
+            </p>
           </div>
         </div>
+
+        {/* ── Tab section ── */}
+        <div className="mt-16">
+          {/* Tab bar */}
+          <div className="border-b border-[#E8EAF2] flex gap-8">
+            {[
+              { id: "description", label: "Description" },
+              { id: "specs", label: "Specifications" },
+              { id: "reviews", label: `Reviews (${initialReviews.length})` },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                suppressHydrationWarning
+                className={cn(
+                  "pb-4 text-sm font-medium transition-all relative",
+                  activeTab === tab.id
+                    ? "text-[#111111] font-semibold border-b-2 border-[#03173D] -mb-px"
+                    : "text-[#666666] hover:text-[#111111]"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <div className="mt-8 min-h-[200px]">
+            <AnimatePresence mode="wait">
+              {activeTab === "description" && (
+                <motion.div
+                  key="description"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="prose max-w-none text-[#666666] leading-relaxed"
+                >
+                  <p>
+                    {product.description || "No description available for this product."}
+                  </p>
+                </motion.div>
+              )}
+
+              {activeTab === "specs" && (
+                <motion.div
+                  key="specs"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="divide-y divide-[#E8EAF2] max-w-xl"
+                >
+                  {specs.length > 0 ? specs.map(spec => (
+                    <div key={spec.label} className="flex items-center justify-between py-3">
+                      <span className="text-sm font-medium text-[#111111]">{spec.label}</span>
+                      <span className="text-sm text-[#666666] capitalize">{spec.value}</span>
+                    </div>
+                  )) : (
+                    <p className="text-sm text-[#666666] py-4">No specifications available.</p>
+                  )}
+                </motion.div>
+              )}
+
+              {activeTab === "reviews" && (
+                <motion.div
+                  key="reviews"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-8"
+                >
+                  {/* ReviewForm */}
+                  <ReviewForm productId={product.id} userId={currentUser?.id} />
+
+                  {/* Review list */}
+                  <div className="space-y-4">
+                    {initialReviews.map(review => (
+                      <div
+                        key={review.id}
+                        className="bg-white border border-[#ECECEC] rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-6 space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-[#111111]">
+                            {review.users?.name || "Anonymous"}
+                          </p>
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map(star => (
+                              <Star
+                                key={star}
+                                size={12}
+                                className={cn(
+                                  star <= review.rating
+                                    ? "fill-amber-400 text-amber-400"
+                                    : "fill-[#E8EAF2] text-[#E8EAF2]"
+                                )}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-sm text-[#666666] leading-relaxed">
+                          {review.review}
+                        </p>
+                        <p className="text-xs text-[#999999]">
+                          {new Date(review.created_at).toLocaleDateString("en-IN", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    ))}
+                    {initialReviews.length === 0 && (
+                      <p className="text-sm text-[#666666] text-center py-8">
+                        No reviews yet. Be the first to share your experience!
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* ── Similar Products ── */}
+        {similarProducts.length > 0 && (
+          <section className="mt-24 bg-white">
+            <div className="space-y-3 mb-8">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD]">
+                You May Also Like
+              </p>
+              <h2 className="text-3xl font-[var(--font-hero)] italic text-[#111111]">
+                Similar Eyewear
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {similarProducts.map((item) => (
+                <ProductCard key={item.id} product={item} />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );

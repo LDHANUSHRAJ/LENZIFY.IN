@@ -26,10 +26,15 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
   const [loading, setLoading] = useState(!initialUser);
   const supabase = createClient();
 
+  // Sync server-provided initialUser into state whenever the layout re-renders
+  // with a new value (e.g. after a server-action login + soft-nav redirect).
+  useEffect(() => {
+    setUser(initialUser);
+  }, [initialUser]);
+
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // use getSession for faster local-first access
         const { data: { session } } = await supabase.auth.getSession();
         setUser(session?.user ?? null);
       } catch (error) {

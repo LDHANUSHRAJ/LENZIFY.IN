@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,8 +23,8 @@ export default function CartPage() {
   const searchParams = useSearchParams();
   const buyNow = searchParams.get("buyNow");
 
-  // Stable supabase reference
   const supabase = useMemo(() => supabaseInstance, []);
+  const channelRef = useRef<any>(null);
 
   const syncCartData = async () => {
     try {
@@ -37,7 +37,7 @@ export default function CartPage() {
         brand: item.products.brand || "LENZIFY",
         price: item.price || item.products.offer_price || item.products.price,
         image: item.products.product_images?.[0]?.image_url || "/placeholder.jpg",
-        category: "Optic Archive",
+        category: "Eyewear",
         quantity: item.quantity,
         stock: item.products.stock ?? 99,
         lens_name: item.lenses?.name,
@@ -62,32 +62,42 @@ export default function CartPage() {
   };
 
   useEffect(() => {
-    let channel: any;
+    let cancelled = false;
+
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
 
     const setupSubscription = async () => {
       await syncCartData();
-
-      if (user) {
-        channel = supabaseInstance
-          .channel(`cart_page_sync_${user.id}`)
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "cart", filter: `user_id=eq.${user.id}` },
-            () => syncCartData()
-          )
-          .subscribe();
-      }
+      if (cancelled || !user) return;
+      // Unique channel name prevents Supabase reusing an already-subscribed
+      // channel instance from a previous effect run that was torn down but
+      // whose removeChannel hasn't fully resolved yet.
+      channelRef.current = supabase
+        .channel(`cart_page_sync_${user.id}_${Date.now()}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "cart", filter: `user_id=eq.${user.id}` },
+          () => syncCartData()
+        )
+        .subscribe();
     };
 
     setupSubscription();
 
     return () => {
-      if (channel) supabaseInstance.removeChannel(channel);
+      cancelled = true;
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [user]);
 
   const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.18; 
+  const tax = subtotal * 0.18;
   const total = subtotal + tax;
 
   const handleRemove = async (dbId: number, productId: string) => {
@@ -100,7 +110,7 @@ export default function CartPage() {
     const item = items.find(i => i.id === productId) as any;
     if (!item) return;
     const newQty = item.quantity + delta;
-    
+
     if (newQty < 1) {
       await handleRemove(dbId, productId);
       return;
@@ -110,7 +120,7 @@ export default function CartPage() {
       toast.error(`Only ${item.stock} items available in stock.`);
       return;
     }
-    
+
     // Optimistic update
     updateQuantity(productId, delta);
     await updateCartQuantity(dbId, newQty);
@@ -124,156 +134,244 @@ export default function CartPage() {
     router.push("/checkout");
   };
 
-  if (loading) return <div className="min-h-screen bg-surface flex items-center justify-center text-[10px] font-bold uppercase tracking-[0.5em] animate-pulse text-brand-navy/30">Synchronizing Vault...</div>;
+  if (loading) return (
+    <div className="min-h-screen bg-[#F8F9FC] flex items-center justify-center">
+      <p className="text-sm font-medium animate-pulse text-[#666666] tracking-widest">
+        Loading your cart...
+      </p>
+    </div>
+  );
 
   return (
-    <div className="bg-surface text-brand-navy min-h-screen pb-20 pt-24">
-      <main className="max-w-screen-2xl mx-auto px-8 py-12">
-        <header className="mb-16">
-          <div className="flex items-center gap-4 mb-4">
-            <span className="h-[1px] w-12 bg-secondary"></span>
-            <span className="text-secondary font-bold text-[10px] uppercase tracking-[0.4em] italic">Your Archive</span>
-          </div>
-          <h1 className="text-6xl md:text-7xl font-serif font-black text-brand-navy tracking-tighter uppercase italic leading-[0.8]">
-            The <br/><span className="text-secondary">Vault</span>
+    <div className="bg-[#F8F9FC] min-h-screen pb-20">
+      {/* Page title area */}
+      <div className="bg-white pt-32 pb-6 border-b border-[#E8EAF2]">
+        <main className="max-w-screen-2xl mx-auto px-8">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-2">Shopping cart</p>
+          <h1 className="text-5xl md:text-6xl font-[var(--font-hero)] italic text-[#111111] leading-tight">
+            Your Cart
           </h1>
-        </header>
+        </main>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
-          <div className="lg:col-span-8 space-y-6">
+      <main className="max-w-screen-2xl mx-auto px-8 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Cart Items */}
+          <div className="lg:col-span-8 space-y-4">
             <AnimatePresence mode="popLayout">
               {items.length > 0 ? (
                 items.map((item: any, i) => (
-                  <motion.div 
+                  <motion.div
                     layout
                     key={item.database_id || item.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="group relative p-8 rounded-sm bg-white border border-brand-navy/5 flex flex-col sm:flex-row gap-10 hover:border-secondary/20 transition-all shadow-sm"
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    className="group relative bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-6 flex flex-col sm:flex-row gap-6 hover:-translate-y-1 hover:shadow-[0_25px_60px_rgba(0,0,0,0.12)] transition-all duration-300"
                   >
-                    <div className="relative w-full sm:w-56 aspect-square bg-brand-background p-8 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-700">
-                      <Image src={item.image} alt={item.name} fill className="object-contain p-4 mix-blend-multiply" />
+                    {/* Item Image */}
+                    <div className="relative w-full sm:w-40 aspect-square rounded-2xl bg-[#F8F9FC] flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        className="object-contain p-4 transition-transform duration-700 group-hover:scale-105"
+                      />
                     </div>
-                    
-                    <div className="flex-grow flex flex-col justify-between py-2">
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-start">
+
+                    {/* Item Details */}
+                    <div className="flex-grow flex flex-col justify-between py-1">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start gap-4">
                           <div>
-                            <p className="text-[10px] text-brand-navy/30 font-black uppercase tracking-[0.3em] mb-1 italic">{item.brand}</p>
-                            <h3 className="text-3xl font-serif italic font-black text-brand-navy uppercase tracking-tighter leading-tight">{item.name}</h3>
+                            <p className="text-[#004AAD] text-xs font-semibold uppercase tracking-widest mb-1">
+                              {item.brand}
+                            </p>
+                            <h3 className="text-xl font-medium text-[#111111] leading-tight">
+                              {item.name}
+                            </h3>
                             {item.lens_name && (
-                               <div className="mt-2 flex items-center gap-2">
-                                  <span className="px-2 py-1 bg-secondary/10 border border-secondary/20 text-[8px] font-bold uppercase tracking-widest text-secondary">Optics: {item.lens_name}</span>
-                               </div>
+                              <div className="mt-2 flex items-center gap-2">
+                                <span className="px-2.5 py-1 bg-[#004AAD]/5 border border-[#004AAD]/15 text-xs font-medium text-[#004AAD] rounded-full">
+                                  Lens: {item.lens_name}
+                                </span>
+                              </div>
                             )}
                           </div>
-                          <p className="text-3xl font-serif italic font-black text-brand-navy tracking-tighter">₹{(item.price || 0).toLocaleString()}</p>
+                          <p className="text-xl font-bold text-[#111111] flex-shrink-0">
+                            ₹{(item.price || 0).toLocaleString()}
+                          </p>
                         </div>
-                        
-                        <div className="flex flex-wrap gap-x-10 gap-y-4">
-                          <div className="space-y-1">
-                            <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Classification</p>
-                            <p className="text-[11px] text-brand-navy font-black uppercase tracking-widest italic">{item.category}</p>
+
+                        <div className="flex flex-wrap gap-x-6 gap-y-2">
+                          <div>
+                            <p className="text-[10px] text-[#666666] uppercase tracking-widest font-medium">Category</p>
+                            <p className="text-xs text-[#111111] font-medium mt-0.5">{item.category}</p>
                           </div>
                           {item.lens_config && (
                             <>
                               {item.lens_config.features?.length > 0 && (
-                                <div className="space-y-1">
-                                   <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Features</p>
-                                   <p className="text-[10px] text-secondary font-black uppercase tracking-widest italic">+{item.lens_config.features.length} Modules</p>
+                                <div>
+                                  <p className="text-[10px] text-[#666666] uppercase tracking-widest font-medium">Features</p>
+                                  <p className="text-xs text-[#004AAD] font-medium mt-0.5">
+                                    +{item.lens_config.features.length} add-ons
+                                  </p>
                                 </div>
                               )}
                               {item.lens_config.coatings?.length > 0 && (
-                                <div className="space-y-1">
-                                   <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Coatings</p>
-                                   <p className="text-[10px] text-brand-navy font-black uppercase tracking-widest italic">+{item.lens_config.coatings.length} Layers</p>
+                                <div>
+                                  <p className="text-[10px] text-[#666666] uppercase tracking-widest font-medium">Coatings</p>
+                                  <p className="text-xs text-[#111111] font-medium mt-0.5">
+                                    +{item.lens_config.coatings.length} layers
+                                  </p>
                                 </div>
                               )}
                             </>
                           )}
                           {item.prescription && (
-                            <div className="space-y-1">
-                               <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Calibration</p>
-                               <p className="text-[11px] text-brand-navy font-black uppercase tracking-widest italic">OD: {item.prescription.od_sph} | OS: {item.prescription.os_sph}</p>
+                            <div>
+                              <p className="text-[10px] text-[#666666] uppercase tracking-widest font-medium">Prescription</p>
+                              <p className="text-xs text-[#111111] font-medium mt-0.5">
+                                OD: {item.prescription.od_sph} | OS: {item.prescription.os_sph}
+                              </p>
                             </div>
                           )}
-                           <div className="space-y-1">
-                             <p className="text-[9px] text-brand-navy/20 uppercase tracking-widest font-black">Availability</p>
-                             {item.stock > 0 ? (
-                               <p className="text-[11px] text-emerald-500 font-black uppercase tracking-widest italic">In Stock ({item.stock})</p>
-                             ) : (
-                               <p className="text-[11px] text-red-500 font-black uppercase tracking-widest italic">Out of Stock</p>
-                             )}
-                           </div>
+                          <div>
+                            <p className="text-[10px] text-[#666666] uppercase tracking-widest font-medium">Stock</p>
+                            {item.stock > 0 ? (
+                              <p className="text-xs text-emerald-600 font-medium mt-0.5">In Stock ({item.stock})</p>
+                            ) : (
+                              <p className="text-xs text-red-500 font-medium mt-0.5">Out of Stock</p>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between mt-8">
-                        <div className="flex items-center bg-brand-background border border-brand-navy/5 p-1 px-6 gap-8">
-                          <button onClick={() => handleUpdateQty(item.database_id, item.id, -1)} className="text-brand-navy/30 hover:text-brand-navy transition-colors font-black">-</button>
-                          <span className="text-sm font-black text-brand-navy w-4 text-center">{item.quantity}</span>
-                          <button onClick={() => handleUpdateQty(item.database_id, item.id, 1)} className="text-brand-navy/30 hover:text-brand-navy transition-colors font-black">+</button>
+                      {/* Quantity & Remove */}
+                      <div className="flex items-center justify-between mt-5">
+                        <div className="flex items-center bg-[#F8F9FC] border border-[#E8EAF2] rounded-full overflow-hidden">
+                          <button
+                            onClick={() => handleUpdateQty(item.database_id, item.id, -1)}
+                            className="w-10 h-10 flex items-center justify-center text-[#666666] hover:text-[#004AAD] hover:bg-[#004AAD]/5 transition-all font-bold text-lg"
+                          >
+                            −
+                          </button>
+                          <span className="w-10 h-10 flex items-center justify-center text-sm font-bold text-[#111111] border-x border-[#E8EAF2]">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => handleUpdateQty(item.database_id, item.id, 1)}
+                            className="w-10 h-10 flex items-center justify-center text-[#666666] hover:text-[#004AAD] hover:bg-[#004AAD]/5 transition-all font-bold text-lg"
+                          >
+                            +
+                          </button>
                         </div>
-                        
-                        <button 
+
+                        <button
                           onClick={() => handleRemove(item.database_id, item.id)}
-                          className="flex items-center gap-2 text-[10px] font-black text-brand-navy/20 uppercase tracking-[0.2em] hover:text-secondary transition-colors italic"
+                          className="text-sm text-[#666666] hover:text-red-500 transition-colors font-medium"
                         >
-                          Eject Item
+                          Remove
                         </button>
                       </div>
                     </div>
                   </motion.div>
                 ))
               ) : (
-                <div className="py-40 text-center border border-dashed border-brand-navy/10 rounded-sm bg-white shadow-inner">
-                   <p className="text-brand-navy/20 text-[10px] uppercase tracking-[0.4em] font-black mb-8 italic">The vault is currently empty</p>
-                   <Link href="/products" className="bg-brand-navy text-white px-10 py-5 font-black text-[10px] uppercase tracking-[0.3em] hover:bg-secondary transition-all shadow-xl">
-                      Initiate Discovery
-                   </Link>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="py-40 text-center bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-16 space-y-6"
+                >
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD]">
+                      Your cart
+                    </p>
+                    <h3 className="text-4xl font-[var(--font-hero)] italic text-[#111111]/20">
+                      Your cart is empty
+                    </h3>
+                    <p className="text-[#666666] text-sm leading-relaxed">
+                      Looks like you haven&apos;t added anything yet.
+                    </p>
+                  </div>
+                  <Link
+                    href="/products"
+                    className="inline-block bg-[#03173D] text-white rounded-full px-8 py-4 font-semibold hover:bg-gradient-to-r hover:from-[#03173D] hover:to-[#004AAD] transition-all duration-300"
+                  >
+                    Browse Products
+                  </Link>
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          <div className="lg:col-span-4 sticky top-32">
-             <div className="bg-white border border-brand-navy/5 p-12 shadow-2xl space-y-12">
-                <header className="space-y-4 border-b border-brand-navy/5 pb-8">
-                   <h2 className="text-3xl font-serif italic font-black text-brand-navy uppercase tracking-tighter leading-none">Protocol <br/>Summary</h2>
-                   <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-brand-navy/20 italic">Final Costing Matrix</p>
+          {/* Order Summary */}
+          {items.length > 0 && (
+            <div className="lg:col-span-4 sticky top-24">
+              <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-8 space-y-6">
+                <header className="border-b border-[#E8EAF2] pb-5">
+                  <h2 className="font-semibold text-[#111111] uppercase tracking-widest text-sm">
+                    Order Summary
+                  </h2>
                 </header>
 
-                <div className="space-y-6">
-                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-brand-navy/40">
-                      <span>Gross Subtotal</span>
-                      <span className="text-brand-navy italic">₹{subtotal.toLocaleString()}</span>
-                   </div>
-                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-brand-navy/40">
-                      <span>Logistic Matrix</span>
-                      <span className="text-secondary italic">Complimentary</span>
-                   </div>
-                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-brand-navy/40">
-                      <span>Applied GST (18%)</span>
-                      <span className="text-brand-navy italic">₹{tax.toLocaleString()}</span>
-                   </div>
-                   <div className="pt-8 border-t border-brand-navy/5 flex justify-between items-baseline">
-                      <span className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-navy/20 italic">Total Due</span>
-                      <span className="text-4xl font-serif italic font-black text-brand-navy">₹{total.toLocaleString()}</span>
-                   </div>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#666666] text-sm">Subtotal</span>
+                    <span className="text-[#111111] font-semibold">₹{subtotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#666666] text-sm">Shipping</span>
+                    <span className="text-emerald-600 font-semibold text-sm">Free</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#666666] text-sm">GST (18%)</span>
+                    <span className="text-[#111111] font-semibold">₹{tax.toLocaleString()}</span>
+                  </div>
+
+                  {/* Free shipping progress */}
+                  <div className="pt-2 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#666666] text-xs">Free shipping progress</span>
+                      <span className="text-xs font-semibold text-[#004AAD]">
+                        {subtotal >= 2000 ? "Unlocked!" : `₹${(2000 - subtotal).toLocaleString()} away`}
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-[#F8F9FC] border border-[#E8EAF2] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#004AAD] rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min((subtotal / 2000) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-[#E8EAF2] flex justify-between items-baseline">
+                    <span className="text-[#666666] text-sm font-medium">Total</span>
+                    <span className="text-3xl font-[var(--font-hero)] italic text-[#111111]">₹{total.toLocaleString()}</span>
+                  </div>
                 </div>
 
-                <div className="pt-8">
-                   <button 
-                     disabled={items.length === 0}
-                     onClick={handleCheckout}
-                     className="w-full py-6 bg-brand-navy text-white font-black text-[10px] uppercase tracking-[0.5em] hover:bg-secondary hover:shadow-2xl transition-all duration-700 active:scale-95 disabled:opacity-30 disabled:grayscale"
-                   >
-                     Authorize Checkout
-                   </button>
+                <button
+                  disabled={items.length === 0}
+                  onClick={handleCheckout}
+                  className={cn(
+                    "w-full py-4 bg-[#03173D] text-white font-semibold rounded-full hover:bg-gradient-to-r hover:from-[#03173D] hover:to-[#004AAD] transition-all duration-300 active:scale-[0.98]",
+                    items.length === 0 && "opacity-30 cursor-not-allowed"
+                  )}
+                >
+                  Proceed to Checkout
+                </button>
+
+                <div className="text-center">
+                  <Link href="/products" className="text-xs text-[#666666] hover:text-[#004AAD] transition-colors font-medium">
+                    Continue shopping
+                  </Link>
                 </div>
-             </div>
-          </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

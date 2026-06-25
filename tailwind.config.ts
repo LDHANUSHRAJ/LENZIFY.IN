@@ -10,6 +10,11 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        "brand-electric": "#00AFFF",
+        "brand-cyan": "#00D4FF",
+        "brand-deep": "#020229",
+        "brand-mid": "#042F80",
+        "brand-dark-blue": "#02104A",
         "surface-container": "#f0eded",
         "on-primary-container": "#778598",
         "secondary-fixed-dim": "#e9c176",
@@ -64,6 +69,7 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
+        hero: ["var(--font-hero)", "serif"],
         headline: ["Noto Serif", "serif"],
         body: ["Inter", "sans-serif"],
         label: ["Inter", "sans-serif"],

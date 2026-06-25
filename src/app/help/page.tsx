@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { HelpCircle, Mail, Phone, MessageSquare, ArrowRight, Search, ShieldCheck, Truck, RotateCcw, Eye } from "lucide-react";
+import { HelpCircle, Mail, MessageSquare, ArrowRight, ShieldCheck, Truck, RotateCcw, Eye } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Help Center",
@@ -45,100 +45,119 @@ const commonQuestions = [
 
 export default function HelpPage() {
   return (
-    <div className="bg-surface min-h-screen pt-32 pb-32">
-      <main className="max-w-screen-xl mx-auto px-6 md:px-12 space-y-20">
-        {/* Header */}
-        <header className="text-center space-y-6 max-w-2xl mx-auto">
-          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-secondary italic">
-            Support Center
-          </p>
-          <h1 className="text-5xl md:text-7xl font-serif italic tracking-tight text-primary leading-none">
-            How can we <span className="text-secondary">help?</span>
+    <div className="min-h-screen bg-white">
+      {/* Hero */}
+      <section className="bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] pt-40 pb-20">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 text-center space-y-5">
+          <p className="text-white/70 text-xs font-semibold uppercase tracking-widest">Support Center</p>
+          <h1 className="font-[var(--font-hero)] italic text-white text-5xl md:text-7xl leading-none">
+            How can we help?
           </h1>
-          <p className="text-on-surface/50 text-lg leading-relaxed">
+          <p className="text-white/70 text-base leading-relaxed max-w-lg mx-auto">
             Find answers to common questions or get in touch with our team.
           </p>
-        </header>
-
-        {/* Help Topics Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {helpTopics.map((topic) => (
-            <Link
-              key={topic.title}
-              href={topic.href}
-              className="group bg-white border border-outline/10 p-8 space-y-4 hover:border-secondary/30 hover:shadow-lg transition-all duration-500"
-            >
-              <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center group-hover:bg-secondary group-hover:scale-110 transition-all">
-                <topic.icon size={20} />
-              </div>
-              <h3 className="text-sm font-black uppercase tracking-widest text-primary">
-                {topic.title}
-              </h3>
-              <p className="text-xs text-on-surface/50 leading-relaxed">
-                {topic.description}
-              </p>
-              <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-secondary opacity-0 group-hover:opacity-100 transition-opacity">
-                Learn More <ArrowRight size={12} />
-              </div>
-            </Link>
-          ))}
-        </section>
-
-        {/* FAQ Section */}
-        <section className="space-y-10">
-          <div className="text-center space-y-4">
-            <h2 className="text-3xl font-serif italic text-primary tracking-tight">
-              Frequently Asked <span className="text-secondary">Questions</span>
-            </h2>
-            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-on-surface/30">
-              Quick answers to common queries
-            </p>
+          {/* Search bar */}
+          <div className="max-w-xl mx-auto mt-6">
+            <div className="bg-white rounded-full shadow-lg border border-[#E8EAF2] flex items-center px-6 py-4 gap-3">
+              <HelpCircle size={18} className="text-[#004AAD] shrink-0" />
+              <input
+                type="text"
+                placeholder="Search for help..."
+                className="flex-1 text-[#111111] text-sm outline-none placeholder:text-[#AAAAAA] bg-transparent"
+              />
+            </div>
           </div>
-          <div className="max-w-3xl mx-auto space-y-6">
+        </div>
+      </section>
+
+      {/* Help Topics Grid */}
+      <section className="py-20 md:py-28 bg-white">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12">
+          <div className="text-center mb-12 space-y-3">
+            <p className="text-[#004AAD] text-xs font-semibold uppercase tracking-widest">Browse Topics</p>
+            <h2 className="font-[var(--font-hero)] italic text-[#111111] text-4xl md:text-5xl">Help Categories</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {helpTopics.map((topic) => (
+              <Link
+                key={topic.title}
+                href={topic.href}
+                className="group bg-white border border-[#ECECEC] rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-6 space-y-4 hover:-translate-y-2 hover:shadow-[0_25px_60px_rgba(0,0,0,0.12)] transition-all duration-300"
+              >
+                <div className="w-12 h-12 bg-[#F0F5FF] rounded-xl flex items-center justify-center">
+                  <topic.icon size={20} className="text-[#004AAD]" />
+                </div>
+                <h3 className="text-[#111111] font-semibold text-base">
+                  {topic.title}
+                </h3>
+                <p className="text-[#666666] text-sm leading-relaxed">
+                  {topic.description}
+                </p>
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#004AAD] opacity-0 group-hover:opacity-100 transition-opacity">
+                  Learn More <ArrowRight size={12} />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-20 md:py-28 bg-[#F8F9FC]">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12">
+          <div className="text-center space-y-4 mb-12">
+            <p className="text-[#004AAD] text-xs font-semibold uppercase tracking-widest">Quick Answers</p>
+            <h2 className="font-[var(--font-hero)] italic text-[#111111] text-4xl md:text-5xl">
+              Common Questions
+            </h2>
+          </div>
+          <div className="max-w-3xl mx-auto space-y-3">
             {commonQuestions.map((item, i) => (
               <details
                 key={i}
-                className="group bg-white border border-outline/10 hover:border-secondary/20 transition-colors"
+                className="group bg-white border border-[#ECECEC] rounded-2xl hover:border-[#004AAD]/40 transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
               >
-                <summary className="p-6 cursor-pointer flex items-center justify-between text-sm font-bold text-primary uppercase tracking-wide list-none">
+                <summary className="p-6 cursor-pointer flex items-center justify-between text-sm font-medium text-[#111111] list-none">
                   <span>{item.q}</span>
-                  <HelpCircle size={16} className="text-on-surface/20 group-open:text-secondary transition-colors shrink-0 ml-4" />
+                  <HelpCircle size={16} className="text-[#004AAD] shrink-0 ml-4" />
                 </summary>
-                <div className="px-6 pb-6 text-sm text-on-surface/60 leading-relaxed border-t border-outline/5 pt-4">
+                <div className="px-6 pb-6 text-sm text-[#666666] leading-relaxed border-t border-[#ECECEC] pt-4">
                   {item.a}
                 </div>
               </details>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Contact CTA */}
-        <section className="bg-primary text-white p-12 md:p-16 text-center space-y-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full -mr-32 -mt-32 blur-[100px]" />
-          <div className="relative z-10 space-y-6 max-w-lg mx-auto">
-            <h3 className="text-3xl font-serif italic tracking-tight">
-              Still need help?
+      {/* Contact CTA */}
+      <section className="py-20 md:py-28 bg-white">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12">
+          <div className="bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] rounded-3xl p-12 md:p-16 text-center space-y-6">
+            <p className="text-white/70 text-xs font-semibold uppercase tracking-widest">Still Need Help?</p>
+            <h3 className="font-[var(--font-hero)] italic text-white text-4xl md:text-5xl leading-tight">
+              We&apos;re here for you.
             </h3>
-            <p className="text-white/60 text-sm leading-relaxed">
+            <p className="text-white/70 text-base leading-relaxed max-w-md mx-auto">
               Our support team is available Monday to Saturday, 10 AM to 7 PM IST.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/contact"
-                className="flex items-center justify-center gap-3 px-8 py-4 bg-secondary text-primary text-[10px] font-black uppercase tracking-[0.3em] hover:opacity-90 transition-opacity"
+                className="flex items-center justify-center gap-3 px-8 py-4 bg-white text-[#03173D] rounded-full font-semibold hover:bg-[#F8F9FC] transition-all"
               >
-                <Mail size={14} /> Contact Us
+                <Mail size={16} /> Contact Us
               </Link>
               <a
                 href="mailto:lenzify.in@gmail.com"
-                className="flex items-center justify-center gap-3 px-8 py-4 border border-white/20 text-white text-[10px] font-black uppercase tracking-[0.3em] hover:bg-white/10 transition-colors"
+                className="flex items-center justify-center gap-3 px-8 py-4 border border-white text-white rounded-full font-semibold hover:bg-white hover:text-[#03173D] transition-all"
               >
-                <MessageSquare size={14} /> Email Support
+                <MessageSquare size={16} /> Email Support
               </a>
             </div>
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { signup } from "../actions";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,11 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
 
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-surface text-primary font-bold italic tracking-widest text-[10px] uppercase">Initializing secure channel...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FC] text-[#004AAD] font-semibold tracking-widest text-xs uppercase">
+        Loading...
+      </div>
+    }>
       <SignupForm fallbackError={error} initialLoading={loading} />
     </Suspense>
   )
@@ -23,6 +27,7 @@ export default function SignupPage() {
 function SignupForm({ fallbackError, initialLoading }: { fallbackError: string | null, initialLoading: boolean }) {
   const [error, setError] = useState<string | null>(fallbackError);
   const [loading, setLoading] = useState(initialLoading);
+  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
 
@@ -37,110 +42,169 @@ function SignupForm({ fallbackError, initialLoading }: { fallbackError: string |
     if (result?.error) {
       setError(result.error);
       setLoading(false);
+      return;
     }
+
+    router.push(result.redirectTo ?? redirectTo);
+    router.refresh();
   };
 
-  const fadeInUp = {
-    initial: { opacity: 0, y: 30 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 1, ease: [0.22, 1, 0.36, 1] } as any
-  };
+  const benefits = [
+    "Exclusive member pricing on all collections",
+    "Early access to new arrivals",
+    "Personalised style recommendations",
+    "Free home try-on for members",
+    "Priority customer support",
+  ];
 
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Editorial Accents */}
-      <div className="absolute top-0 left-0 w-1/3 h-full bg-surface-container-low/50 skew-x-12 transform origin-top -translate-x-1/2"></div>
-      
-      <motion.div 
-        {...fadeInUp}
-        className="w-full max-w-[540px] z-10"
-      >
-        <div className="bg-white p-12 md:p-20 editorial-shadow rounded-sm border border-outline/10 space-y-12 relative overflow-hidden">
-           <div className="absolute top-0 left-0 w-full h-1.5 bg-secondary"></div>
-           
-           <header className="space-y-6 text-center">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="inline-block px-5 py-2 mb-2 rounded-full border border-primary/20 text-primary text-[10px] font-bold tracking-[0.4em] uppercase italic"
-            >
-              Protocol Initiation
-            </motion.div>
-            <h1 className="text-5xl md:text-6xl font-serif italic text-primary leading-tight tracking-tight">
-              Join the <br/><span className="text-secondary">Archive</span>
+    <div className="min-h-screen grid lg:grid-cols-12">
+      {/* Left Brand Panel — hidden on mobile */}
+      <div className="hidden lg:flex lg:col-span-5 relative bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] flex-col items-center justify-center overflow-hidden p-16">
+        {/* Floating white blur shapes */}
+        <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-20 right-10 w-48 h-48 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-white/3 blur-3xl pointer-events-none" />
+
+        {/* Brand content */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          className="relative z-10 text-center space-y-8 max-w-md"
+        >
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#00AEEF]">Est. 2024</p>
+            <h1 className="text-7xl xl:text-8xl font-[var(--font-hero)] italic text-white leading-none">
+              LENZIFY
             </h1>
-            <p className="text-on-surface/40 font-medium tracking-wide italic text-sm">Form your unique visionary identity.</p>
-          </header>
-
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <input type="hidden" name="redirectTo" value={redirectTo} />
-            
-            <div className="space-y-3">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40 px-1">Legal Receiver Name</label>
-              <input
-                name="name"
-                type="text"
-                required
-                placeholder="FULL IDENTITY"
-                className="w-full bg-transparent border-b border-outline/20 py-4 text-sm text-primary font-bold tracking-widest focus:border-secondary outline-none transition-all placeholder:text-on-surface/20 uppercase"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40 px-1">Email Matrix</label>
-              <input
-                name="email"
-                type="email"
-                required
-                placeholder="YOUR@IDENTITY.COM"
-                className="w-full bg-transparent border-b border-outline/20 py-4 text-sm text-primary font-bold tracking-widest focus:border-secondary outline-none transition-all placeholder:text-on-surface/20"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface/40 px-1">Access Passphrase</label>
-              <input
-                name="password"
-                type="password"
-                required
-                placeholder="••••••••"
-                className="w-full bg-transparent border-b border-outline/20 py-4 text-sm text-primary font-bold tracking-widest focus:border-secondary outline-none transition-all placeholder:text-on-surface/20"
-              />
-            </div>
-
-            {error && (
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-secondary text-[10px] font-bold text-center mt-4 uppercase tracking-[0.2em] italic bg-secondary/5 py-4 border border-secondary/10"
-              >
-                Initiation Error: {error}
-              </motion.p>
-            )}
-
-            <button
-              disabled={loading}
-              className={cn(
-                "w-full bg-secondary text-white py-6 rounded-lg font-bold text-[10px] uppercase tracking-[0.4em] transition-all duration-500 hover:opacity-80 active:scale-[0.98] mt-4 relative overflow-hidden group",
-                loading && "opacity-70 cursor-not-allowed"
-              )}
-            >
-              <span className="relative z-10">{loading ? "SYNCHRONIZING..." : "INITIALIZE IDENTITY"}</span>
-              <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity" />
-            </button>
-          </form>
-
-          <footer className="text-center pt-8 border-t border-outline/10">
-            <p className="text-on-surface/40 text-[10px] font-bold uppercase tracking-widest">
-              Existing Archival Access?{" "}
-              <Link href={`/auth/login?redirect=${encodeURIComponent(redirectTo)}`} className="text-primary hover:text-secondary transition-colors ml-2 underline underline-offset-4 decoration-primary/30">
-                Sign In
-              </Link>
+            <p className="text-[#00AEEF] text-sm font-semibold uppercase tracking-widest mt-2">
+              Join LENZIFY
             </p>
-          </footer>
-        </div>
-      </motion.div>
+          </div>
+
+          <div className="h-px w-24 bg-white/20 mx-auto" />
+
+          <p className="text-white/70 text-sm leading-relaxed max-w-xs mx-auto">
+            Join an exclusive community of visionaries. Curated eyewear, precision crafted for your unique perspective.
+          </p>
+
+          {/* Member benefits */}
+          <div className="mt-10 space-y-4 text-left max-w-xs mx-auto">
+            {benefits.map((benefit, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <span className="text-[#00AEEF] mt-0.5 flex-shrink-0 font-bold text-base leading-none">✓</span>
+                <p className="text-white/70 text-sm leading-snug">{benefit}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Right Form Panel */}
+      <div className="lg:col-span-7 bg-white min-h-screen flex items-center justify-center px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-md w-full mx-auto"
+        >
+          {/* Mobile logo */}
+          <div className="lg:hidden text-center mb-10">
+            <h1 className="text-4xl font-[var(--font-hero)] italic text-[#03173D]">LENZIFY</h1>
+            <p className="text-[#004AAD] text-xs font-semibold uppercase tracking-widest mt-1">The Future of Vision</p>
+          </div>
+
+          <div className="space-y-8">
+            <header className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD]">
+                Get started
+              </p>
+              <h2 className="text-3xl font-[var(--font-hero)] italic text-[#111111]">
+                Create your account
+              </h2>
+              <p className="text-[#666666] text-sm leading-relaxed">
+                Join thousands of customers who see the world differently.
+              </p>
+            </header>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <input type="hidden" name="redirectTo" value={redirectTo} />
+
+              <div className="space-y-2">
+                <label className="text-[#111111] text-sm font-medium block">
+                  Full name
+                </label>
+                <input
+                  name="name"
+                  type="text"
+                  required
+                  placeholder="Your full name"
+                  className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-xl px-4 py-3 text-[#111111] focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 outline-none w-full transition-all placeholder:text-[#999999]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[#111111] text-sm font-medium block">
+                  Email address
+                </label>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="your@email.com"
+                  className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-xl px-4 py-3 text-[#111111] focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 outline-none w-full transition-all placeholder:text-[#999999]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[#111111] text-sm font-medium block">
+                  Password
+                </label>
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-xl px-4 py-3 text-[#111111] focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 outline-none w-full transition-all placeholder:text-[#999999]"
+                />
+              </div>
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm"
+                >
+                  {error}
+                </motion.div>
+              )}
+
+              <button
+                disabled={loading}
+                className={cn(
+                  "w-full bg-[#03173D] text-white rounded-full py-4 font-semibold hover:bg-gradient-to-r hover:from-[#03173D] hover:to-[#004AAD] transition-all duration-300 active:scale-[0.98] mt-2",
+                  loading && "opacity-70 cursor-not-allowed"
+                )}
+              >
+                {loading ? "Creating account..." : "Start your journey"}
+              </button>
+            </form>
+
+            <footer className="text-center pt-6 border-t border-[#E8EAF2]">
+              <p className="text-[#666666] text-sm">
+                Already have an account?{" "}
+                <Link
+                  href={`/auth/login?redirect=${encodeURIComponent(redirectTo)}`}
+                  className="text-[#004AAD] hover:underline font-medium transition-colors"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </footer>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }

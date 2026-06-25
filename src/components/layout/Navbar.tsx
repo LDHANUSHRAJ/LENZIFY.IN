@@ -44,7 +44,7 @@ const OFFERS = [
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  
+
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -52,11 +52,13 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { user } = useAuth();
-  const [brands, setBrands] = useState<{name: string, slug: string}[]>([]);
-  const [lenses, setLenses] = useState<{name: string, id: string}[]>([]);
-  const [coatings, setCoatings] = useState<{name: string, id: string}[]>([]);
-  
-  const totalItems = useCartStore((state) => state.items.reduce((acc, item) => acc + Number(item.quantity || 0), 0));
+  const [brands, setBrands] = useState<{ name: string; slug: string }[]>([]);
+  const [lenses, setLenses] = useState<{ name: string; id: string }[]>([]);
+  const [coatings, setCoatings] = useState<{ name: string; id: string }[]>([]);
+
+  const totalItems = useCartStore((state) =>
+    state.items.reduce((acc, item) => acc + Number(item.quantity || 0), 0)
+  );
   const setItems = useCartStore((state) => state.setItems);
   const setWishlistItems = useWishlistStore((state) => state.setItems);
 
@@ -65,7 +67,7 @@ export default function Navbar() {
     if (!user) return;
 
     const supabase = createClient();
-    
+
     const syncCart = async () => {
       const cartData = await getCart();
       const mappedItems = (cartData || []).map((item: any) => ({
@@ -73,23 +75,22 @@ export default function Navbar() {
         name: item.products.name,
         price: item.price || item.products.price,
         image: item.products.product_images?.[0]?.image_url,
-        quantity: item.quantity
+        quantity: item.quantity,
       }));
       setItems(mappedItems as any);
     };
 
     syncCart();
 
-    // Realtime subscription for instant updates
     const channel = supabase
       .channel(`cart_sync_global_${user.id}`)
       .on(
         "postgres_changes",
-        { 
-          event: "*", 
-          schema: "public", 
+        {
+          event: "*",
+          schema: "public",
           table: "cart",
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${user.id}`,
         },
         () => {
           syncCart();
@@ -102,7 +103,6 @@ export default function Navbar() {
     };
   }, [user, setItems]);
 
-  
   const zustandWishlistCount = useWishlistStore((state) => state.items.length);
 
   // Sync wishlist
@@ -110,13 +110,13 @@ export default function Navbar() {
     if (!user) return;
 
     const supabase = createClient();
-    
+
     const syncWishlist = async () => {
       const { data: wishlistData } = await supabase
         .from("wishlist")
         .select("*, products(*, product_images(*))")
         .eq("user_id", user.id);
-      
+
       const mappedItems = (wishlistData || []).map((item: any) => ({
         ...item.products,
       }));
@@ -129,11 +129,11 @@ export default function Navbar() {
       .channel(`wishlist_sync_global_${user.id}`)
       .on(
         "postgres_changes",
-        { 
-          event: "*", 
-          schema: "public", 
+        {
+          event: "*",
+          schema: "public",
           table: "wishlist",
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${user.id}`,
         },
         () => {
           syncWishlist();
@@ -181,7 +181,7 @@ export default function Navbar() {
         .eq("type", "brand")
         .eq("is_active", true)
         .order("name", { ascending: true });
-        
+
       if (data && data.length > 0) {
         setBrands(data);
       } else {
@@ -189,11 +189,11 @@ export default function Navbar() {
           { name: "RayBan", slug: "rayban" },
           { name: "Titan", slug: "titan" },
           { name: "Fastrack", slug: "fastrack" },
-          { name: "Oakley", slug: "oakley" }
+          { name: "Oakley", slug: "oakley" },
         ]);
       }
     };
-    
+
     const fetchLenses = async () => {
       const { data } = await supabase
         .from("lenses")
@@ -201,7 +201,7 @@ export default function Navbar() {
         .eq("is_active", true)
         .eq("category", "type")
         .order("name", { ascending: true });
-        
+
       if (data) setLenses(data);
     };
 
@@ -212,7 +212,7 @@ export default function Navbar() {
         .eq("is_active", true)
         .eq("category", "feature")
         .order("name", { ascending: true });
-        
+
       if (data) setCoatings(data);
     };
 
@@ -250,33 +250,52 @@ export default function Navbar() {
     else setActiveMenu(menu);
   };
 
+  // Derived color states
+  // Transparent only on homepage hero; all other pages always use white navbar
+  const isHomePage = pathname === '/';
+  const isWhiteMode = isScrolled || !!activeMenu || !isHomePage;
+  const linkColor = isWhiteMode ? "text-[#111111] hover:text-[#004AAD]" : "text-white hover:text-white/70";
+  const iconColor = isWhiteMode ? "text-[#111111]" : "text-white";
+  const logoColor = isWhiteMode ? "text-[#111111]" : "text-white";
+
   return (
-    <header 
+    <header
       ref={navRef}
       className={cn(
         "fixed top-0 w-full z-50 transition-all duration-500 print:hidden",
-        (isScrolled || activeMenu) ? "bg-[#0A0A2E]/95 backdrop-blur-md editorial-shadow py-4" : "bg-gradient-to-r from-[#1FC8E8] via-[#0A0A2E] to-[#0080FF] py-6"
+        isWhiteMode
+          ? "bg-white shadow-[0_2px_20px_rgba(0,0,0,0.08)] py-4"
+          : "bg-transparent py-6"
       )}
     >
       <nav className="flex justify-between items-center px-6 lg:px-12 max-w-screen-2xl mx-auto">
         <div className="flex items-center gap-4">
           {/* Back Button (Conditional) */}
-          {pathname !== '/' && (
-            <button 
+          {pathname !== "/" && (
+            <button
               onClick={() => router.back()}
-              className="text-white/70 hover:text-white transition-colors p-1 flex items-center gap-1 group"
+              className={cn(
+                "transition-colors p-1 flex items-center gap-1 group",
+                isWhiteMode
+                  ? "text-[#666666] hover:text-[#111111]"
+                  : "text-white/70 hover:text-white"
+              )}
               title="Go Back"
               suppressHydrationWarning
             >
-              <span className="material-symbols-outlined text-2xl group-hover:-translate-x-1 transition-transform">arrow_back</span>
-              <span className="hidden sm:inline text-[8px] font-black uppercase tracking-widest">Back</span>
+              <span className="material-symbols-outlined text-2xl group-hover:-translate-x-1 transition-transform">
+                arrow_back
+              </span>
+              <span className="hidden sm:inline text-[8px] font-black uppercase tracking-widest">
+                Back
+              </span>
             </button>
           )}
 
           {/* Mobile Toggle */}
-          <button 
+          <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden text-white focus:outline-none p-1"
+            className={cn("lg:hidden focus:outline-none p-1", iconColor)}
             suppressHydrationWarning
           >
             <span className="material-symbols-outlined text-2xl">
@@ -284,23 +303,30 @@ export default function Navbar() {
             </span>
           </button>
 
-          {/* 🔹 Left Side (Brand) */}
-          <Link 
-            href="/" 
-            className="text-2xl font-serif italic tracking-tighter text-white hover:opacity-70 transition-opacity"
+          {/* Logo */}
+          <Link
+            href="/"
+            className={cn(
+              "text-2xl font-serif italic tracking-tighter transition-all hover:opacity-70",
+              logoColor
+            )}
           >
             LENZIFY
           </Link>
         </div>
-        
-        {/* 🔹 Center (Core Navigation) */}
+
+        {/* Center Navigation */}
         <div className="hidden lg:flex items-center gap-4 xl:gap-8 flex-1 justify-center">
           {/* Home */}
           <Link
             href="/"
             className={cn(
-              "font-medium transition-colors duration-300 py-1",
-              pathname === '/' ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
+              "font-medium transition-all duration-300 py-1",
+              pathname === "/"
+                ? isWhiteMode
+                  ? "text-[#004AAD] border-b border-[#004AAD]"
+                  : "text-white border-b border-white"
+                : linkColor
             )}
           >
             Home
@@ -308,11 +334,15 @@ export default function Navbar() {
 
           {/* Shop */}
           <div className="relative">
-            <button 
-              onClick={() => toggleMenu('shop')}
+            <button
+              onClick={() => toggleMenu("shop")}
               className={cn(
-                "font-medium transition-colors duration-300 py-1 flex items-center gap-1",
-                activeMenu === 'shop' || pathname.startsWith('/products') ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
+                "font-medium transition-all duration-300 py-1 flex items-center gap-1",
+                activeMenu === "shop" || pathname.startsWith("/products")
+                  ? isWhiteMode
+                    ? "text-[#004AAD] border-b border-[#004AAD]"
+                    : "text-white border-b border-white"
+                  : linkColor
               )}
               suppressHydrationWarning
             >
@@ -323,11 +353,15 @@ export default function Navbar() {
 
           {/* Lenses */}
           <div className="relative">
-            <button 
-              onClick={() => toggleMenu('lenses')}
+            <button
+              onClick={() => toggleMenu("lenses")}
               className={cn(
-                "font-medium transition-colors duration-300 py-1 flex items-center gap-1",
-                activeMenu === 'lenses' ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
+                "font-medium transition-all duration-300 py-1 flex items-center gap-1",
+                activeMenu === "lenses"
+                  ? isWhiteMode
+                    ? "text-[#004AAD] border-b border-[#004AAD]"
+                    : "text-white border-b border-white"
+                  : linkColor
               )}
               suppressHydrationWarning
             >
@@ -340,8 +374,12 @@ export default function Navbar() {
           <Link
             href="/replace-lenses"
             className={cn(
-              "font-medium transition-colors duration-300 py-1",
-              pathname === '/replace-lenses' ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
+              "font-medium transition-all duration-300 py-1",
+              pathname === "/replace-lenses"
+                ? isWhiteMode
+                  ? "text-[#004AAD] border-b border-[#004AAD]"
+                  : "text-white border-b border-white"
+                : linkColor
             )}
           >
             Replace Lenses
@@ -351,8 +389,12 @@ export default function Navbar() {
           <Link
             href="/try-at-home"
             className={cn(
-              "font-medium transition-colors duration-300 py-1",
-              pathname === '/try-at-home' ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
+              "font-medium transition-all duration-300 py-1",
+              pathname === "/try-at-home"
+                ? isWhiteMode
+                  ? "text-[#004AAD] border-b border-[#004AAD]"
+                  : "text-white border-b border-white"
+                : linkColor
             )}
           >
             Try at Home
@@ -360,11 +402,15 @@ export default function Navbar() {
 
           {/* Offers */}
           <div className="relative">
-            <button 
-              onClick={() => toggleMenu('offers')}
+            <button
+              onClick={() => toggleMenu("offers")}
               className={cn(
-                "font-medium transition-colors duration-300 py-1 flex items-center gap-1",
-                activeMenu === 'offers' ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
+                "font-medium transition-all duration-300 py-1 flex items-center gap-1",
+                activeMenu === "offers"
+                  ? isWhiteMode
+                    ? "text-[#004AAD] border-b border-[#004AAD]"
+                    : "text-white border-b border-white"
+                  : linkColor
               )}
               suppressHydrationWarning
             >
@@ -375,11 +421,15 @@ export default function Navbar() {
 
           {/* Brands */}
           <div className="relative">
-            <button 
-              onClick={() => toggleMenu('brands')}
+            <button
+              onClick={() => toggleMenu("brands")}
               className={cn(
-                "font-medium transition-colors duration-300 py-1 flex items-center gap-1",
-                activeMenu === 'brands' ? "text-secondary border-b border-secondary" : "text-white/80 hover:text-white"
+                "font-medium transition-all duration-300 py-1 flex items-center gap-1",
+                activeMenu === "brands"
+                  ? isWhiteMode
+                    ? "text-[#004AAD] border-b border-[#004AAD]"
+                    : "text-white border-b border-white"
+                  : linkColor
               )}
               suppressHydrationWarning
             >
@@ -389,49 +439,86 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* 🔹 Right Side (User Actions) */}
+        {/* Right Side Actions */}
         <div className="flex items-center gap-3 sm:gap-6">
           {/* Search */}
-          <div className={cn(
-            "hidden md:flex items-center border-b transition-all duration-500",
-            isSearchOpen ? "w-48 border-white/30" : "w-8 border-transparent"
-          )}>
-            <button 
+          <div
+            className={cn(
+              "hidden md:flex items-center transition-all duration-500",
+              isSearchOpen
+                ? isWhiteMode
+                  ? "w-48 border-b border-[#E8EAF2]"
+                  : "w-48 border-b border-white/30"
+                : "w-8 border-b border-transparent"
+            )}
+          >
+            <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={cn("text-white/80 hover:text-white transition-colors p-1 flex items-center", isSearchOpen && "text-secondary")}
+              className={cn(
+                "transition-colors p-1 flex items-center",
+                isSearchOpen ? "text-[#004AAD]" : iconColor
+              )}
               suppressHydrationWarning
             >
               <span className="material-symbols-outlined text-2xl">search</span>
             </button>
-            <form onSubmit={handleSearch} className={cn("flex-grow", !isSearchOpen && "hidden")}>
-              <input 
-                type="text" 
+            <form
+              onSubmit={handleSearch}
+              className={cn("flex-grow", !isSearchOpen && "hidden")}
+            >
+              <input
+                type="text"
                 placeholder="Product Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent border-none focus:ring-0 text-[10px] uppercase font-bold tracking-widest text-white placeholder:text-white/30 w-full px-2"
+                className={cn(
+                  "bg-transparent border-none focus:ring-0 text-[10px] uppercase font-bold tracking-widest w-full px-2",
+                  isWhiteMode
+                    ? "text-[#111111] placeholder:text-[#999999]"
+                    : "text-white placeholder:text-white/30"
+                )}
               />
             </form>
           </div>
 
+          {/* Wishlist */}
           <Link href="/wishlist" className="relative group p-1 transition-transform hover:scale-110">
-            <span className="material-symbols-outlined text-2xl text-white/80 hover:text-secondary transition-colors">favorite</span>
+            <span
+              className={cn(
+                "material-symbols-outlined text-2xl transition-colors",
+                isWhiteMode
+                  ? "text-[#111111] hover:text-[#004AAD]"
+                  : "text-white hover:text-white/70"
+              )}
+            >
+              favorite
+            </span>
             {mounted && wishlistCount > 0 && (
-              <span 
+              <span
                 suppressHydrationWarning
-                className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[8px] font-bold text-white shadow-sm"
+                className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#004AAD] text-[8px] font-bold text-white shadow-sm"
               >
                 {wishlistCount}
               </span>
             )}
           </Link>
 
+          {/* Cart */}
           <Link href="/cart" className="relative group p-1 transition-transform hover:scale-110">
-            <span className="material-symbols-outlined text-2xl text-white/80 hover:text-secondary transition-colors">shopping_cart</span>
+            <span
+              className={cn(
+                "material-symbols-outlined text-2xl transition-colors",
+                isWhiteMode
+                  ? "text-[#111111] hover:text-[#004AAD]"
+                  : "text-white hover:text-white/70"
+              )}
+            >
+              shopping_cart
+            </span>
             {mounted && totalItems > 0 && (
-              <span 
+              <span
                 suppressHydrationWarning
-                className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[8px] font-bold text-white shadow-sm"
+                className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#004AAD] text-[8px] font-bold text-white shadow-sm"
               >
                 {totalItems}
               </span>
@@ -442,36 +529,57 @@ export default function Navbar() {
           {user ? (
             <UserMenu user={user} />
           ) : (
-            <Link 
-              href="/auth/login"
-              className="group p-1 transition-transform hover:scale-110"
-            >
-              <span className="material-symbols-outlined text-2xl text-white/80 hover:text-secondary transition-colors">person</span>
+            <Link href="/auth/login" className="group p-1 transition-transform hover:scale-110">
+              <span
+                className={cn(
+                  "material-symbols-outlined text-2xl transition-colors",
+                  isWhiteMode
+                    ? "text-[#111111] hover:text-[#004AAD]"
+                    : "text-white hover:text-white/70"
+                )}
+              >
+                person
+              </span>
             </Link>
           )}
 
           {/* Support */}
           <div className="relative hidden sm:block">
-            <button 
-              onClick={() => toggleMenu('support')}
+            <button
+              onClick={() => toggleMenu("support")}
               className="group p-1 transition-transform hover:scale-110 flex items-center"
               suppressHydrationWarning
             >
-              <span className="material-symbols-outlined text-2xl text-white/80 hover:text-secondary transition-colors">support_agent</span>
+              <span
+                className={cn(
+                  "material-symbols-outlined text-2xl transition-colors",
+                  isWhiteMode
+                    ? "text-[#111111] hover:text-[#004AAD]"
+                    : "text-white hover:text-white/70"
+                )}
+              >
+                support_agent
+              </span>
             </button>
-            
+
             <AnimatePresence>
-              {activeMenu === 'support' && (
+              {activeMenu === "support" && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute right-0 top-full mt-6 w-48 bg-white border border-outline/10 shadow-lg p-2 flex flex-col gap-1 z-50 rounded-sm editorial-shadow"
+                  className="absolute right-0 top-full mt-6 w-48 bg-white border border-[#E8EAF2] shadow-xl p-2 flex flex-col gap-1 z-50 rounded-2xl"
                 >
-                  <Link href="/contact" className="px-4 py-3 hover:bg-surface-container-low text-xs font-bold uppercase tracking-widest text-primary transition-colors">
+                  <Link
+                    href="/contact"
+                    className="px-4 py-3 hover:bg-[#F8F9FC] text-xs font-bold uppercase tracking-widest text-[#111111] hover:text-[#004AAD] transition-colors rounded-xl"
+                  >
                     Contact Us
                   </Link>
-                  <Link href="/help" className="px-4 py-3 hover:bg-surface-container-low text-xs font-bold uppercase tracking-widest text-primary transition-colors">
+                  <Link
+                    href="/help"
+                    className="px-4 py-3 hover:bg-[#F8F9FC] text-xs font-bold uppercase tracking-widest text-[#111111] hover:text-[#004AAD] transition-colors rounded-xl"
+                  >
                     Help
                   </Link>
                 </motion.div>
@@ -481,46 +589,71 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* 🔹 Mega Menu Dropdowns (Desktop) */}
+      {/* Mega Menu Dropdowns (Desktop) */}
       <AnimatePresence>
-        {activeMenu === 'shop' && (
+        {activeMenu === "shop" && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="absolute top-full left-0 w-full bg-white border-t border-outline/10 shadow-xl overflow-hidden z-40 hidden lg:block"
+            className="absolute top-full left-0 w-full bg-white border-t border-[#E8EAF2] shadow-2xl overflow-hidden z-40 hidden lg:block"
           >
             <div className="max-w-screen-2xl mx-auto px-12 py-10 flex gap-20">
               <div className="flex flex-col gap-4">
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-on-surface/40 mb-2">By Category</h3>
-                {SHOP_CATEGORIES.map(link => (
-                  <Link key={link.name} href={link.href} className="text-sm font-medium text-primary hover:text-secondary transition-colors">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#666666] mb-2">
+                  By Category
+                </h3>
+                {SHOP_CATEGORIES.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
+                  >
                     {link.name}
                   </Link>
                 ))}
               </div>
               <div className="flex flex-col gap-4">
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-on-surface/40 mb-2">By Gender</h3>
-                {SHOP_GENDER.map(link => (
-                  <Link key={link.name} href={link.href} className="text-sm font-medium text-primary hover:text-secondary transition-colors">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#666666] mb-2">
+                  By Gender
+                </h3>
+                {SHOP_GENDER.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
+                  >
                     {link.name}
                   </Link>
                 ))}
               </div>
               <div className="flex flex-col gap-4">
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-on-surface/40 mb-2">By Collection</h3>
-                {SHOP_COLLECTION.map(link => (
-                  <Link key={link.name} href={link.href} className="text-sm font-medium text-primary hover:text-secondary transition-colors">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#666666] mb-2">
+                  By Collection
+                </h3>
+                {SHOP_COLLECTION.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
+                  >
                     {link.name}
                   </Link>
                 ))}
               </div>
-              <div className="flex-1 bg-surface-container-low p-8 rounded-sm shrink-0 border border-outline/5 relative overflow-hidden group">
+              <div className="flex-1 bg-[#F8F9FC] p-8 rounded-2xl shrink-0 border border-[#E8EAF2] relative overflow-hidden group">
                 <div className="relative z-10">
-                  <h3 className="text-xl font-serif italic text-primary mb-2">Find Your Perfect Pair</h3>
-                  <p className="text-xs text-on-surface/60 mb-6 max-w-[200px]">Explore our curated collections designed for every face shape and aesthetic.</p>
-                  <Link href="/products" className="inline-block border-b border-primary text-xs font-bold uppercase tracking-widest hover:text-secondary hover:border-secondary transition-all">
+                  <h3 className="text-xl font-serif italic text-[#111111] mb-2">
+                    Find Your Perfect Pair
+                  </h3>
+                  <p className="text-xs text-[#666666] mb-6 max-w-[200px]">
+                    Explore our curated collections designed for every face shape and aesthetic.
+                  </p>
+                  <Link
+                    href="/products"
+                    className="inline-block border-b border-[#004AAD] text-xs font-bold uppercase tracking-widest text-[#004AAD] hover:text-[#03173D] hover:border-[#03173D] transition-all"
+                  >
                     Shop All
                   </Link>
                 </div>
@@ -530,35 +663,50 @@ export default function Navbar() {
         )}
 
         {/* Small Dropdowns */}
-        {(activeMenu === 'lenses' || activeMenu === 'offers' || activeMenu === 'brands') && (
+        {(activeMenu === "lenses" ||
+          activeMenu === "offers" ||
+          activeMenu === "brands") && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             className={cn(
-              "absolute top-full bg-white border border-outline/10 shadow-lg p-2 flex flex-col gap-1 z-50 rounded-sm hidden lg:flex min-w-[200px] editorial-shadow mt-4",
-              activeMenu === 'lenses' && "left-[calc(50%-250px)] min-w-[500px] p-6 grid grid-cols-2 gap-8",
-              activeMenu === 'offers' && "left-[calc(50%+60px)]",
-              activeMenu === 'brands' && "left-[calc(50%+140px)]"
+              "absolute top-full bg-white border border-[#E8EAF2] shadow-2xl p-2 flex flex-col gap-1 z-50 rounded-2xl hidden lg:flex min-w-[200px] mt-4",
+              activeMenu === "lenses" &&
+                "left-[calc(50%-250px)] min-w-[500px] p-6 grid grid-cols-2 gap-8",
+              activeMenu === "offers" && "left-[calc(50%+60px)]",
+              activeMenu === "brands" && "left-[calc(50%+140px)]"
             )}
           >
-            {activeMenu === 'lenses' && (
+            {activeMenu === "lenses" && (
               <>
                 <div className="space-y-4">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface/40 px-4">Lens Types</h3>
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#666666] px-4">
+                    Lens Types
+                  </h3>
                   <div className="flex flex-col gap-1">
-                    {lenses.map(lens => (
-                      <Link key={lens.id} href={`/lenses/${lens.id}`} className="px-4 py-3 hover:bg-surface-container-low text-xs font-bold uppercase tracking-widest text-primary hover:text-secondary transition-colors rounded-sm">
+                    {lenses.map((lens) => (
+                      <Link
+                        key={lens.id}
+                        href={`/lenses/${lens.id}`}
+                        className="px-4 py-3 hover:bg-[#F8F9FC] text-xs font-bold uppercase tracking-widest text-[#111111] hover:text-[#004AAD] transition-colors rounded-xl"
+                      >
                         {lens.name}
                       </Link>
                     ))}
                   </div>
                 </div>
-                <div className="space-y-4 border-l border-outline/5">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface/40 px-4">Laboratory Enhancements</h3>
+                <div className="space-y-4 border-l border-[#E8EAF2]">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#666666] px-4">
+                    Laboratory Enhancements
+                  </h3>
                   <div className="flex flex-col gap-1">
-                    {coatings.map(coating => (
-                      <Link key={coating.id} href={`/lenses/${coating.id}`} className="px-4 py-3 hover:bg-surface-container-low text-xs font-bold uppercase tracking-widest text-primary hover:text-secondary transition-colors rounded-sm">
+                    {coatings.map((coating) => (
+                      <Link
+                        key={coating.id}
+                        href={`/lenses/${coating.id}`}
+                        className="px-4 py-3 hover:bg-[#F8F9FC] text-xs font-bold uppercase tracking-widest text-[#111111] hover:text-[#004AAD] transition-colors rounded-xl"
+                      >
                         {coating.name}
                       </Link>
                     ))}
@@ -566,21 +714,31 @@ export default function Navbar() {
                 </div>
               </>
             )}
-            {activeMenu === 'offers' && OFFERS.map(link => (
-              <Link key={link.name} href={link.href} className="px-4 py-3 hover:bg-surface-container-low text-xs font-bold uppercase tracking-widest text-primary hover:text-secondary transition-colors rounded-sm">
-                {link.name}
-              </Link>
-            ))}
-            {activeMenu === 'brands' && brands.map(brand => (
-              <Link key={brand.slug} href={`/products?brand=${brand.slug}`} className="px-4 py-3 hover:bg-surface-container-low text-xs font-bold uppercase tracking-widest text-primary hover:text-secondary transition-colors rounded-sm">
-                {brand.name}
-              </Link>
-            ))}
+            {activeMenu === "offers" &&
+              OFFERS.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className="px-4 py-3 hover:bg-[#F8F9FC] text-xs font-bold uppercase tracking-widest text-[#111111] hover:text-[#004AAD] transition-colors rounded-xl"
+                >
+                  {link.name}
+                </Link>
+              ))}
+            {activeMenu === "brands" &&
+              brands.map((brand) => (
+                <Link
+                  key={brand.slug}
+                  href={`/products?brand=${brand.slug}`}
+                  className="px-4 py-3 hover:bg-[#F8F9FC] text-xs font-bold uppercase tracking-widest text-[#111111] hover:text-[#004AAD] transition-colors rounded-xl"
+                >
+                  {brand.name}
+                </Link>
+              ))}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 🔹 Mobile Menu Overlay */}
+      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -589,35 +747,47 @@ export default function Navbar() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-40 lg:hidden"
           >
-            <div 
-              className="absolute inset-0 bg-primary/20 backdrop-blur-sm"
+            <div
+              className="absolute inset-0 bg-[#111111]/20 backdrop-blur-sm"
               onClick={() => setIsMobileMenuOpen(false)}
             />
-            
+
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="absolute top-0 left-0 w-[85%] max-w-sm h-full bg-surface editorial-shadow p-8 flex flex-col overflow-y-auto"
+              className="absolute top-0 left-0 w-[85%] max-w-sm h-full bg-white shadow-[0_0_40px_rgba(0,0,0,0.15)] p-8 flex flex-col overflow-y-auto"
             >
               <div className="flex justify-between items-center mb-10">
-                <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-serif italic tracking-tighter text-primary">
+                <Link
+                  href="/"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-2xl font-serif italic tracking-tighter text-[#111111]"
+                >
                   LENZIFY
                 </Link>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="text-secondary p-2">
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-[#666666] hover:text-[#111111] p-2 transition-colors"
+                >
                   <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
 
               {/* Mobile Search */}
               <div className="mb-8">
-                <form onSubmit={handleSearch} className="flex items-center border-b border-outline/20 pb-2">
-                  <span className="material-symbols-outlined text-xl text-on-surface/40 mr-3">search</span>
-                  <input 
-                    type="text" 
-                    placeholder="Search..." 
-                    className="bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-widest w-full"
+                <form
+                  onSubmit={handleSearch}
+                  className="flex items-center border-b border-[#E8EAF2] pb-2"
+                >
+                  <span className="material-symbols-outlined text-xl text-[#999999] mr-3">
+                    search
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-widest text-[#111111] placeholder:text-[#999999] w-full"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -627,12 +797,14 @@ export default function Navbar() {
               {/* Mobile Links */}
               <div className="space-y-6 flex-1">
                 {/* Home */}
-                <Link 
-                  href="/" 
+                <Link
+                  href="/"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
                     "text-xs font-black uppercase tracking-[0.2em] flex items-center gap-3 transition-colors",
-                    pathname === '/' ? "text-secondary" : "text-primary hover:text-secondary"
+                    pathname === "/"
+                      ? "text-[#004AAD]"
+                      : "text-[#111111] hover:text-[#004AAD]"
                   )}
                 >
                   <span className="material-symbols-outlined text-xl">home</span>
@@ -641,28 +813,51 @@ export default function Navbar() {
 
                 {/* Shop */}
                 <div>
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-on-surface/40 mb-4 border-b border-outline/10 pb-2">Shop</h3>
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#999999] mb-4 border-b border-[#E8EAF2] pb-2">
+                    Shop
+                  </h3>
                   <div className="space-y-4 pl-2">
-                    <div className="space-y-3 pb-2 border-b border-outline/5">
-                      <p className="text-[10px] font-bold text-on-surface/30 uppercase">By Category</p>
+                    <div className="space-y-3 pb-2 border-b border-[#F0F2F8]">
+                      <p className="text-[10px] font-bold text-[#999999] uppercase">
+                        By Category
+                      </p>
                       {SHOP_CATEGORIES.map((link) => (
-                        <Link key={link.name} href={link.href} onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-primary">
+                        <Link
+                          key={link.name}
+                          href={link.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="block text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
+                        >
                           {link.name}
                         </Link>
                       ))}
                     </div>
-                    <div className="space-y-3 pb-2 border-b border-outline/5">
-                      <p className="text-[10px] font-bold text-on-surface/30 uppercase">By Gender</p>
+                    <div className="space-y-3 pb-2 border-b border-[#F0F2F8]">
+                      <p className="text-[10px] font-bold text-[#999999] uppercase">
+                        By Gender
+                      </p>
                       {SHOP_GENDER.map((link) => (
-                        <Link key={link.name} href={link.href} onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-primary">
+                        <Link
+                          key={link.name}
+                          href={link.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="block text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
+                        >
                           {link.name}
                         </Link>
                       ))}
                     </div>
                     <div className="space-y-3">
-                      <p className="text-[10px] font-bold text-on-surface/30 uppercase">By Collection</p>
+                      <p className="text-[10px] font-bold text-[#999999] uppercase">
+                        By Collection
+                      </p>
                       {SHOP_COLLECTION.map((link) => (
-                        <Link key={link.name} href={link.href} onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-primary">
+                        <Link
+                          key={link.name}
+                          href={link.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="block text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
+                        >
                           {link.name}
                         </Link>
                       ))}
@@ -672,25 +867,45 @@ export default function Navbar() {
 
                 {/* Lenses */}
                 <div>
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-on-surface/40 mb-4 border-b border-outline/10 pb-2">Lenses</h3>
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#999999] mb-4 border-b border-[#E8EAF2] pb-2">
+                    Lenses
+                  </h3>
                   <div className="space-y-6 pl-2">
                     <div className="space-y-3">
-                      <p className="text-[10px] font-bold text-on-surface/30 uppercase">Lens Types</p>
+                      <p className="text-[10px] font-bold text-[#999999] uppercase">
+                        Lens Types
+                      </p>
                       {lenses.map((lens) => (
-                        <Link key={lens.id} href={`/lenses/${lens.id}`} onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-primary">
+                        <Link
+                          key={lens.id}
+                          href={`/lenses/${lens.id}`}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="block text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
+                        >
                           {lens.name}
                         </Link>
                       ))}
                     </div>
                     <div className="space-y-3">
-                      <p className="text-[10px] font-bold text-on-surface/30 uppercase">Coatings</p>
+                      <p className="text-[10px] font-bold text-[#999999] uppercase">
+                        Coatings
+                      </p>
                       {coatings.map((coating) => (
-                        <Link key={coating.id} href={`/lenses/${coating.id}`} onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-primary">
+                        <Link
+                          key={coating.id}
+                          href={`/lenses/${coating.id}`}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="block text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
+                        >
                           {coating.name}
                         </Link>
                       ))}
                     </div>
-                    <Link href="/replace-lenses" onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-secondary mt-2">
+                    <Link
+                      href="/replace-lenses"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block text-sm font-medium text-[#004AAD] mt-2"
+                    >
                       Replace Your Lenses
                     </Link>
                   </div>
@@ -698,10 +913,17 @@ export default function Navbar() {
 
                 {/* Offers */}
                 <div>
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-on-surface/40 mb-4 border-b border-outline/10 pb-2">Offers</h3>
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#999999] mb-4 border-b border-[#E8EAF2] pb-2">
+                    Offers
+                  </h3>
                   <div className="space-y-3 pl-2">
                     {OFFERS.map((link) => (
-                      <Link key={link.name} href={link.href} onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-primary">
+                      <Link
+                        key={link.name}
+                        href={link.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
+                      >
                         {link.name}
                       </Link>
                     ))}
@@ -710,16 +932,23 @@ export default function Navbar() {
 
                 {/* Brands */}
                 <div>
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-on-surface/40 mb-4 border-b border-outline/10 pb-2">Brands</h3>
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#999999] mb-4 border-b border-[#E8EAF2] pb-2">
+                    Brands
+                  </h3>
                   <div className="space-y-3 pl-2">
                     {brands.map((brand) => (
-                      <Link key={brand.slug} href={`/products?brand=${brand.slug}`} onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-primary">
+                      <Link
+                        key={brand.slug}
+                        href={`/products?brand=${brand.slug}`}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
+                      >
                         {brand.name}
                       </Link>
                     ))}
                   </div>
                 </div>
-                
+
                 {/* Try at Home */}
                 <div>
                   <Link
@@ -727,7 +956,9 @@ export default function Navbar() {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={cn(
                       "text-xs font-black uppercase tracking-[0.2em] flex items-center gap-3 transition-colors",
-                      pathname === '/try-at-home' ? "text-secondary" : "text-primary hover:text-secondary"
+                      pathname === "/try-at-home"
+                        ? "text-[#004AAD]"
+                        : "text-[#111111] hover:text-[#004AAD]"
                     )}
                   >
                     <span className="material-symbols-outlined text-xl">home_work</span>
@@ -737,30 +968,52 @@ export default function Navbar() {
 
                 {/* Support */}
                 <div>
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-on-surface/40 mb-4 border-b border-outline/10 pb-2">Support</h3>
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#999999] mb-4 border-b border-[#E8EAF2] pb-2">
+                    Support
+                  </h3>
                   <div className="space-y-3 pl-2">
-                    <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-primary">
+                    <Link
+                      href="/contact"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
+                    >
                       Contact Us
                     </Link>
-                    <Link href="/help" onClick={() => setIsMobileMenuOpen(false)} className="block text-sm font-medium text-primary">
+                    <Link
+                      href="/help"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
+                    >
                       Help
                     </Link>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-8 space-y-6 pt-8 border-t border-outline/10 mb-8">
+              <div className="mt-8 space-y-6 pt-8 border-t border-[#E8EAF2] mb-8">
                 <div className="flex items-center gap-6">
-                  <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#111111] hover:text-[#004AAD] transition-colors"
+                  >
                     <span className="material-symbols-outlined text-xl">person</span>
                     Account
                   </Link>
-                  <Link href="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-                    <span className="material-symbols-outlined text-xl text-secondary">favorite</span>
+                  <Link
+                    href="/wishlist"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#111111] hover:text-[#004AAD] transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-xl text-[#004AAD]">
+                      favorite
+                    </span>
                     Wishlist
                   </Link>
                 </div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-on-surface/30 italic">© 2026 Lenzify</p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-[#999999] italic">
+                  © 2026 Lenzify
+                </p>
               </div>
             </motion.div>
           </motion.div>

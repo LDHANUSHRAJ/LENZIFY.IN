@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Serif } from "next/font/google";
+import { Inter, Noto_Serif, Bodoni_Moda } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import SmoothScroll from "@/components/lenis/SmoothScroll";
@@ -19,11 +19,18 @@ const interLabel = Inter({
   weight: ['300', '400', '500', '600']
 });
 
-const notoSerif = Noto_Serif({ 
-  subsets: ['latin'], 
+const notoSerif = Noto_Serif({
+  subsets: ['latin'],
   variable: '--font-headline',
   weight: ['400', '700'],
   style: ['normal', 'italic']
+});
+
+const bodoniModa = Bodoni_Moda({
+  subsets: ['latin'],
+  variable: '--font-hero',
+  weight: ['400', '700', '900'],
+  style: ['italic'],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://lenzify.in';
@@ -93,7 +100,7 @@ export default async function RootLayout({
   const { data: { user } } = await supabase.auth.getUser();
 
   return (
-    <html lang="en" className={cn(inter.variable, interLabel.variable, notoSerif.variable)} suppressHydrationWarning>
+    <html lang="en" className={cn(inter.variable, interLabel.variable, notoSerif.variable, bodoniModa.variable)} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -101,7 +108,7 @@ export default async function RootLayout({
         <OrganizationJsonLd />
         <GoogleAnalytics />
       </head>
-      <body className="bg-surface text-on-surface font-body selection:bg-secondary-fixed selection:text-on-secondary-fixed antialiased">
+      <body className="bg-surface text-on-surface font-serif italic tracking-tighter selection:bg-secondary-fixed selection:text-on-secondary-fixed antialiased">
         <Toaster position="bottom-right" toastOptions={{
           style: {
             background: '#ffffff',

@@ -5,13 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { useAuth } from "@/components/providers/AuthProvider";
-import { cn } from "@/lib/utils";
 import ProductCard from "@/components/store/ProductCard";
 import HomeCarousel from "./HomeCarousel";
-import SectionBanner from "./SectionBanner";
-import LensesSection from "./LensesSection";
-
+import {
+  Star,
+  ChevronRight,
+  Tag,
+  Truck,
+  Eye,
+  CheckCircle,
+} from "lucide-react";
 
 interface HomeClientProps {
   initialSections: any[];
@@ -22,82 +25,757 @@ interface HomeClientProps {
   };
 }
 
-function ProductRow({ title, subtitle, filterField, filterValue, initialData }: { title: string, subtitle: string, filterField?: string, filterValue?: any, initialData?: any[] }) {
-  const [products, setProducts] = useState<any[]>(initialData || []);
-  const [loading, setLoading] = useState(!initialData);
-  const supabase = createClient();
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      // If we have initialData, we don't need to fetch
-      if (initialData && initialData.length > 0) return;
-
-      let query = supabase
-        .from("products")
-        .select("*")
-        .eq("is_enabled", true)
-        .order("created_at", { ascending: false })
-        .limit(4);
-      
-      if (filterField === 'featured') {
-          query = query.eq('is_featured', true);
-      } else if (filterField === 'trending') {
-          query = query.eq('is_trending', true);
-      } else if (filterField === 'new_arrival') {
-          query = query.eq('is_new_arrival', true);
-      } else if (filterField === 'best_seller') {
-          query = query.eq('is_editors_choice', true);
-      }
-
-      const { data } = await query;
-      if (data) setProducts(data);
-      setLoading(false);
-    };
-    fetchProducts();
-  }, [supabase, filterField, filterValue, initialData]);
-
-  if (loading) {
-    return (
-      <section className="py-24 bg-surface-container">
-        <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map((p) => (
-                    <div key={p} className="aspect-[4/5] bg-surface-container-high animate-pulse rounded-lg" />
-                ))}
-            </div>
-        </div>
-      </section>
-    );
-  }
+// ─── Top Categories Strip ─────────────────────────────────────────────────────
+function TopCategoriesStrip() {
+  const cats = [
+    { name: "Eyeglasses", image: "/images/categories/eyeglasses.png", href: "/products?type=Eyeglasses" },
+    { name: "Sunglasses", image: "/images/categories/sunglasses.png", href: "/products?type=Sunglasses" },
+    { name: "Computer Glasses", image: "/images/categories/computer_glasses.png", href: "/products?type=Computer Glasses" },
+    { name: "Contact Lenses", image: "/images/categories/contact_lenses.png", href: "/products?type=Contact Lenses" },
+    { name: "Kids", image: "/images/categories/kids.png", href: "/products?gender=Kids" },
+    { name: "Offers", image: null, href: "/offers" },
+  ];
 
   return (
-    <section className="py-24 bg-surface-container">
-      <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
-        <div className="flex justify-between items-end mb-16">
-          <div>
-            <h2 className="text-4xl font-serif text-primary">{title}</h2>
-            <p className="text-on-surface-variant mt-2 font-body">{subtitle}</p>
-          </div>
-          <Link href="/products" className="text-secondary font-medium underline underline-offset-8 hover:opacity-70 transition-all">
-            View All
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
+    <section className="bg-white py-10 px-6 border-b border-[#E8EAF2]">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex gap-3 overflow-x-auto no-scrollbar">
+          {cats.map((cat, i) => (
+            <motion.div
+              key={cat.name}
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.06 }}
+              className="flex-1 min-w-[100px]"
+            >
+              <Link href={cat.href} className="flex flex-col items-center gap-3 group">
+                <div className="relative w-full aspect-square rounded-2xl bg-[#F8F9FC] overflow-hidden border border-[#E8EAF2] group-hover:border-[#004AAD] group-hover:shadow-[0_8px_24px_rgba(0,74,173,0.12)] transition-all duration-300">
+                  {cat.image ? (
+                    <Image
+                      src={cat.image}
+                      alt={cat.name}
+                      fill
+                      className="object-contain p-3 group-hover:scale-110 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Tag className="w-10 h-10 text-[#004AAD]" />
+                    </div>
+                  )}
+                </div>
+                <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-[#666666] group-hover:text-[#004AAD] transition-colors text-center leading-tight">
+                  {cat.name}
+                </span>
+              </Link>
+            </motion.div>
           ))}
-          {products.length === 0 && (
-             <div className="col-span-12 text-center py-20 opacity-30 uppercase tracking-[0.3em] font-bold text-xs">No archives found.</div>
-          )}
         </div>
       </div>
     </section>
   );
 }
 
+// ─── Collection Showcase ───────────────────────────────────────────────────────
+function CollectionShowcase() {
+  const collections = [
+    {
+      name: "Optical Frames",
+      desc: "Minimal precision engineering",
+      href: "/products?type=Eyeglasses",
+      image: "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?q=80&w=800&auto=format&fit=crop",
+    },
+    {
+      name: "Sunglasses",
+      desc: "Luxury fashion collection",
+      href: "/products?type=Sunglasses",
+      image: "https://images.unsplash.com/photo-1577803645773-f96470509666?q=80&w=800&auto=format&fit=crop",
+    },
+    {
+      name: "Contact Lenses",
+      desc: "Daily and monthly comfort",
+      href: "/products?type=Contact Lenses",
+      image: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?q=80&w=800&auto=format&fit=crop",
+    },
+    {
+      name: "Smart Glasses",
+      desc: "Future-ready wearable tech",
+      href: "/products?type=Smart Glasses",
+      image: "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?q=80&w=800&auto=format&fit=crop",
+    },
+  ];
+
+  return (
+    <section className="py-20 md:py-28 px-6 bg-white">
+      <div className="max-w-7xl mx-auto lg:px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <span className="text-xs font-semibold uppercase tracking-widest mb-4 block text-[#004AAD]">
+            Collections
+          </span>
+          <h2 className="font-serif italic text-4xl md:text-5xl text-[#111111]">
+            Explore Collections
+          </h2>
+          <p className="text-[#666666] text-sm mt-4 font-medium">
+            Designed for every personality.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {collections.map((col, i) => (
+            <motion.div
+              key={col.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: i * 0.1 }}
+            >
+              <Link
+                href={col.href}
+                className="group relative aspect-[3/4] block rounded-3xl overflow-hidden bg-[#F8F9FC] border border-[#ECECEC] hover:border-transparent transition-all duration-500 shadow-[0_10px_30px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_60px_rgba(0,0,0,0.12)] hover:-translate-y-2"
+              >
+                <Image
+                  src={col.image}
+                  alt={col.name}
+                  fill
+                  unoptimized
+                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#03173D]/80 via-[#03173D]/10 to-transparent opacity-70 group-hover:opacity-85 transition-opacity" />
+                <div className="absolute bottom-6 left-6 right-6">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-1">
+                    {col.desc}
+                  </p>
+                  <h3 className="text-base md:text-xl font-bold uppercase tracking-tight text-white leading-tight">
+                    {col.name}
+                  </h3>
+                </div>
+                <div className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 bg-white">
+                  <ChevronRight className="w-4 h-4 text-[#03173D]" />
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Product Row ───────────────────────────────────────────────────────────────
+function ProductRow({
+  title,
+  subtitle,
+  filterField,
+  initialData,
+  gray = false,
+}: {
+  title: string;
+  subtitle?: string;
+  filterField?: string;
+  initialData?: any[];
+  gray?: boolean;
+}) {
+  const [products, setProducts] = useState<any[]>(initialData || []);
+  const [loading, setLoading] = useState(!initialData);
+  const supabase = createClient();
+
+  useEffect(() => {
+    if (initialData && initialData.length > 0) return;
+    const fetchProducts = async () => {
+      let query = supabase
+        .from("products")
+        .select("*")
+        .eq("is_enabled", true)
+        .order("created_at", { ascending: false })
+        .limit(4);
+      if (filterField === "featured") query = query.eq("is_featured", true);
+      else if (filterField === "trending") query = query.eq("is_trending", true);
+      else if (filterField === "new_arrival") query = query.eq("is_new_arrival", true);
+      else if (filterField === "best_seller") query = query.eq("is_editors_choice", true);
+      const { data } = await query;
+      if (data) setProducts(data);
+      setLoading(false);
+    };
+    fetchProducts();
+  }, [supabase, filterField, initialData]);
+
+  if (loading) {
+    return (
+      <section className={`py-20 md:py-28 ${gray ? "bg-[#F8F9FC]" : "bg-white"}`}>
+        <div className="max-w-7xl mx-auto px-6 lg:px-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((p) => (
+              <div
+                key={p}
+                className="aspect-[4/5] bg-[#F0F2F8] animate-pulse rounded-3xl"
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (products.length === 0) return null;
+
+  return (
+    <section className={`py-20 md:py-28 px-6 ${gray ? "bg-[#F8F9FC]" : "bg-white"}`}>
+      <div className="max-w-7xl mx-auto lg:px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex justify-between items-end mb-16"
+        >
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-widest mb-2 block text-[#004AAD]">
+              {subtitle || "Curated"}
+            </span>
+            <h2 className="font-serif italic text-4xl md:text-5xl text-[#111111]">
+              {title}
+            </h2>
+          </div>
+          <Link
+            href="/products"
+            className="text-[10px] font-bold uppercase tracking-widest text-[#004AAD] border border-[#004AAD] hover:bg-[#004AAD] hover:text-white px-5 py-2.5 rounded-full transition-all duration-300"
+          >
+            View All →
+          </Link>
+        </motion.div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-8">
+          {products.map((p, i) => (
+            <motion.div
+              key={p.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08 }}
+            >
+              <ProductCard product={p} />
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Premium Brand Banner ──────────────────────────────────────────────────────
+function PremiumBrandBanner() {
+  const premiumBrands = ["Ray-Ban", "ZEISS", "Essilor", "Oakley", "Vogue", "Carrera"];
+
+  return (
+    <section
+      className="py-20 md:py-28 px-6 relative overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #03173D 0%, #004AAD 60%, #009DFF 100%)" }}
+    >
+      {/* Subtle pattern overlay */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-white/3 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2" />
+      </div>
+
+      <div className="max-w-7xl mx-auto lg:px-6 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <span className="text-xs font-semibold uppercase tracking-widest mb-4 block text-white/60">
+            Premium Partners
+          </span>
+          <h2 className="font-serif italic text-4xl md:text-5xl text-white mb-4">
+            Discover Premium Brands
+          </h2>
+          <p className="text-white/60 text-sm font-medium max-w-xl mx-auto">
+            We stock only the finest eyewear brands from across the world, curated for quality and style.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-12">
+          {premiumBrands.map((brand, i) => (
+            <motion.div
+              key={brand}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08 }}
+            >
+              <Link
+                href={`/products?brand=${brand.toLowerCase().replace(/[^a-z0-9]/g, "-")}`}
+                className="flex items-center justify-center py-5 px-4 rounded-2xl bg-white/10 border border-white/15 hover:bg-white/20 hover:border-white/30 transition-all duration-300 group"
+              >
+                <span className="text-sm font-bold uppercase tracking-widest text-white/80 group-hover:text-white transition-colors">
+                  {brand}
+                </span>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="text-center">
+          <Link
+            href="/products"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-white text-[#03173D] font-semibold text-sm hover:bg-white/90 transition-all duration-300 shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
+          >
+            Shop All Brands
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Brands Marquee ────────────────────────────────────────────────────────────
+function BrandsMarquee() {
+  const brands = [
+    "Ray-Ban",
+    "ZEISS",
+    "Essilor",
+    "Kodak",
+    "Bausch & Lomb",
+    "Johnson & Johnson",
+    "Oakley",
+    "Vogue",
+    "Carrera",
+    "Fastrack",
+  ];
+
+  return (
+    <section className="py-16 border-y border-[#E8EAF2] bg-[#F8F9FC] overflow-hidden">
+      <div className="flex gap-0">
+        <div className="flex gap-20 items-center animate-marquee shrink-0 pr-20">
+          {[...brands, ...brands].map((brand, i) => (
+            <span
+              key={`${brand}-${i}`}
+              className="text-[#111111] opacity-30 font-bold text-xl lg:text-2xl uppercase tracking-[0.15em] whitespace-nowrap hover:opacity-100 hover:text-[#004AAD] transition-all cursor-default"
+            >
+              {brand}
+            </span>
+          ))}
+        </div>
+        <div
+          aria-hidden
+          className="flex gap-20 items-center animate-marquee shrink-0 pr-20"
+        >
+          {[...brands, ...brands].map((brand, i) => (
+            <span
+              key={`dup-${brand}-${i}`}
+              className="text-[#111111] opacity-30 font-bold text-xl lg:text-2xl uppercase tracking-[0.15em] whitespace-nowrap"
+            >
+              {brand}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Why Lenzify ──────────────────────────────────────────────────────────────
+function WhyLenzify() {
+  const stats = [
+    { icon: Star, number: "1000+", label: "Happy Customers" },
+    { icon: Eye, number: "500+", label: "Frames Available" },
+    { icon: Truck, number: "24 Hr", label: "Delivery" },
+    { icon: CheckCircle, number: "Free", label: "Eye Test" },
+  ];
+
+  return (
+    <section className="py-20 md:py-28 px-6 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto lg:px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <motion.div
+          initial={{ opacity: 0, x: -40 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.9 }}
+          className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
+        >
+          <Image
+            src="https://images.unsplash.com/photo-1556306535-0f09a537f0a3?q=80&w=800&auto=format&fit=crop"
+            alt="Why Lenzify"
+            fill
+            unoptimized
+            className="object-cover"
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "linear-gradient(to top, rgba(3,23,61,0.7) 0%, transparent 60%)",
+            }}
+          />
+          <div className="absolute bottom-10 left-10 right-10">
+            <p className="text-white font-bold text-2xl uppercase tracking-tight">
+              Premium Vision
+            </p>
+            <p className="text-white/60 text-sm mt-2">
+              Crafted for the modern visionary
+            </p>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, x: 40 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.9, delay: 0.2 }}
+        >
+          <span className="text-xs font-semibold uppercase tracking-widest mb-4 block text-[#004AAD]">
+            Why Choose Us
+          </span>
+          <h2 className="font-serif italic text-4xl md:text-5xl text-[#111111] mb-4">
+            India&apos;s Most Trusted Optical Brand
+          </h2>
+          <p className="text-[#666666] text-sm leading-relaxed mb-12 max-w-md">
+            From clinical eye tests to the latest smart eyewear, we combine cutting-edge
+            technology with unmatched personal care.
+          </p>
+
+          <div className="grid grid-cols-2 gap-4">
+            {stats.map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 + i * 0.1 }}
+                className="rounded-2xl p-6 group hover:-translate-y-1 transition-transform duration-300 bg-white border border-[#E8EAF2] shadow-[0_10px_30px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:border-[#004AAD]/20"
+              >
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform bg-[#E8EEF8]">
+                  <stat.icon className="w-5 h-5 text-[#004AAD]" />
+                </div>
+                <p className="text-2xl font-bold text-[#111111]">{stat.number}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#666666] mt-1">
+                  {stat.label}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Virtual Try-On CTA ────────────────────────────────────────────────────────
+function VirtualTryOnCTA() {
+  return (
+    <section
+      className="py-20 md:py-28 px-6 relative overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, #03173D 0%, #004AAD 50%, #009DFF 100%)",
+      }}
+    >
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-white/5 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3" />
+      </div>
+
+      <div className="max-w-5xl mx-auto relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.9 }}
+          className="text-center"
+        >
+          <span className="text-xs font-semibold uppercase tracking-widest mb-6 block text-white/60">
+            Augmented Reality
+          </span>
+          <h2 className="font-serif italic text-4xl md:text-6xl text-white mb-6">
+            Experience Before<br />You Buy
+          </h2>
+          <p className="text-white/60 text-sm md:text-base font-medium max-w-xl mx-auto mb-12 leading-relaxed">
+            Use your camera to preview frames in real time. 500+ styles. Zero commitment.
+          </p>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+            className="relative rounded-3xl p-8 md:p-12 max-w-lg mx-auto mb-12 border border-white/15 bg-white/10 backdrop-blur-sm"
+          >
+            <div className="relative aspect-video rounded-2xl overflow-hidden mb-6">
+              <Image
+                src="https://images.unsplash.com/photo-1574258495973-f010dfbb5371?q=80&w=600&auto=format&fit=crop"
+                alt="Virtual Try-On"
+                fill
+                unoptimized
+                className="object-cover opacity-80"
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full border-2 border-white flex items-center justify-center bg-white/20">
+                  <Eye className="w-8 h-8 text-white" />
+                </div>
+              </div>
+            </div>
+            <p className="text-white/50 text-xs uppercase tracking-[0.3em] font-bold">
+              AI-Powered Face Detection
+            </p>
+          </motion.div>
+
+          <button
+            suppressHydrationWarning
+            onClick={() => document.dispatchEvent(new CustomEvent("open-virtual-tryon"))}
+            className="px-12 py-5 text-sm font-semibold rounded-full transition-all duration-300 hover:scale-105 bg-white text-[#03173D] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)]"
+          >
+            Try Now — It&apos;s Free
+          </button>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Testimonials ──────────────────────────────────────────────────────────────
+function Testimonials() {
+  const [active, setActive] = useState(0);
+
+  const reviews = [
+    {
+      name: "Priya Sharma",
+      location: "Mumbai",
+      text: "Lenzify completely changed how I shop for glasses. The virtual try-on is insanely accurate — I could see exactly how each frame looked on my face.",
+      rating: 5,
+      avatar:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop",
+    },
+    {
+      name: "Rahul Verma",
+      location: "Bangalore",
+      text: "Ordered ZEISS blue-cut lenses and they arrived in 24 hours. Quality is incredible, and the free eye test service at home was a game changer.",
+      rating: 5,
+      avatar:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop",
+    },
+    {
+      name: "Anjali Nair",
+      location: "Chennai",
+      text: "The Try-at-Home service brought 150+ frames to my door. Bought two pairs and the optometrist was so professional. 10/10 experience.",
+      rating: 5,
+      avatar:
+        "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=200&auto=format&fit=crop",
+    },
+  ];
+
+  useEffect(() => {
+    const t = setInterval(() => setActive((p) => (p + 1) % reviews.length), 5000);
+    return () => clearInterval(t);
+  }, [reviews.length]);
+
+  return (
+    <section className="py-20 md:py-28 px-6 bg-[#F8F9FC]">
+      <div className="max-w-5xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <span className="text-xs font-semibold uppercase tracking-widest mb-4 block text-[#004AAD]">
+            Testimonials
+          </span>
+          <h2 className="font-serif italic text-4xl md:text-5xl text-[#111111]">
+            What Our Customers Say
+          </h2>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {reviews.map((r, i) => (
+            <motion.div
+              key={r.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className={`rounded-3xl p-8 border transition-all duration-500 cursor-pointer bg-white ${
+                active === i
+                  ? "border-[#004AAD] shadow-[0_10px_40px_rgba(0,74,173,0.12)]"
+                  : "border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
+              }`}
+              onClick={() => setActive(i)}
+            >
+              <div className="flex gap-1 mb-4">
+                {[...Array(r.rating)].map((_, j) => (
+                  <Star key={j} className="w-4 h-4 fill-current text-[#D4A853]" />
+                ))}
+              </div>
+              <p className="text-[#666666] text-sm leading-relaxed mb-6 font-medium">
+                &ldquo;{r.text}&rdquo;
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full overflow-hidden relative border border-[#ECECEC]">
+                  <Image
+                    src={r.avatar}
+                    alt={r.name}
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#111111]">
+                    {r.name}
+                  </p>
+                  <p className="text-[9px] text-[#999999] font-bold uppercase tracking-widest">
+                    {r.location}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="flex justify-center gap-2 mt-8">
+          {reviews.map((_, i) => (
+            <button
+              suppressHydrationWarning
+              key={i}
+              onClick={() => setActive(i)}
+              className="h-1.5 rounded-full transition-all duration-300"
+              style={{
+                width: active === i ? 24 : 8,
+                background: active === i ? "#004AAD" : "#E8EAF2",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Trust Badges ─────────────────────────────────────────────────────────────
+function TrustBadges() {
+  const badges = [
+    { icon: Truck, title: "Free Shipping", desc: "On all orders above ₹999" },
+    { icon: CheckCircle, title: "2-Year Warranty", desc: "On all frames & lenses" },
+    { icon: Eye, title: "Virtual Try-On", desc: "500+ frames via AR" },
+    { icon: Star, title: "Easy Returns", desc: "7-day hassle-free returns" },
+  ];
+
+  return (
+    <section className="py-16 px-6 bg-white border-t border-[#E8EAF2]">
+      <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
+        {badges.map((badge, i) => (
+          <motion.div
+            key={badge.title}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.08 }}
+            className="flex flex-col items-center text-center p-6 rounded-2xl bg-white border border-[#E8EAF2] shadow-[0_10px_30px_rgba(0,0,0,0.05)] hover:border-[#004AAD]/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] transition-all duration-300 group"
+          >
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-[#E8EEF8] group-hover:bg-[#D8E8FF] transition-colors">
+              <badge.icon className="w-6 h-6 text-[#004AAD]" />
+            </div>
+            <p className="text-xs font-bold uppercase tracking-widest text-[#111111] mb-1">
+              {badge.title}
+            </p>
+            <p className="text-[10px] text-[#666666] font-medium">{badge.desc}</p>
+          </motion.div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─── Newsletter ────────────────────────────────────────────────────────────────
+function NewsletterSection() {
+  const [email, setEmail] = useState("");
+  return (
+    <section
+      className="py-20 md:py-28 px-6 relative overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, #03173D 0%, #004AAD 100%)",
+      }}
+    >
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 right-0 w-72 h-72 bg-white/5 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3" />
+      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="max-w-2xl mx-auto text-center relative z-10"
+      >
+        <span className="text-xs font-semibold uppercase tracking-widest mb-4 block text-white/60">
+          Newsletter
+        </span>
+        <h2 className="font-serif italic text-4xl md:text-5xl text-white mb-4">
+          Get Exclusive Offers
+        </h2>
+        <p className="text-white/60 text-sm font-medium mb-10 leading-relaxed">
+          Join 10,000+ visionaries. Early access to new drops, member-only discounts, and
+          insider style guides.
+        </p>
+        <div className="flex gap-3 max-w-md mx-auto">
+          <input
+            suppressHydrationWarning
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="your@email.com"
+            className="flex-1 rounded-full px-6 py-4 bg-white/10 border border-white/20 text-white text-sm font-medium placeholder:text-white/30 focus:outline-none focus:border-white/50 transition-colors"
+          />
+          <button
+            suppressHydrationWarning
+            className="px-8 py-4 rounded-full text-sm font-semibold bg-white text-[#03173D] hover:bg-white/90 transition-all hover:scale-105 shadow-[0_8px_24px_rgba(0,0,0,0.2)] whitespace-nowrap"
+          >
+            Subscribe
+          </button>
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+// ─── Replace Lenses CTA ────────────────────────────────────────────────────────
+function ReplaceLensesCTA() {
+  return (
+    <section className="py-20 md:py-28 px-6 bg-[#F8F9FC]">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="max-w-4xl mx-auto text-center"
+      >
+        <span className="text-xs font-semibold uppercase tracking-widest mb-4 block text-[#004AAD]">
+          Service
+        </span>
+        <h2 className="font-serif italic text-4xl md:text-5xl text-[#111111] mb-4">
+          Replace Your Lenses
+        </h2>
+        <p className="text-[#666666] text-sm leading-relaxed max-w-xl mx-auto mb-10">
+          Love your frames? Send them to us. Our master opticians will fit state-of-the-art
+          lenses at unbeatable prices.
+        </p>
+        <Link
+          href="/replace-lenses"
+          className="inline-flex items-center gap-2 px-12 py-5 rounded-full text-sm font-semibold bg-[#03173D] text-white hover:bg-gradient-to-r hover:from-[#03173D] hover:to-[#004AAD] transition-all duration-300 hover:-translate-y-1 shadow-[0_8px_24px_rgba(3,23,61,0.25)]"
+        >
+          Start Replacement
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+      </motion.div>
+    </section>
+  );
+}
+
+// ─── Main Export ───────────────────────────────────────────────────────────────
 export default function HomeClient({ initialSections, initialProducts }: HomeClientProps) {
   const [sections, setSections] = useState(initialSections);
-  const { user } = useAuth();
   const supabase = createClient();
 
   useEffect(() => {
@@ -107,195 +785,93 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
         "postgres_changes",
         { event: "*", schema: "public", table: "homepage_config" },
         async () => {
-            const { data } = await supabase
-                .from("homepage_config")
-                .select("*")
-                .eq("is_active", true)
-                .order("sort_order", { ascending: true });
-            if (data) setSections(data);
+          const { data } = await supabase
+            .from("homepage_config")
+            .select("*")
+            .eq("is_active", true)
+            .order("sort_order", { ascending: true });
+          if (data) setSections(data);
         }
       )
       .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [supabase]);
 
+  const featuredSection = sections.find((s) => s.section_key === "featured_products");
+  const trendingSection = sections.find((s) => s.section_key === "trending_products");
+
   return (
-    <div className="bg-surface text-on-surface selection:bg-secondary-fixed selection:text-on-secondary-fixed">
-      <main className="pt-0">
-        <HomeCarousel />
-        
-        {sections.map((section) => {
+    <div className="bg-white">
+      {/* 1. Hero Carousel — dark navy gradient */}
+      <HomeCarousel />
 
-          const content = section.content;
+      {/* 2. Quick Category Strip — white */}
+      <TopCategoriesStrip />
 
-          switch (section.section_key) {
-            case "hero":
-              return null;
+      {/* 3. Featured Collections — white, large cards */}
+      <CollectionShowcase />
 
+      {/* 4. Featured Products — white */}
+      {featuredSection && (
+        <ProductRow
+          title={featuredSection.content.title || "Featured"}
+          subtitle={featuredSection.content.subtitle || "Handpicked"}
+          filterField="featured"
+          initialData={initialProducts?.featured}
+        />
+      )}
 
-            case "categories":
-              return (
-                <section key={section.id} className="py-32 bg-surface-container-low">
+      {/* 5. Trending Products — gray */}
+      {trendingSection && (
+        <ProductRow
+          title={trendingSection.content.title || "Trending Now"}
+          subtitle={trendingSection.content.subtitle || "Most Popular"}
+          filterField="trending"
+          initialData={initialProducts?.trending}
+          gray
+        />
+      )}
 
+      {/* 6. New Arrivals — white */}
+      <ProductRow
+        title="New Arrivals"
+        subtitle="Just Landed"
+        filterField="new_arrival"
+        initialData={initialProducts?.new_arrivals}
+      />
 
-                  <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
-                    <div className="flex justify-between items-end mb-16">
-                      <div>
-                        <h2 className="text-4xl font-serif text-primary">{content.title || "Curated Categories"}</h2>
-                        <p className="text-on-surface-variant mt-2 font-body">{content.subtitle || "Defining the future of optical aesthetics."}</p>
-                      </div>
-                      <Link href="/products" className="text-secondary font-medium underline underline-offset-8 hover:opacity-70 transition-all">
-                        View All
-                      </Link>
-                    </div>
-                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-6">
-                      {(content.items as any[] | undefined)
-                        ?.filter((cat: any, idx: number, arr: any[]) => arr.findIndex((c: any) => c.name === cat.name) === idx)
-                        .map((cat: any) => (
-                        <Link href={cat.href || "/products"} key={cat.name} className="group relative overflow-hidden bg-surface aspect-[3/4] md:aspect-[4/5] rounded-[14px]">
-                          <Image
-                            src={cat.image_url || "/images/categories/men.png"}
-                            alt={cat.name}
-                            fill
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                          <div className="absolute bottom-3 left-3 md:bottom-8 md:left-8">
-                            <span className="text-[7px] md:text-[9px] font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] text-on-surface/50 block mb-1 md:mb-2">{cat.type || cat.label || "Collection"}</span>
-                            <h3 className="text-sm md:text-2xl font-serif">{cat.name}</h3>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                </section>
-              );
+      {/* 7. Premium Brand Banner — dark navy gradient */}
+      <PremiumBrandBanner />
 
+      {/* 8. Best Sellers — white */}
+      <ProductRow
+        title="Best Sellers"
+        subtitle="Customer Favourites"
+        filterField="best_seller"
+      />
 
-            case "featured_products":
-              return <ProductRow key={section.id} title={content.title || "Featured"} subtitle={content.subtitle} filterField="featured" filterValue="Featured" initialData={initialProducts?.featured} />;
+      {/* 9. Brand Marquee — gray */}
+      <BrandsMarquee />
 
+      {/* 10. Why LENZIFY / Trust Section — white */}
+      <WhyLenzify />
 
-            
-            case "trending_products":
-              return <ProductRow key={section.id} title={content.title || "Trending"} subtitle={content.subtitle} filterField="trending" filterValue="Trending" initialData={initialProducts?.trending} />;
+      {/* Virtual Try-On CTA — navy gradient */}
+      <VirtualTryOnCTA />
 
-            case "new_arrivals":
-              return (
-                <div key={section.id}>
-                  <SectionBanner title={content.title || "New Arrivals"} image="/images/editorial/lifestyle_laughing.png" />
-                  <ProductRow title={content.title || "New Arrivals"} subtitle={content.subtitle} filterField="new_arrival" filterValue="New Arrivals" initialData={initialProducts?.new_arrivals} />
-                </div>
-              );
+      {/* 11. Testimonials — gray */}
+      <Testimonials />
 
-            case "collections_gallery":
-              const collections = content.items || [];
-              return (
-                <div key={section.id}>
-                  <LensesSection />
-                  <section className="py-32 bg-brand-background">
+      {/* Trust Badges — white */}
+      <TrustBadges />
 
+      {/* 12. Newsletter — dark navy gradient */}
+      <NewsletterSection />
 
-                   <div className="max-w-screen-2xl mx-auto px-6 md:px-12">
-                      <div className="flex justify-between items-end mb-16">
-                        <div>
-                          <h2 className="text-4xl font-serif text-brand-navy italic">{content.title || "The Collections"}</h2>
-                          <p className="text-brand-navy/40 mt-2 font-body uppercase tracking-widest text-[10px] font-bold">{content.subtitle || "Curated aesthetic narratives."}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                         {collections.length > 0 ? (
-                           collections.map((col: any) => (
-                            <Link href={`/products?collection=${col.name}`} key={col.id} className="group relative aspect-[16/10] overflow-hidden bg-white border border-brand-navy/5">
-                               {col.banner_url ? (
-                                 <Image src={col.banner_url} alt={col.name} fill className="object-cover transition-transform duration-1000 group-hover:scale-110" />
-                               ) : (
-                                 <div className="w-full h-full flex items-center justify-center bg-brand-navy/[0.02] text-[8px] font-bold tracking-widest uppercase text-brand-navy/10 italic">SCHEMA ASSET MISSING</div>
-                               )}
-                               <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/60 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
-                               <div className="absolute bottom-8 left-8 right-8">
-                                  <p className="text-[9px] font-bold text-white/60 tracking-[0.3em] uppercase mb-2">{col.type || "CURATED"}</p>
-                                  <h3 className="text-2xl font-serif text-white italic">{col.name}</h3>
-                               </div>
-                            </Link>
-                          ))
-                         ) : (
-                           [1,2,3].map(i => (
-                            <div key={i} className="aspect-[16/10] bg-brand-navy/5 animate-pulse rounded-lg" />
-                           ))
-                         )}
-                      </div>
-                   </div>
-                </section>
-                </div>
-              );
-
-            case "best_sellers":
-              return (
-                <div key={section.id}>
-                  <SectionBanner title={content.title || "Best Sellers"} image="/images/editorial/featured_woman.png" />
-                  <ProductRow title={content.title || "Best Sellers"} subtitle={content.subtitle} filterField="best_seller" filterValue="Best Sellers" />
-                </div>
-              );
-
-
-
-            case "brand_section":
-              const brands = content.items || [];
-              return (
-                <section key={section.id} className="py-32 bg-surface text-center border-t border-brand-navy/5">
-                  <div className="container mx-auto px-6">
-                    <span className="text-[10px] font-bold text-secondary tracking-[0.4em] mb-4 block uppercase leading-none italic">{content.subtitle || "The Vanguard of Optics"}</span>
-                    <h3 className="text-4xl font-serif italic mb-20 text-brand-navy">{content.title || "Premium Partners"}</h3>
-                    
-                    <div className="flex flex-wrap justify-center items-center gap-x-20 gap-y-16 lg:gap-x-32">
-                       {brands.length > 0 ? (
-                         brands.map((brand: any) => (
-                          <div key={brand.id} className="group flex flex-col items-center gap-4 transition-all duration-700 hover:-translate-y-2">
-                            <div className="w-24 h-16 relative grayscale hover:grayscale-0 transition-all duration-700 opacity-40 hover:opacity-100">
-                               {brand.logo_url ? (
-                                 <Image src={brand.logo_url} alt={brand.name} fill className="object-contain" />
-                               ) : (
-                                 <span className="font-black text-lg uppercase tracking-widest text-brand-navy whitespace-nowrap">{brand.name}</span>
-                               )}
-                            </div>
-                          </div>
-                        ))
-                       ) : (
-                         ["Ray-Ban", "Oakley", "Gucci", "Prada", "Persol"].map(brand => (
-                            <span key={brand} className="font-black text-xl lg:text-3xl uppercase tracking-[0.2em] text-brand-navy/20 hover:text-secondary hover:opacity-100 transition-all cursor-default">{brand}</span>
-                         ))
-                       )}
-                    </div>
-                  </div>
-                </section>
-              );
-
-            case "full_width_banner":
-              return null;
-
-
-            default:
-              return null;
-          }
-        })}
-
-
-
-        <section className="py-24 bg-brand-navy text-white text-center px-6 border-t border-white/5">
-          <div className="max-w-4xl mx-auto space-y-8">
-             <h2 className="text-4xl md:text-6xl font-serif italic tracking-tight">Replace Your Lenses</h2>
-             <p className="text-[12px] uppercase font-bold tracking-widest text-white/60 leading-relaxed max-w-2xl mx-auto">
-               Love your current frames but need a new prescription? Send them to us and our master opticians will fit them with state-of-the-art lenses.
-             </p>
-             <Link href="/replace-lenses" className="inline-block bg-secondary text-brand-navy px-12 py-5 text-[11px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-[0_0_40px_rgba(var(--brand-gold-rgb),0.3)] hover:shadow-[0_0_60px_rgba(255,255,255,0.4)]">
-                Initiate Lens Replacement
-             </Link>
-          </div>
-        </section>
-      </main>
+      {/* Replace Lenses CTA — gray */}
+      <ReplaceLensesCTA />
     </div>
   );
 }

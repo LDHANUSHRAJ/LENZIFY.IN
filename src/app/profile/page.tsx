@@ -1,5 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
-import { User, Shield, Key, History, Mail, UserCircle } from "lucide-react";
+import {
+  User,
+  Shield,
+  Key,
+  History,
+  Mail,
+  UserCircle,
+  Package,
+  Heart,
+  FileText,
+  MapPin,
+  Settings,
+} from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export default async function ProfilePage() {
@@ -12,125 +25,173 @@ export default async function ProfilePage() {
     console.error("Profile Auth Error:", err);
   }
 
-  if (!user) return <div className="py-20 text-center uppercase tracking-widest text-brand-navy/30">Unauthorized Access Protocol</div>;
+  if (!user) {
+    return (
+      <div className="bg-[#F8F9FC] min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-[#666666] mb-4">Please log in to view your profile.</p>
+          <Link href="/auth/login" className="bg-[#03173D] text-white rounded-full px-6 py-3 font-semibold hover:bg-[#004AAD] transition-all">
+            Log In
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const metadata = user.user_metadata || {};
-  const joinDate = new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const joinDate = new Date(user.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const navItems = [
+    { href: "/profile", label: "Profile", icon: User, active: true },
+    { href: "/orders", label: "Orders", icon: Package },
+    { href: "/wishlist", label: "Wishlist", icon: Heart },
+    { href: "/addresses", label: "Addresses", icon: MapPin },
+    { href: "/prescriptions", label: "Prescriptions", icon: FileText },
+    { href: "/settings", label: "Settings", icon: Settings },
+  ];
 
   return (
-    <div className="bg-surface text-brand-navy min-h-screen pt-24 font-sans">
-      <main className="max-w-7xl mx-auto px-8 md:px-12 py-20 pb-32">
-        <div className="flex flex-col lg:flex-row gap-20 items-start">
-          {/* Left: Identity Visualization */}
-          <div className="w-full lg:w-1/3 space-y-10">
-            <div className="bg-white border border-brand-navy/5 p-12 shadow-sm text-center space-y-8 relative overflow-hidden group">
-               <div className="absolute top-0 left-0 w-full h-1 bg-secondary shadow-[0_0_15px_rgba(var(--brand-gold-rgb),0.3)]"></div>
-               <div className="w-32 h-32 rounded-full border border-brand-navy/5 bg-brand-background mx-auto flex items-center justify-center relative overflow-hidden">
+    <div className="bg-[#F8F9FC] min-h-screen pt-28 pb-16">
+      <div className="max-w-6xl mx-auto px-6 lg:px-12">
+        {/* Page header */}
+        <div className="mb-8">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-2">Account</p>
+          <h1 className="text-4xl font-[var(--font-hero)] italic text-[#111111]">My Profile</h1>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* Sidebar Nav */}
+          <aside className="w-full lg:w-64 flex-shrink-0">
+            <div className="bg-white rounded-3xl border border-[#ECECEC] p-6 sticky top-24">
+              {/* Avatar */}
+              <div className="flex flex-col items-center text-center mb-6 pb-6 border-b border-[#ECECEC]">
+                <div className="w-20 h-20 rounded-full border-2 border-[#ECECEC] bg-[#F8F9FC] flex items-center justify-center overflow-hidden mb-3">
                   {metadata.avatar_url ? (
                     <img src={metadata.avatar_url} alt={metadata.name} className="w-full h-full object-cover" />
                   ) : (
-                    <UserCircle size={80} className="text-brand-navy/10" />
+                    <UserCircle size={48} className="text-[#ECECEC]" />
                   )}
-               </div>
-               <div className="space-y-4">
-                  <h2 className="text-3xl font-serif italic text-brand-navy font-black uppercase tracking-tight">{metadata.name || "Anonymous"}</h2>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-brand-navy/30 italic">Active Since {joinDate}</p>
-               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-               <div className="bg-brand-navy text-white p-6 space-y-2 border border-brand-navy border-b-secondary border-b-2">
-                  <p className="text-[8px] font-black uppercase tracking-widest text-white/30">Auth Status</p>
-                  <p className="text-[10px] font-bold uppercase whitespace-nowrap">Verified Protocol</p>
-               </div>
-               <div className="bg-white border border-brand-navy/5 p-6 space-y-2">
-                  <p className="text-[8px] font-black uppercase tracking-widest text-brand-navy/30">Access Level</p>
-                  <p className="text-[10px] font-bold uppercase text-secondary">Base Identity</p>
-               </div>
-            </div>
-          </div>
-
-          {/* Right: Data Matrix */}
-          <div className="flex-1 space-y-16">
-            <div className="space-y-4 pb-8 border-b border-brand-navy/5">
-                <h1 className="text-5xl font-serif italic text-brand-navy uppercase leading-none">Identity <span className="text-secondary">Matrix</span></h1>
-                <p className="text-[10px] uppercase font-bold tracking-[0.3em] text-brand-navy/30 italic">Registry Entry v.4.0.01</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-               {/* Contact Block */}
-               <section className="space-y-8 bg-white border border-brand-navy/5 p-10">
-                  <div className="flex items-center gap-4 text-brand-navy">
-                     <Mail size={18} className="text-secondary" />
-                     <h3 className="text-xs font-black uppercase tracking-widest">Communication Channel</h3>
-                  </div>
-                  <div className="space-y-6">
-                     <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/30">Primary Logic Address</label>
-                        <p className="text-sm font-serif italic font-black text-brand-navy lowercase">{user.email}</p>
-                     </div>
-                     <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/30">Verified Status</label>
-                        <div className="flex items-center gap-2">
-                           <Shield size={10} className="text-emerald-500" />
-                           <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Encrypted & Validated</span>
-                        </div>
-                     </div>
-                  </div>
-               </section>
-
-               {/* Meta Block */}
-               <section className="space-y-8 bg-white border border-brand-navy/5 p-10">
-                  <div className="flex items-center gap-4 text-brand-navy">
-                     <User size={18} className="text-secondary" />
-                     <h3 className="text-xs font-black uppercase tracking-widest">Attribute Metadata</h3>
-                  </div>
-                  <div className="space-y-6">
-                     <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/30">Display Identification</label>
-                        <p className="text-sm font-serif italic font-black text-brand-navy uppercase">{metadata.name || 'Anonymous'}</p>
-                     </div>
-                     <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-brand-navy/30">Archive Hash</label>
-                        <p className="text-[9px] font-mono text-brand-navy/40 truncate">{user.id}</p>
-                     </div>
-                  </div>
-               </section>
-            </div>
-
-            {/* Security Section */}
-            <section className="bg-brand-background border border-brand-navy/5 p-12 relative group">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-10">
-                   <div className="space-y-4">
-                      <div className="flex items-center gap-4">
-                         <Key size={20} className="text-secondary" />
-                         <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-navy">Security Protocol Layer</h3>
-                      </div>
-                      <p className="text-xs font-serif italic text-brand-navy/40 max-w-md">Update your synchronization parameters or reset your authentication matrix for maximum channel security.</p>
-                   </div>
-                   <button className="px-10 py-5 bg-brand-navy text-white text-[9px] font-black uppercase tracking-widest hover:bg-secondary transition-all shadow-xl active:scale-95">Update Security Key</button>
                 </div>
-            </section>
+                <p className="font-semibold text-[#111111]">{metadata.name || "Your Account"}</p>
+                <p className="text-xs text-[#666666] mt-0.5 truncate max-w-[180px]">{user.email}</p>
+                <p className="text-xs text-[#666666] mt-1">Member since {joinDate}</p>
+              </div>
 
-            {/* Recent History Prompt */}
-            <section className="pt-8 border-t border-brand-navy/5 flex flex-col md:flex-row justify-between items-center gap-8">
-               <div className="flex items-center gap-6">
-                  <div className="w-12 h-12 bg-white border border-brand-navy/5 flex items-center justify-center text-secondary shadow-sm">
-                     <History size={20} />
+              {/* Nav items */}
+              <nav className="space-y-1">
+                {navItems.map(({ href, label, icon: Icon, active }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
+                      active
+                        ? "bg-[#F0F4FF] text-[#03173D] font-semibold"
+                        : "text-[#666666] hover:bg-[#F8F9FC] hover:text-[#111111]"
+                    )}
+                  >
+                    <Icon size={16} />
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </aside>
+
+          {/* Main Content */}
+          <div className="flex-1 space-y-6">
+            {/* Profile Info Card */}
+            <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-8">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-6">Personal Information</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Display Name */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-2">Display Name</label>
+                  <div className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-xl px-4 py-3 text-[#111111]">
+                    {metadata.name || <span className="text-[#666666]">Not set</span>}
                   </div>
-                  <div className="space-y-1">
-                     <p className="text-[10px] font-black uppercase tracking-widest text-brand-navy">Last Synchronization</p>
-                     <p className="text-[8px] font-bold text-brand-navy/30 uppercase tracking-[0.3em] italic">Archive Checked 2 minutes ago</p>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-2">Email Address</label>
+                  <div className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-xl px-4 py-3 text-[#111111] flex items-center gap-2">
+                    <Mail size={14} className="text-[#666666] flex-shrink-0" />
+                    <span className="truncate">{user.email}</span>
+                    <div className="ml-auto flex items-center gap-1 text-emerald-600 text-xs font-semibold flex-shrink-0">
+                      <Shield size={12} />
+                      Verified
+                    </div>
                   </div>
-               </div>
-               <div className="flex gap-4">
-                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                   <span className="text-[9px] font-black uppercase tracking-widest text-brand-navy/20">System Nominal // All Channels Active</span>
-               </div>
-            </section>
+                </div>
+
+                {/* User ID */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-2">Account ID</label>
+                  <div className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-xl px-4 py-3 text-[#666666] text-xs font-mono truncate">
+                    {user.id}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Security Card */}
+            <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-8">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-6">Security</h2>
+
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-[#F8F9FC] border border-[#ECECEC] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Key size={18} className="text-[#004AAD]" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-[#111111]">Password</p>
+                    <p className="text-[#666666] text-sm mt-0.5">
+                      Update your password to keep your account secure.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/auth/forgot-password"
+                  className="border border-[#03173D] text-[#03173D] rounded-full px-6 py-3 font-semibold hover:bg-[#03173D] hover:text-white transition-all text-sm whitespace-nowrap"
+                >
+                  Change Password
+                </Link>
+              </div>
+            </div>
+
+            {/* Activity Card */}
+            <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-8">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-6">Account Activity</h2>
+
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-[#F8F9FC] border border-[#ECECEC] rounded-xl flex items-center justify-center">
+                  <History size={18} className="text-[#004AAD]" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-[#111111] text-sm">Last Sign In</p>
+                  <p className="text-[#666666] text-xs mt-0.5">
+                    {user.last_sign_in_at
+                      ? new Date(user.last_sign_in_at).toLocaleString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "N/A"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs font-semibold text-emerald-600">Active</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
