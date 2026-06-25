@@ -95,7 +95,7 @@ function CollectionShowcase() {
       name: "Contact Lenses",
       desc: "Daily and monthly comfort",
       href: "/products?type=Contact Lenses",
-      image: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?q=80&w=800&auto=format&fit=crop",
+      image: "/images/contact-lenses-hero.jpg",
     },
     {
       name: "Smart Glasses",
@@ -401,10 +401,9 @@ function WhyLenzify() {
           className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
         >
           <Image
-            src="https://images.unsplash.com/photo-1556306535-0f09a537f0a3?q=80&w=800&auto=format&fit=crop"
+            src="/images/why-lenzify.jpg"
             alt="Why Lenzify"
             fill
-            unoptimized
             className="object-cover"
           />
           <div
@@ -466,86 +465,17 @@ function WhyLenzify() {
   );
 }
 
-// ─── Virtual Try-On CTA ────────────────────────────────────────────────────────
-function VirtualTryOnCTA() {
-  return (
-    <section
-      className="py-20 md:py-28 px-6 relative overflow-hidden"
-      style={{
-        background: "linear-gradient(135deg, #03173D 0%, #004AAD 50%, #009DFF 100%)",
-      }}
-    >
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-white/5 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3" />
-      </div>
-
-      <div className="max-w-5xl mx-auto relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.9 }}
-          className="text-center"
-        >
-          <span className="text-xs font-semibold uppercase tracking-widest mb-6 block text-white/60">
-            Augmented Reality
-          </span>
-          <h2 className="font-serif italic text-4xl md:text-6xl text-white mb-6">
-            Experience Before<br />You Buy
-          </h2>
-          <p className="text-white/60 text-sm md:text-base font-medium max-w-xl mx-auto mb-12 leading-relaxed">
-            Use your camera to preview frames in real time. 500+ styles. Zero commitment.
-          </p>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-            className="relative rounded-3xl p-8 md:p-12 max-w-lg mx-auto mb-12 border border-white/15 bg-white/10 backdrop-blur-sm"
-          >
-            <div className="relative aspect-video rounded-2xl overflow-hidden mb-6">
-              <Image
-                src="https://images.unsplash.com/photo-1574258495973-f010dfbb5371?q=80&w=600&auto=format&fit=crop"
-                alt="Virtual Try-On"
-                fill
-                unoptimized
-                className="object-cover opacity-80"
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full border-2 border-white flex items-center justify-center bg-white/20">
-                  <Eye className="w-8 h-8 text-white" />
-                </div>
-              </div>
-            </div>
-            <p className="text-white/50 text-xs uppercase tracking-[0.3em] font-bold">
-              AI-Powered Face Detection
-            </p>
-          </motion.div>
-
-          <button
-            suppressHydrationWarning
-            onClick={() => document.dispatchEvent(new CustomEvent("open-virtual-tryon"))}
-            className="px-12 py-5 text-sm font-semibold rounded-full transition-all duration-300 hover:scale-105 bg-white text-[#03173D] shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)]"
-          >
-            Try Now — It&apos;s Free
-          </button>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
 
 // ─── Testimonials ──────────────────────────────────────────────────────────────
 function Testimonials() {
   const [active, setActive] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
   const reviews = [
     {
       name: "Priya Sharma",
       location: "Mumbai",
-      text: "Lenzify completely changed how I shop for glasses. The virtual try-on is insanely accurate — I could see exactly how each frame looked on my face.",
+      text: "Lenzify completely changed how I shop for glasses. The quality of the lenses is outstanding — exactly what I was looking for at a great price.",
       rating: 5,
       avatar:
         "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop",
@@ -569,9 +499,19 @@ function Testimonials() {
   ];
 
   useEffect(() => {
-    const t = setInterval(() => setActive((p) => (p + 1) % reviews.length), 5000);
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => setActive((p) => (p + 1) % reviews.length), 4500);
     return () => clearInterval(t);
   }, [reviews.length]);
+
+  const prev = () => setActive((p) => (p - 1 + reviews.length) % reviews.length);
+  const next = () => setActive((p) => (p + 1) % reviews.length);
 
   return (
     <section className="py-20 md:py-28 px-6 bg-[#F8F9FC]">
@@ -580,7 +520,7 @@ function Testimonials() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-12 md:mb-16"
         >
           <span className="text-xs font-semibold uppercase tracking-widest mb-4 block text-[#004AAD]">
             Testimonials
@@ -590,7 +530,121 @@ function Testimonials() {
           </h2>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* ── Mobile: 3D rotating carousel ── */}
+        <div className="md:hidden">
+          <div
+            style={{ perspective: 900, perspectiveOrigin: "50% 50%" }}
+            className="relative"
+            // height = card height + some breathing room
+            // Card is ~220px, we leave 240px
+            // Side cards shift back so they peek out
+          >
+            <div className="relative" style={{ height: 248 }}>
+              {reviews.map((r, i) => {
+                const total   = reviews.length;
+                const offset  = (i - active + total) % total;
+                // Normalise: 0=centre, 1=right, -1=left
+                const norm    = offset > Math.floor(total / 2) ? offset - total : offset;
+                const absNorm = Math.abs(norm);
+
+                return (
+                  <motion.div
+                    key={r.name}
+                    animate={{
+                      rotateY: norm * -38,
+                      x: `${norm * 74}%`,
+                      scale: absNorm === 0 ? 1 : 0.76,
+                      opacity: absNorm === 0 ? 1 : absNorm === 1 ? 0.48 : 0,
+                      zIndex: absNorm === 0 ? 10 : 10 - absNorm,
+                    }}
+                    transition={{ type: "spring", stiffness: 300, damping: 32 }}
+                    style={{
+                      position: "absolute",
+                      width: "90%",
+                      left: "5%",
+                      transformStyle: "preserve-3d",
+                      transformOrigin: "center center",
+                      cursor: absNorm !== 0 ? "pointer" : "default",
+                      pointerEvents: absNorm > 1 ? "none" : "auto",
+                    }}
+                    onClick={() => { if (absNorm !== 0) setActive(i); }}
+                  >
+                    <div
+                      className={`rounded-2xl p-5 border bg-white transition-shadow ${
+                        active === i
+                          ? "border-[#004AAD] shadow-[0_8px_32px_rgba(0,74,173,0.14)]"
+                          : "border-[#ECECEC] shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
+                      }`}
+                    >
+                      <div className="flex gap-1 mb-3">
+                        {[...Array(r.rating)].map((_, j) => (
+                          <Star key={j} className="w-3 h-3 fill-current text-[#D4A853]" />
+                        ))}
+                      </div>
+                      <p className="text-[#666666] text-xs leading-relaxed mb-4 font-medium line-clamp-3">
+                        &ldquo;{r.text}&rdquo;
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full overflow-hidden relative border border-[#ECECEC] shrink-0">
+                          <Image
+                            src={r.avatar}
+                            alt={r.name}
+                            fill
+                            unoptimized
+                            className="object-cover"
+                          />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-[#111111]">
+                            {r.name}
+                          </p>
+                          <p className="text-[9px] text-[#999999] font-bold uppercase tracking-widest">
+                            {r.location}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Controls */}
+            <div className="flex justify-center items-center gap-4 mt-4">
+              <button
+                suppressHydrationWarning
+                onClick={prev}
+                className="w-8 h-8 rounded-full border border-[#E8EAF2] bg-white flex items-center justify-center text-[#004AAD] text-lg font-bold shadow-sm"
+              >
+                ‹
+              </button>
+              <div className="flex gap-2">
+                {reviews.map((_, i) => (
+                  <button
+                    suppressHydrationWarning
+                    key={i}
+                    onClick={() => setActive(i)}
+                    className="h-1.5 rounded-full transition-all duration-300"
+                    style={{
+                      width: active === i ? 24 : 8,
+                      background: active === i ? "#004AAD" : "#E8EAF2",
+                    }}
+                  />
+                ))}
+              </div>
+              <button
+                suppressHydrationWarning
+                onClick={next}
+                className="w-8 h-8 rounded-full border border-[#E8EAF2] bg-white flex items-center justify-center text-[#004AAD] text-lg font-bold shadow-sm"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Desktop: grid ── */}
+        <div className="hidden md:grid grid-cols-3 gap-6">
           {reviews.map((r, i) => (
             <motion.div
               key={r.name}
@@ -615,13 +669,7 @@ function Testimonials() {
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden relative border border-[#ECECEC]">
-                  <Image
-                    src={r.avatar}
-                    alt={r.name}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
+                  <Image src={r.avatar} alt={r.name} fill unoptimized className="object-cover" />
                 </div>
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-widest text-[#111111]">
@@ -636,7 +684,8 @@ function Testimonials() {
           ))}
         </div>
 
-        <div className="flex justify-center gap-2 mt-8">
+        {/* Desktop dots */}
+        <div className="hidden md:flex justify-center gap-2 mt-8">
           {reviews.map((_, i) => (
             <button
               suppressHydrationWarning
@@ -660,7 +709,7 @@ function TrustBadges() {
   const badges = [
     { icon: Truck, title: "Free Shipping", desc: "On all orders above ₹999" },
     { icon: CheckCircle, title: "2-Year Warranty", desc: "On all frames & lenses" },
-    { icon: Eye, title: "Virtual Try-On", desc: "500+ frames via AR" },
+    { icon: Eye, title: "Expert Opticians", desc: "Certified lens specialists" },
     { icon: Star, title: "Easy Returns", desc: "7-day hassle-free returns" },
   ];
 
@@ -857,9 +906,6 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
 
       {/* 10. Why LENZIFY / Trust Section — white */}
       <WhyLenzify />
-
-      {/* Virtual Try-On CTA — navy gradient */}
-      <VirtualTryOnCTA />
 
       {/* 11. Testimonials — gray */}
       <Testimonials />

@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  DollarSign, 
-  ShoppingCart, 
-  Users, 
-  AlertCircle, 
-  ShoppingBag,
+import {
+  TrendingUp,
+  ShoppingCart,
+  Users,
+  AlertTriangle,
+  Package,
+  CreditCard,
   ArrowUpRight,
   ArrowDownRight,
-  Package
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -22,6 +22,11 @@ interface StatsProps {
     lowStockCount: number;
     abandonedCarts: number;
     replacementsCount?: number;
+    todayRevenue?: number;
+    todayOrders?: number;
+    pendingOrders?: number;
+    codOrders?: number;
+    onlineOrders?: number;
   };
 }
 
@@ -30,33 +35,52 @@ export default function DashboardStats({ initialStats }: StatsProps) {
   const supabase = createClient();
 
   useEffect(() => {
-    // 📡 Live Network Protocol Synchronization
     const channel = supabase
-      .channel("dashboard_realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => fetchUpdatedStats())
-      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => fetchUpdatedStats())
-      .on("postgres_changes", { event: "*", schema: "public", table: "users" }, () => fetchUpdatedStats())
-      .on("postgres_changes", { event: "*", schema: "public", table: "cart" }, () => fetchUpdatedStats())
+      .channel("dashboard_realtime_v2")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, fetchStats)
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, fetchStats)
+      .on("postgres_changes", { event: "*", schema: "public", table: "users" }, fetchStats)
       .subscribe();
 
-    async function fetchUpdatedStats() {
-      // Re-fetch only metrics to keep it light
-      const { data: salesData } = await supabase.from("orders").select("total_price").eq("payment_status", "paid");
-      const { count: totalOrders } = await supabase.from("orders").select("*", { count: "exact", head: true });
-      const { count: totalCustomers } = await supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "customer");
-      const { count: lowStockCount } = await supabase.from("products").select("*", { count: "exact", head: true }).lte("stock", 5);
-      const { data: cartUsers } = await supabase.from("cart").select("user_id");
-      const { count: replacementsCount } = await supabase.from("lens_replacement_orders").select("*", { count: "exact", head: true });
-      const abandonedCarts = new Set(cartUsers?.map((c: any) => c.user_id)).size;
+    async function fetchStats() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayISO = today.toISOString();
+
+      const [
+        { data: salesData },
+        { count: totalOrders },
+        { count: totalCustomers },
+        { count: lowStockCount },
+        { data: todayOrders },
+        { count: pendingOrders },
+        { count: codOrders },
+        { count: replacementsCount },
+      ] = await Promise.all([
+        supabase.from("orders").select("total_price").eq("payment_status", "paid"),
+        supabase.from("orders").select("*", { count: "exact", head: true }),
+        supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "customer"),
+        supabase.from("products").select("*", { count: "exact", head: true }).lte("stock", 5).gt("stock", 0),
+        supabase.from("orders").select("total_price, payment_method").gte("created_at", todayISO),
+        supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("orders").select("*", { count: "exact", head: true }).eq("payment_method", "cod"),
+        supabase.from("lens_replacement_orders").select("*", { count: "exact", head: true }),
+      ]);
+
+      const todayRevenue = (todayOrders || []).reduce((acc: number, o: any) => acc + Number(o.total_price || 0), 0);
+      const todayOrdersCount = (todayOrders || []).length;
 
       setStats({
-        ...stats,
-        totalSales: salesData?.reduce((acc: any, curr: any) => acc + Number(curr.total_price), 0) || 0,
+        totalSales: salesData?.reduce((acc: number, o: any) => acc + Number(o.total_price || 0), 0) || 0,
         totalOrders: totalOrders || 0,
         totalCustomers: totalCustomers || 0,
         lowStockCount: lowStockCount || 0,
+        abandonedCarts: stats.abandonedCarts,
         replacementsCount: replacementsCount || 0,
-        abandonedCarts
+        todayRevenue,
+        todayOrders: todayOrdersCount,
+        pendingOrders: pendingOrders || 0,
+        codOrders: codOrders || 0,
       });
     }
 
@@ -64,35 +88,93 @@ export default function DashboardStats({ initialStats }: StatsProps) {
   }, [supabase]);
 
   const cards = [
-    { label: "Total Revenue", value: `₹${stats.totalSales.toLocaleString()}`, icon: DollarSign, trend: "+12.5%", positive: true, period: "Cumulative" },
-    { label: "Active Orders", value: stats.totalOrders.toString(), icon: ShoppingBag, trend: "+3.2%", positive: true, period: "Life-cycle Total" },
-    { label: "Client Base", value: stats.totalCustomers.toString(), icon: Users, trend: "+8.1%", positive: true, period: "Verified Agents" },
-    { label: "Critical Stock", value: stats.lowStockCount.toString(), icon: AlertCircle, trend: "Priority", positive: false, period: "Units < 5" },
-    { label: "Replacements", value: stats.replacementsCount?.toString() || "0", icon: Package, trend: "Active", positive: true, period: "Service Lane" },
-    { label: "Abandoned Carts", value: stats.abandonedCarts.toString(), icon: ShoppingCart, trend: "-2.4%", positive: false, period: "Inactive Sessions" },
+    {
+      label: "Total Revenue",
+      value: `₹${(stats.totalSales || 0).toLocaleString("en-IN")}`,
+      subtext: `₹${(stats.todayRevenue || 0).toLocaleString("en-IN")} today`,
+      icon: TrendingUp,
+      trend: "+12.5%",
+      positive: true,
+      color: "bg-blue-50 text-blue-600",
+    },
+    {
+      label: "Total Orders",
+      value: (stats.totalOrders || 0).toString(),
+      subtext: `${stats.todayOrders || 0} orders today`,
+      icon: ShoppingCart,
+      trend: "+3.2%",
+      positive: true,
+      color: "bg-emerald-50 text-emerald-600",
+    },
+    {
+      label: "Customers",
+      value: (stats.totalCustomers || 0).toString(),
+      subtext: "Registered accounts",
+      icon: Users,
+      trend: "+8.1%",
+      positive: true,
+      color: "bg-purple-50 text-purple-600",
+    },
+    {
+      label: "Pending Orders",
+      value: (stats.pendingOrders || 0).toString(),
+      subtext: "Awaiting processing",
+      icon: Package,
+      trend: stats.pendingOrders && stats.pendingOrders > 5 ? "Needs attention" : "On track",
+      positive: !stats.pendingOrders || stats.pendingOrders <= 5,
+      color: "bg-orange-50 text-orange-600",
+    },
+    {
+      label: "COD Orders",
+      value: (stats.codOrders || 0).toString(),
+      subtext: "Cash on delivery",
+      icon: CreditCard,
+      trend: "Active",
+      positive: true,
+      color: "bg-sky-50 text-sky-600",
+    },
+    {
+      label: "Low Stock",
+      value: (stats.lowStockCount || 0).toString(),
+      subtext: "Products ≤ 5 units",
+      icon: AlertTriangle,
+      trend: stats.lowStockCount > 0 ? "Restock needed" : "All stocked",
+      positive: stats.lowStockCount === 0,
+      color: "bg-red-50 text-red-600",
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-      {cards.map((card, i) => {
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      {cards.map((card) => {
         const Icon = card.icon;
         return (
           <div
             key={card.label}
-            className="bg-white border border-brand-navy/5 p-8 group hover:border-brand-navy transition-all duration-700 hover:-translate-y-1 relative overflow-hidden shadow-sm"
+            className="bg-white rounded-2xl border border-[#ECEFF5] p-5 hover:shadow-sm transition-shadow"
           >
-            <div className="flex justify-between items-start mb-6">
-              <div className="w-10 h-10 bg-brand-background flex items-center justify-center text-brand-navy border border-brand-navy/5 group-hover:bg-brand-navy group-hover:text-white transition-all duration-700">
-                <Icon size={16} />
-              </div>
-              <div className={cn("flex items-center gap-1 text-[9px] font-bold transition-all italic", card.positive ? "text-secondary" : "text-red-500")}>
-                 {card.positive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                 {card.trend}
-              </div>
+            <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center mb-4", card.color)}>
+              <Icon size={17} strokeWidth={2} />
             </div>
-            <p className="text-[9px] uppercase font-bold tracking-widest text-brand-text-muted mb-2">{card.label}</p>
-            <h3 className="text-2xl font-serif italic text-brand-navy leading-none tracking-tight mb-1">{card.value}</h3>
-            <p className="text-[7px] uppercase font-bold tracking-widest text-brand-navy/20 italic">{card.period}</p>
+            <p className="text-2xl font-bold text-[#111111] leading-none mb-1">
+              {card.value}
+            </p>
+            <p className="text-xs text-[#888888] mb-3 leading-tight">{card.label}</p>
+            <div className="flex items-center gap-1">
+              {card.positive ? (
+                <ArrowUpRight size={12} className="text-emerald-500" />
+              ) : (
+                <ArrowDownRight size={12} className="text-red-400" />
+              )}
+              <span
+                className={cn(
+                  "text-[10px] font-semibold",
+                  card.positive ? "text-emerald-600" : "text-red-500"
+                )}
+              >
+                {card.trend}
+              </span>
+            </div>
           </div>
         );
       })}

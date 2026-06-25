@@ -250,13 +250,11 @@ export default function Navbar() {
     else setActiveMenu(menu);
   };
 
-  // Derived color states
-  // Transparent only on homepage hero; all other pages always use white navbar
-  const isHomePage = pathname === '/';
-  const isWhiteMode = isScrolled || !!activeMenu || !isHomePage;
-  const linkColor = isWhiteMode ? "text-[#111111] hover:text-[#004AAD]" : "text-white hover:text-white/70";
-  const iconColor = isWhiteMode ? "text-[#111111]" : "text-white";
-  const logoColor = isWhiteMode ? "text-[#111111]" : "text-white";
+  // Hero is now white — always use white navbar mode
+  const isWhiteMode = true;
+  const linkColor = "text-[#111111] hover:text-[#004AAD]";
+  const iconColor = "text-[#111111]";
+  const logoColor = "text-[#111111]";
 
   return (
     <header
@@ -419,24 +417,6 @@ export default function Navbar() {
             </button>
           </div>
 
-          {/* Brands */}
-          <div className="relative">
-            <button
-              onClick={() => toggleMenu("brands")}
-              className={cn(
-                "font-medium transition-all duration-300 py-1 flex items-center gap-1",
-                activeMenu === "brands"
-                  ? isWhiteMode
-                    ? "text-[#004AAD] border-b border-[#004AAD]"
-                    : "text-white border-b border-white"
-                  : linkColor
-              )}
-              suppressHydrationWarning
-            >
-              Brands
-              <span className="material-symbols-outlined text-sm">expand_more</span>
-            </button>
-          </div>
         </div>
 
         {/* Right Side Actions */}
@@ -664,8 +644,7 @@ export default function Navbar() {
 
         {/* Small Dropdowns */}
         {(activeMenu === "lenses" ||
-          activeMenu === "offers" ||
-          activeMenu === "brands") && (
+          activeMenu === "offers") && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -674,8 +653,7 @@ export default function Navbar() {
               "absolute top-full bg-white border border-[#E8EAF2] shadow-2xl p-2 flex flex-col gap-1 z-50 rounded-2xl hidden lg:flex min-w-[200px] mt-4",
               activeMenu === "lenses" &&
                 "left-[calc(50%-250px)] min-w-[500px] p-6 grid grid-cols-2 gap-8",
-              activeMenu === "offers" && "left-[calc(50%+60px)]",
-              activeMenu === "brands" && "left-[calc(50%+140px)]"
+              activeMenu === "offers" && "left-[calc(50%+60px)]"
             )}
           >
             {activeMenu === "lenses" && (
@@ -722,16 +700,6 @@ export default function Navbar() {
                   className="px-4 py-3 hover:bg-[#F8F9FC] text-xs font-bold uppercase tracking-widest text-[#111111] hover:text-[#004AAD] transition-colors rounded-xl"
                 >
                   {link.name}
-                </Link>
-              ))}
-            {activeMenu === "brands" &&
-              brands.map((brand) => (
-                <Link
-                  key={brand.slug}
-                  href={`/products?brand=${brand.slug}`}
-                  className="px-4 py-3 hover:bg-[#F8F9FC] text-xs font-bold uppercase tracking-widest text-[#111111] hover:text-[#004AAD] transition-colors rounded-xl"
-                >
-                  {brand.name}
                 </Link>
               ))}
           </motion.div>
@@ -925,25 +893,6 @@ export default function Navbar() {
                         className="block text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
                       >
                         {link.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Brands */}
-                <div>
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#999999] mb-4 border-b border-[#E8EAF2] pb-2">
-                    Brands
-                  </h3>
-                  <div className="space-y-3 pl-2">
-                    {brands.map((brand) => (
-                      <Link
-                        key={brand.slug}
-                        href={`/products?brand=${brand.slug}`}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="block text-sm font-medium text-[#111111] hover:text-[#004AAD] transition-colors"
-                      >
-                        {brand.name}
                       </Link>
                     ))}
                   </div>

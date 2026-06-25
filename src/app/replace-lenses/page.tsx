@@ -164,6 +164,18 @@ function ReplaceLensesContent() {
         toast.error("Please select a pickup date");
         return;
       }
+
+      // Pickup must be at least tomorrow
+      const pickupDateObj = new Date(formData.pickup_date);
+      pickupDateObj.setHours(0, 0, 0, 0);
+      const tomorrow = new Date();
+      tomorrow.setHours(0, 0, 0, 0);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      if (pickupDateObj < tomorrow) {
+        toast.error("Invalid pickup date. Please select a future date (tomorrow or later).");
+        return;
+      }
+
       if (formData.is_delivery_different) {
         const dAddr = formData.delivery_address;
         if (!dAddr.name || !dAddr.phone || !dAddr.address || !dAddr.pincode) {
@@ -173,6 +185,16 @@ function ReplaceLensesContent() {
       }
       if (!formData.delivery_date) {
         toast.error("Please select a delivery date");
+        return;
+      }
+
+      // Delivery must be at least 3 days after pickup
+      const deliveryDateObj = new Date(formData.delivery_date);
+      deliveryDateObj.setHours(0, 0, 0, 0);
+      const minDelivery = new Date(pickupDateObj);
+      minDelivery.setDate(minDelivery.getDate() + 3);
+      if (deliveryDateObj < minDelivery) {
+        toast.error("Delivery date must be at least 3 days after the pickup date.");
         return;
       }
     }
@@ -648,10 +670,12 @@ function ReplaceLensesContent() {
                         <label className="text-[#004AAD] text-xs font-semibold uppercase tracking-widest">Pickup Date *</label>
                         <input
                           type="date"
+                          min={(() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; })()}
                           className="bg-white border border-[#E8EAF2] rounded-xl px-4 py-3 text-[#111111] focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 outline-none w-full text-sm"
                           value={formData.pickup_date}
-                          onChange={(e) => setFormData({ ...formData, pickup_date: e.target.value })}
+                          onChange={(e) => setFormData({ ...formData, pickup_date: e.target.value, delivery_date: "" })}
                         />
+                        <p className="text-[10px] text-[#AAAAAA]">Must be tomorrow or later</p>
                       </div>
                     </div>
                   </div>
@@ -729,10 +753,17 @@ function ReplaceLensesContent() {
                       <label className="text-[#004AAD] text-xs font-semibold uppercase tracking-widest">Delivery Date *</label>
                       <input
                         type="date"
+                        min={(() => {
+                          if (!formData.pickup_date) {
+                            const d = new Date(); d.setDate(d.getDate() + 4); return d.toISOString().split("T")[0];
+                          }
+                          const d = new Date(formData.pickup_date); d.setDate(d.getDate() + 3); return d.toISOString().split("T")[0];
+                        })()}
                         className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-xl px-4 py-3 text-[#111111] focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 outline-none w-full text-sm"
                         value={formData.delivery_date}
                         onChange={(e) => setFormData({ ...formData, delivery_date: e.target.value })}
                       />
+                      <p className="text-[10px] text-[#AAAAAA]">Must be at least 3 days after pickup date</p>
                     </div>
                   </div>
                 </motion.div>

@@ -9,7 +9,7 @@ import { getCart } from "@/lib/db/customer_actions";
 import { placeOrder } from "@/lib/db/order_actions";
 import { cn } from "@/lib/utils";
 import { validateCheckoutAddress, sanitizeErrorMessage } from "@/lib/validation";
-import { applyCoupon } from "@/lib/db/coupon_actions";
+import { applyCoupon, incrementCouponUsage } from "@/lib/db/coupon_actions";
 import toast from "react-hot-toast";
 import {
   Package,
@@ -97,6 +97,7 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponApplied, setCouponApplied] = useState("");
+  const [couponId, setCouponId] = useState<number | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   const handleApplyCoupon = async () => {
@@ -110,6 +111,7 @@ export default function CheckoutPage() {
     } else if (result.success) {
       setCouponDiscount(result.discount!);
       setCouponApplied(result.description!);
+      setCouponId(result.coupon_id ?? null);
       toast.success(`Coupon applied! ${result.description}`);
     }
   };
@@ -179,6 +181,7 @@ export default function CheckoutPage() {
         });
 
         if (orderRes.success) {
+          if (couponId) await incrementCouponUsage(couponId);
           router.push(`/orders/success?id=${orderRes.order_id}`);
         } else {
           toast.error(sanitizeErrorMessage(orderRes.error || ""));
@@ -263,6 +266,7 @@ export default function CheckoutPage() {
             });
 
             if (orderRes.success) {
+              if (couponId) await incrementCouponUsage(couponId);
               router.push(`/orders/success?id=${orderRes.order_id}`);
             } else {
               console.error("Order Placement Error:", orderRes.error);

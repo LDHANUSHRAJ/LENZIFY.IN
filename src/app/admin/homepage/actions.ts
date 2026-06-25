@@ -4,6 +4,44 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+export async function moveSectionUp(id: number, currentSortOrder: number) {
+  const supabase = await createClient();
+  const { data: prev } = await supabase
+    .from("homepage_config")
+    .select("id, sort_order")
+    .lt("sort_order", currentSortOrder)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!prev) return;
+
+  await supabase.from("homepage_config").update({ sort_order: prev.sort_order }).eq("id", id);
+  await supabase.from("homepage_config").update({ sort_order: currentSortOrder }).eq("id", prev.id);
+
+  revalidatePath("/admin/homepage");
+  revalidatePath("/");
+}
+
+export async function moveSectionDown(id: number, currentSortOrder: number) {
+  const supabase = await createClient();
+  const { data: next } = await supabase
+    .from("homepage_config")
+    .select("id, sort_order")
+    .gt("sort_order", currentSortOrder)
+    .order("sort_order", { ascending: true })
+    .limit(1)
+    .single();
+
+  if (!next) return;
+
+  await supabase.from("homepage_config").update({ sort_order: next.sort_order }).eq("id", id);
+  await supabase.from("homepage_config").update({ sort_order: currentSortOrder }).eq("id", next.id);
+
+  revalidatePath("/admin/homepage");
+  revalidatePath("/");
+}
+
 export async function updateHomepageSection(sectionKey: string, content: any, isActive: boolean = true) {
   const supabase = await createClient();
 

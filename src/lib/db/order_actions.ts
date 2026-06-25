@@ -45,8 +45,9 @@ export async function placeOrder(data: {
     .insert({
       user_id: user.id,
       total_price: data.total_price,
-      status: 'pending',
+      status: 'confirmed',
       payment_status: data.payment.method === 'cod' ? 'pending' : 'paid',
+      payment_method: data.payment.method,
       address_id: address.id
     })
     .select("id")
@@ -161,13 +162,17 @@ export async function updateOrderStatus(
   status: string,
   paymentStatus?: string,
   trackingId?: string,
-  courier?: string
+  courier?: string,
+  estimatedDeliveryDate?: string,
+  note?: string
 ) {
   const supabase = await createClient();
+  const { createAdminClient } = await import("@/lib/supabase/server");
+  const adminSupabase = await createAdminClient();
 
-  const { data: order } = await supabase
+  const { data: order } = await adminSupabase
     .from("orders")
-    .select("*, order_items(*)")
+    .select("*, order_items(*), users(email, name)")
     .eq("id", orderId)
     .single();
 
@@ -175,11 +180,10 @@ export async function updateOrderStatus(
 
   const oldStatus = order.status;
 
-  // Stock was already decremented at order creation (placeOrder).
-  // Only restore it when an order is cancelled from a stock-holding state.
-  if (status === "cancelled" && ["pending", "confirmed", "shipped"].includes(oldStatus)) {
+  // Restore stock when cancelled from an active state
+  if (status === "cancelled" && ["pending", "confirmed", "frame_reserved", "frame_preparing"].includes(oldStatus)) {
     for (const item of order.order_items) {
-      await supabase.rpc("increment_stock", {
+      await adminSupabase.rpc("increment_stock", {
         product_id: item.product_id,
         quantity: item.quantity,
       });
@@ -188,25 +192,142 @@ export async function updateOrderStatus(
 
   const updateData: any = { status, updated_at: new Date().toISOString() };
   if (paymentStatus) updateData.payment_status = paymentStatus;
-  if (trackingId) updateData.tracking_id = trackingId;
-  if (courier) updateData.courier_partner = courier;
+  if (trackingId !== undefined) updateData.tracking_id = trackingId;
+  if (courier !== undefined) updateData.courier_partner = courier;
+  if (estimatedDeliveryDate) updateData.estimated_delivery_date = estimatedDeliveryDate;
 
-  const { error } = await supabase
-    .from("orders")
-    .update(updateData)
-    .eq("id", orderId);
-
+  const { error } = await adminSupabase.from("orders").update(updateData).eq("id", orderId);
   if (error) return { error: error.message };
 
-  await supabase.from("notifications").insert({
-    user_id: order.user_id,
-    title: `Order Status: ${status.toUpperCase()}`,
-    message: `Your order #${orderId.slice(0, 8)} has been updated to ${status}.`,
-    type: "order_update",
-    metadata: { order_id: orderId, status },
-  });
+  // Record in status history
+  try {
+    await adminSupabase.from("order_status_history").insert({
+      order_id: orderId,
+      status,
+      note: note || null,
+      updated_by: "admin",
+    });
+  } catch {}
+
+  // In-app notification
+  try {
+    await adminSupabase.from("notifications").insert({
+      user_id: order.user_id,
+      title: `Order Update`,
+      message: `Your order #${orderId.slice(0, 8).toUpperCase()} is now: ${status.replace(/_/g, " ")}.`,
+      type: "order_update",
+      metadata: { order_id: orderId, status },
+    });
+  } catch {}
+
+  // Email notification (fire-and-forget)
+  try {
+    const customerEmail = (order.users as any)?.email;
+    const customerName = (order.users as any)?.name || "Customer";
+    if (customerEmail) {
+      const { sendEmail, getOrderStatusUpdateHtml } = await import("@/lib/mail");
+      const statusLabel = status.replace(/_/g, " ");
+      await sendEmail({
+        to: customerEmail,
+        subject: `Order #${orderId.slice(0, 8).toUpperCase()} — ${statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1)}`,
+        html: getOrderStatusUpdateHtml(orderId, status, customerName, estimatedDeliveryDate, trackingId, courier, note),
+      });
+    }
+  } catch (mailErr) {
+    console.error("[ORDER] Status email failed:", mailErr);
+  }
 
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath(`/orders/${orderId}`);
+  return { success: true };
+}
+
+/** Customer: cancel an order (only pending/confirmed) */
+export async function cancelOrder(orderId: string, reason?: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("*, order_items(*)")
+    .eq("id", orderId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!order) return { error: "Order not found" };
+  if (!["pending", "confirmed"].includes(order.status)) {
+    return { error: "This order can no longer be cancelled. Please contact support." };
+  }
+
+  // Restore stock
+  for (const item of order.order_items) {
+    try {
+      await supabase.rpc("increment_stock", {
+        product_id: item.product_id,
+        quantity: item.quantity,
+      });
+    } catch {}
+  }
+
+  const { error } = await supabase.from("orders").update({
+    status: "cancelled",
+    cancelled_at: new Date().toISOString(),
+    cancel_reason: reason || "Cancelled by customer",
+    updated_at: new Date().toISOString(),
+  }).eq("id", orderId);
+
+  if (error) return { error: error.message };
+
+  try {
+    await supabase.from("order_status_history").insert({
+      order_id: orderId,
+      status: "cancelled",
+      note: reason || "Cancelled by customer",
+      updated_by: "customer",
+    });
+  } catch {}
+
+  revalidatePath(`/orders/${orderId}`);
+  revalidatePath("/orders");
+  return { success: true };
+}
+
+/** Customer: request return (only if delivered) */
+export async function requestReturn(orderId: string, reason: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("id, status, user_id")
+    .eq("id", orderId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!order) return { error: "Order not found" };
+  if (order.status !== "delivered") return { error: "Only delivered orders can be returned." };
+
+  const { error } = await supabase.from("orders").update({
+    return_requested_at: new Date().toISOString(),
+    return_reason: reason,
+    updated_at: new Date().toISOString(),
+  }).eq("id", orderId);
+
+  if (error) return { error: error.message };
+
+  try {
+    await supabase.from("notifications").insert({
+      user_id: user.id,
+      title: "Return Requested",
+      message: `Return request submitted for order #${orderId.slice(0, 8).toUpperCase()}.`,
+      type: "return_request",
+      metadata: { order_id: orderId },
+    });
+  } catch {}
+
+  revalidatePath(`/orders/${orderId}`);
   return { success: true };
 }

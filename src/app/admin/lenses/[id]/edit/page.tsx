@@ -24,9 +24,9 @@ export default async function EditLensPage({
         <div className="space-y-2">
            <Link href="/admin/lenses" className="text-[9px] font-bold uppercase tracking-[0.4em] text-secondary flex items-center gap-2 hover:translate-x-1 transition-transform mb-4">
               <ArrowLeft size={10} />
-              Return to Lens Matrix
+              Back to Lenses
            </Link>
-          <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-secondary italic">Edit Module</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-secondary italic">Catalog</p>
           <h1 className="text-4xl md:text-5xl font-serif italic text-brand-navy tracking-tight">Edit <span className="text-secondary">{lens.name}</span></h1>
         </div>
       </header>
@@ -72,7 +72,7 @@ export default async function EditLensPage({
 
         <button type="submit" className="w-full bg-brand-navy text-white text-[10px] font-bold uppercase tracking-[0.4em] py-6 shadow-xl hover:bg-secondary hover:text-brand-navy transition-all duration-700 flex items-center justify-center gap-4 active:scale-95">
            <Save size={18} />
-           UPDATE LENS MODULE
+           Save Changes
         </button>
       </form>
     </div>

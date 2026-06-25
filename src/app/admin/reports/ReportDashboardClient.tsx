@@ -133,8 +133,8 @@ export default function ReportDashboardClient({ initialData }: { initialData: an
       {/* GLOBAL HEADER */}
       <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 border-b border-brand-navy/5 pb-10">
         <div className="space-y-2">
-           <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-secondary italic">Data Intelligence</p>
-          <h1 className="text-4xl md:text-5xl font-serif italic text-brand-navy tracking-tight uppercase">Archive <span className="text-secondary">Analytics</span></h1>
+           <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-secondary italic">Business Analytics</p>
+          <h1 className="text-4xl md:text-5xl font-serif italic text-brand-navy tracking-tight uppercase">Reports <span className="text-secondary">Dashboard</span></h1>
         </div>
         
         <div className="flex gap-4 items-center">
@@ -163,10 +163,10 @@ export default function ReportDashboardClient({ initialData }: { initialData: an
       {/* QUICK METRICS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
          {[
-           { label: "Lifespan Revenue", value: `₹${totalSales.toLocaleString()}`, icon: BarChart3 },
-           { label: "Total Interventions", value: totalOrdersCount.toString(), icon: Package },
-           { label: "Registered Agents", value: initialData.customers.length.toString(), icon: Users },
-           { label: "Matrix AOV", value: `₹${totalOrdersCount ? Math.floor(totalSales/totalOrdersCount).toLocaleString() : 0}`, icon: TrendingUp },
+           { label: "Total Revenue", value: `₹${totalSales.toLocaleString()}`, icon: BarChart3 },
+           { label: "Total Orders", value: totalOrdersCount.toString(), icon: Package },
+           { label: "Customers", value: initialData.customers.length.toString(), icon: Users },
+           { label: "Avg. Order Value", value: `₹${totalOrdersCount ? Math.floor(totalSales/totalOrdersCount).toLocaleString() : 0}`, icon: TrendingUp },
          ].map((stat, i) => (
            <div key={i} className="bg-white border border-brand-navy/5 p-8 space-y-6 group hover:border-secondary transition-all">
               <div className="flex justify-between items-start">

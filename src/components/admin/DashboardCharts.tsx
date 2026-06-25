@@ -1,17 +1,15 @@
 "use client";
 
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   BarChart,
   Bar,
-  Legend,
-  Cell
 } from "recharts";
 
 interface ChartsProps {
@@ -22,111 +20,93 @@ interface ChartsProps {
   }[];
 }
 
+const tooltipStyle = {
+  contentStyle: {
+    backgroundColor: "#ffffff",
+    border: "1px solid #ECEFF5",
+    borderRadius: "10px",
+    fontSize: "12px",
+    color: "#111111",
+    boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+  },
+  itemStyle: { color: "#333333" },
+  labelStyle: { color: "#888888", fontWeight: 600, fontSize: 11 },
+};
+
+const axisProps = {
+  axisLine: false,
+  tickLine: false,
+  tick: { fontSize: 10, fill: "#AAAAAA" },
+};
+
 export default function DashboardCharts({ data }: ChartsProps) {
+  const totalRevenue = data.reduce((acc, d) => acc + d.revenue, 0);
+  const totalOrders = data.reduce((acc, d) => acc + d.orders, 0);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* Revenue Area Chart */}
-      <div className="bg-white border border-brand-navy/5 p-10 shadow-sm relative overflow-hidden group">
-        <div className="flex items-center justify-between mb-10 border-b border-brand-navy/5 pb-6">
-          <div className="space-y-1">
-            <h2 className="text-xl font-serif italic text-brand-navy uppercase tracking-tight">Revenue <span className="text-secondary">Nexus</span></h2>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">7-Day Economic Calibration</p>
-          </div>
-          <div className="text-right">
-             <p className="text-sm font-bold text-brand-navy">₹{data.reduce((acc, curr) => acc + curr.revenue, 0).toLocaleString()}</p>
-             <p className="text-[8px] uppercase tracking-widest text-secondary font-black">Total Period Yield</p>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Revenue Chart */}
+      <div className="bg-white border border-[#ECEFF5] rounded-2xl p-6">
+        <div className="flex items-end justify-between mb-5">
+          <div>
+            <p className="text-xs text-[#AAAAAA] font-medium mb-1">Revenue — last 7 days</p>
+            <p className="text-2xl font-bold text-[#111111]">
+              ₹{totalRevenue.toLocaleString("en-IN")}
+            </p>
           </div>
         </div>
-        
-        <div className="h-[300px] w-full">
+        <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
               <defs>
-                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#775a19" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#775a19" stopOpacity={0}/>
+                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#004AAD" stopOpacity={0.12} />
+                  <stop offset="95%" stopColor="#004AAD" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(28, 27, 27, 0.05)" />
-              <XAxis 
-                dataKey="date" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 9, fontWeight: 700, fill: "rgba(28, 27, 27, 0.3)" }} 
-              />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 9, fontWeight: 700, fill: "rgba(28, 27, 27, 0.3)" }} 
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: "#000000", 
-                  border: "none", 
-                  borderRadius: "0px",
-                  fontSize: "10px",
-                  fontWeight: "bold",
-                  color: "#ffffff"
-                }}
-                itemStyle={{ color: "#e9c176" }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="revenue" 
-                stroke="#775a19" 
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
+              <XAxis dataKey="date" {...axisProps} />
+              <YAxis {...axisProps} />
+              <Tooltip {...tooltipStyle} />
+              <Area
+                type="monotone"
+                dataKey="revenue"
+                name="Revenue (₹)"
+                stroke="#004AAD"
                 strokeWidth={2}
-                fillOpacity={1} 
-                fill="url(#colorRevenue)" 
+                fillOpacity={1}
+                fill="url(#revGrad)"
+                dot={false}
+                activeDot={{ r: 4, fill: "#004AAD" }}
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Orders Bar Chart */}
-      <div className="bg-[#000000] text-white p-10 shadow-xl relative overflow-hidden group">
-        <div className="flex items-center justify-between mb-10 border-b border-white/5 pb-6">
-          <div className="space-y-1">
-            <h2 className="text-xl font-serif italic text-secondary uppercase tracking-tight">Order <span className="text-white">Lifecycle</span></h2>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-white/30 italic">Volumetric Transaction Analysis</p>
-          </div>
-          <div className="text-right">
-             <p className="text-sm font-bold text-white">{data.reduce((acc, curr) => acc + curr.orders, 0)}</p>
-             <p className="text-[8px] uppercase tracking-widest text-secondary font-black">Total Protocols</p>
+      {/* Orders Chart */}
+      <div className="bg-white border border-[#ECEFF5] rounded-2xl p-6">
+        <div className="flex items-end justify-between mb-5">
+          <div>
+            <p className="text-xs text-[#AAAAAA] font-medium mb-1">Orders — last 7 days</p>
+            <p className="text-2xl font-bold text-[#111111]">{totalOrders}</p>
           </div>
         </div>
-
-        <div className="h-[300px] w-full">
+        <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
-              <XAxis 
-                dataKey="date" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 9, fontWeight: 700, fill: "rgba(255, 255, 255, 0.2)" }} 
+            <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
+              <XAxis dataKey="date" {...axisProps} />
+              <YAxis {...axisProps} allowDecimals={false} />
+              <Tooltip {...tooltipStyle} />
+              <Bar
+                dataKey="orders"
+                name="Orders"
+                fill="#EEF2FF"
+                stroke="#004AAD"
+                strokeWidth={1}
+                radius={[4, 4, 0, 0]}
               />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 9, fontWeight: 700, fill: "rgba(255, 255, 255, 0.2)" }} 
-              />
-              <Tooltip 
-                cursor={{ fill: "rgba(255, 255, 255, 0.03)" }}
-                contentStyle={{ 
-                  backgroundColor: "#ffffff", 
-                  border: "none", 
-                  borderRadius: "0px",
-                  fontSize: "10px",
-                  fontWeight: "bold",
-                  color: "#000000"
-                }}
-              />
-              <Bar dataKey="orders" fill="#775a19" radius={[2, 2, 0, 0]}>
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={index === data.length - 1 ? "#ffffff" : "#775a19"} />
-                ))}
-              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>

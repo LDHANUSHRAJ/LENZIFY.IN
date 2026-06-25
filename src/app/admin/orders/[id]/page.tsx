@@ -1,40 +1,62 @@
 import { createClient } from "@/lib/supabase/server";
-import { 
-  Package, 
-  User, 
-  MapPin, 
-  CreditCard, 
-  Truck, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle,
-  ChevronLeft,
-  FileText,
-  Eye,
-  Download,
-  AlertTriangle
+import {
+  Package, User, MapPin, CreditCard, Truck,
+  ChevronLeft, FileText, Download, AlertTriangle, AlertCircle, Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { updateOrderStatus } from "@/lib/db/order_actions";
 import { cn } from "@/lib/utils";
 
+const ORDER_STATUSES = [
+  { group: "Processing", values: ["pending","confirmed","frame_reserved","frame_preparing","lens_selected","lens_manufacturing","lens_fitting","quality_check","packed","waiting_shipment"] },
+  { group: "Shipping",   values: ["shipped","out_for_delivery","delivered"] },
+  { group: "Resolution", values: ["cancelled","returned","refunded"] },
+];
+
+const STATUS_STYLES: Record<string, string> = {
+  delivered:        "bg-emerald-50 text-emerald-700 border-emerald-100",
+  shipped:          "bg-blue-50 text-blue-700 border-blue-100",
+  out_for_delivery: "bg-sky-50 text-sky-700 border-sky-100",
+  confirmed:        "bg-violet-50 text-violet-700 border-violet-100",
+  pending:          "bg-amber-50 text-amber-700 border-amber-100",
+  cancelled:        "bg-red-50 text-red-600 border-red-100",
+  returned:         "bg-gray-50 text-gray-600 border-gray-200",
+  refunded:         "bg-gray-50 text-gray-600 border-gray-200",
+};
+
+const PAYMENT_STYLES: Record<string, string> = {
+  paid:     "bg-emerald-50 text-emerald-700 border-emerald-100",
+  pending:  "bg-amber-50 text-amber-700 border-amber-100",
+  failed:   "bg-red-50 text-red-600 border-red-100",
+  refunded: "bg-gray-50 text-gray-600 border-gray-200",
+};
+
+function fmtStatus(s: string) {
+  return s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function InfoRow({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold mb-0.5">{label}</p>
+      <p className="text-sm text-[#111111]">{value || "—"}</p>
+    </div>
+  );
+}
+
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // Fetch Order with Joins
   const { data: order, error } = await supabase
     .from("orders")
     .select(`
       *,
       users(name, email, phone),
       addresses(*),
-      order_items(
-        *,
-        products(name, brand, product_images(*)),
-        lenses(name)
-      ),
-      prescriptions(*)
+      order_items(*, products(name, brand, product_images(*)), lenses(name)),
+      prescriptions(*),
+      order_status_history(id, status, note, updated_by, created_at)
     `)
     .eq("id", id)
     .single();
@@ -42,260 +64,352 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   if (error || !order) {
     return (
       <div className="py-20 text-center">
-        <AlertTriangle size={48} className="mx-auto text-red-500 mb-4" />
-        <h1 className="text-2xl font-serif italic text-brand-navy">Protocol Not Found</h1>
-        <p className="text-[10px] text-brand-navy/30 uppercase tracking-widest mt-4">The requested transaction does not exist in the vault.</p>
-        <Link href="/admin/orders" className="inline-block mt-8 text-[10px] font-bold uppercase tracking-widest border-b border-brand-navy pb-1">Return to Matrix</Link>
+        <AlertTriangle size={40} className="mx-auto text-red-400 mb-4" />
+        <h1 className="text-xl font-bold text-[#111111]">Order not found</h1>
+        <p className="text-sm text-[#888888] mt-2">This order does not exist or was deleted.</p>
+        <Link href="/admin/orders" className="inline-block mt-6 text-sm font-semibold text-[#004AAD] hover:underline">
+          ← Back to Orders
+        </Link>
       </div>
     );
   }
 
+  const addr = order.addresses as any;
+  const user = order.users as any;
+  const history: any[] = ((order as any).order_status_history || []).sort(
+    (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  // Min delivery date: 3 days after order placed
+  const minDelivery = new Date(order.created_at);
+  minDelivery.setDate(minDelivery.getDate() + 3);
+  const minDeliveryStr = minDelivery.toISOString().split("T")[0];
+
   return (
-    <div className="max-w-7xl mx-auto space-y-12">
-      <header className="flex items-center justify-between border-b border-brand-navy/5 pb-10">
-        <div className="flex items-center gap-8">
-          <Link href="/admin/orders" className="p-4 bg-brand-background border border-brand-navy/5 hover:bg-brand-navy hover:text-white transition-all">
-            <ChevronLeft size={20} />
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/orders"
+            className="p-2 rounded-lg bg-white border border-[#ECEFF5] text-[#666666] hover:bg-[#F4F6F8] transition-colors"
+          >
+            <ChevronLeft size={18} />
           </Link>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-secondary italic mb-2">Order Identification</p>
-            <h1 className="text-4xl font-serif italic text-brand-navy tracking-tight uppercase">Protocol <span className="text-secondary">#{id.slice(0, 8)}</span></h1>
+            <h1 className="text-xl font-bold text-[#111111]">Order #{id.slice(0, 8).toUpperCase()}</h1>
+            <p className="text-xs text-[#888888] mt-0.5">
+              {new Date(order.created_at).toLocaleDateString("en-IN", {
+                day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+              })}
+            </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-4">
-           {/* Primary Actions */}
-           <div className="flex gap-2">
-              <button 
-                onClick={() => window.print()}
-                className="p-4 bg-white border border-brand-navy/10 text-brand-navy hover:bg-brand-navy hover:text-white transition-all shadow-sm flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest"
-              >
-                <FileText size={16} className="text-secondary" />
-                Print Protocol
+        <div className="flex items-center gap-2">
+          <span className={cn("text-xs font-semibold capitalize px-3 py-1.5 rounded-full border", STATUS_STYLES[order.status] ?? "bg-gray-50 text-gray-600 border-gray-200")}>
+            {fmtStatus(order.status)}
+          </span>
+          <span className={cn("text-xs font-semibold capitalize px-3 py-1.5 rounded-full border", PAYMENT_STYLES[order.payment_status] ?? "bg-gray-50 text-gray-600 border-gray-200")}>
+            {order.payment_status}
+          </span>
+        </div>
+      </div>
+
+      {/* Update Form */}
+      <form
+        action={async (formData) => {
+          "use server";
+          const status = formData.get("status") as string;
+          const payment_status = formData.get("payment_status") as string;
+          const tracking_id = formData.get("tracking_id") as string;
+          const courier = formData.get("courier") as string;
+          const estimated_delivery_date = formData.get("estimated_delivery_date") as string;
+          const note = formData.get("note") as string;
+          await updateOrderStatus(
+            id, status, payment_status || undefined, tracking_id || undefined,
+            courier || undefined, estimated_delivery_date || undefined, note || undefined
+          );
+        }}
+        className="bg-white border border-[#ECEFF5] rounded-2xl p-5"
+      >
+        <div className="flex flex-wrap items-end gap-4">
+          {/* Order Status */}
+          <div className="flex flex-col gap-1 min-w-[190px]">
+            <label className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold">Order Status</label>
+            <select name="status" defaultValue={order.status}
+              className="bg-[#F4F6F8] border border-[#ECEFF5] rounded-lg px-3 py-2 text-sm text-[#111111] focus:outline-none focus:border-[#004AAD]">
+              {ORDER_STATUSES.map(group => (
+                <optgroup key={group.group} label={group.group}>
+                  {group.values.map(s => (
+                    <option key={s} value={s}>{fmtStatus(s)}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+
+          {/* Payment Status */}
+          <div className="flex flex-col gap-1 min-w-[140px]">
+            <label className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold">Payment Status</label>
+            <select name="payment_status" defaultValue={order.payment_status}
+              className="bg-[#F4F6F8] border border-[#ECEFF5] rounded-lg px-3 py-2 text-sm text-[#111111] focus:outline-none focus:border-[#004AAD]">
+              {["pending","paid","failed","refunded"].map(s => (
+                <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Tracking ID */}
+          <div className="flex flex-col gap-1 min-w-[160px]">
+            <label className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold">Tracking ID</label>
+            <input name="tracking_id" defaultValue={order.tracking_id || ""} placeholder="e.g. DL123456789"
+              className="bg-[#F4F6F8] border border-[#ECEFF5] rounded-lg px-3 py-2 text-sm text-[#111111] focus:outline-none focus:border-[#004AAD]" />
+          </div>
+
+          {/* Courier */}
+          <div className="flex flex-col gap-1 min-w-[140px]">
+            <label className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold">Courier Partner</label>
+            <input name="courier" defaultValue={order.courier_partner || ""} placeholder="e.g. Delhivery"
+              className="bg-[#F4F6F8] border border-[#ECEFF5] rounded-lg px-3 py-2 text-sm text-[#111111] focus:outline-none focus:border-[#004AAD]" />
+          </div>
+
+          {/* Estimated Delivery Date */}
+          <div className="flex flex-col gap-1 min-w-[160px]">
+            <label className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold">Est. Delivery Date</label>
+            <input type="date" name="estimated_delivery_date"
+              defaultValue={(order as any).estimated_delivery_date || ""}
+              min={minDeliveryStr}
+              className="bg-[#F4F6F8] border border-[#ECEFF5] rounded-lg px-3 py-2 text-sm text-[#111111] focus:outline-none focus:border-[#004AAD]" />
+          </div>
+
+          {/* Note */}
+          <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
+            <label className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold">Note to Customer</label>
+            <input name="note" placeholder="Optional message sent with the status update..."
+              className="bg-[#F4F6F8] border border-[#ECEFF5] rounded-lg px-3 py-2 text-sm text-[#111111] focus:outline-none focus:border-[#004AAD]" />
+          </div>
+        </div>
+
+        <div className="flex gap-2 mt-4 pt-4 border-t border-[#ECEFF5] justify-end">
+          {order.payment_status === "paid" && (
+            <form action={async () => {
+              "use server";
+              const { refundOrder } = await import("@/app/admin/orders/actions");
+              await refundOrder(id);
+            }}>
+              <button type="submit"
+                className="px-4 py-2.5 rounded-lg bg-red-50 text-red-600 border border-red-100 text-sm font-semibold hover:bg-red-100 transition-colors flex items-center gap-2">
+                <AlertCircle size={14} /> Issue Refund
               </button>
-              
-              {order.payment_status === 'paid' && (
-                <form action={async () => {
-                   "use server";
-                   const { refundOrder } = await import("@/app/admin/orders/actions");
-                   await refundOrder(id);
-                }}>
-                  <button type="submit" className="p-4 bg-red-50 border border-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-sm flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
-                    <AlertCircle size={16} />
-                    Issue Refund
-                  </button>
-                </form>
+            </form>
+          )}
+          <button type="submit"
+            className="px-6 py-2.5 rounded-lg bg-[#004AAD] text-white text-sm font-semibold hover:bg-[#003d99] transition-colors">
+            Save & Notify Customer
+          </button>
+        </div>
+      </form>
+
+      {/* Status History */}
+      {history.length > 0 && (
+        <div className="bg-white border border-[#ECEFF5] rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-6 py-4 border-b border-[#ECEFF5]">
+            <Clock size={14} className="text-[#004AAD]" />
+            <h2 className="text-sm font-semibold text-[#111111]">Status History</h2>
+          </div>
+          <div className="divide-y divide-[#F5F5F5]">
+            {history.map((h: any) => (
+              <div key={h.id} className="flex items-center justify-between gap-4 px-6 py-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <span className={cn(
+                    "text-[10px] font-semibold capitalize px-2.5 py-1 rounded-full border flex-shrink-0",
+                    STATUS_STYLES[h.status] ?? "bg-[#F4F6F8] text-[#555555] border-[#ECEFF5]"
+                  )}>
+                    {fmtStatus(h.status)}
+                  </span>
+                  {h.note && <span className="text-xs text-[#666666] truncate">{h.note}</span>}
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-[10px] text-[#AAAAAA]">
+                    {new Date(h.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                    {" · "}
+                    {new Date(h.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                  <p className="text-[10px] text-[#CCCCCC]">by {h.updated_by}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Left: Items + Prescription */}
+        <div className="lg:col-span-2 space-y-6">
+
+          {/* Order Items */}
+          <div className="bg-white border border-[#ECEFF5] rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2.5 px-6 py-4 border-b border-[#ECEFF5]">
+              <Package size={15} className="text-[#004AAD]" />
+              <h2 className="text-sm font-semibold text-[#111111]">Order Items</h2>
+            </div>
+            <div className="divide-y divide-[#F5F5F5]">
+              {order.order_items.map((item: any) => (
+                <div key={item.id} className="flex gap-4 p-5">
+                  <div className="w-20 h-20 rounded-xl bg-[#F4F6F8] border border-[#ECEFF5] flex-shrink-0 overflow-hidden">
+                    <img
+                      src={item.products?.product_images?.[0]?.image_url || "/placeholder.jpg"}
+                      alt={item.products?.name}
+                      className="w-full h-full object-contain p-1"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between gap-2">
+                      <div>
+                        <p className="text-[10px] text-[#AAAAAA] font-medium">{item.products?.brand}</p>
+                        <p className="text-sm font-semibold text-[#111111] mt-0.5">{item.products?.name}</p>
+                      </div>
+                      <p className="text-sm font-bold text-[#111111] flex-shrink-0">₹{Number(item.price || 0).toLocaleString("en-IN")}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-4 mt-3">
+                      <div>
+                        <p className="text-[10px] text-[#AAAAAA]">Lens</p>
+                        <p className="text-xs text-[#333333]">{item.lenses?.name || item.lens_type || "Frame Only"}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-[#AAAAAA]">Power</p>
+                        <p className="text-xs text-[#333333]">
+                          {item.prescription_json
+                            ? `L: ${item.prescription_json.os_sph || "0.00"} | R: ${item.prescription_json.od_sph || "0.00"}`
+                            : `L: ${item.power_left || "PL"} | R: ${item.power_right || "PL"}`}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-[#AAAAAA]">Qty</p>
+                        <p className="text-xs text-[#333333]">{item.quantity}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="px-6 py-4 border-t border-[#ECEFF5] flex justify-between items-center bg-[#FAFAFA]">
+              <span className="text-sm text-[#666666]">Order Total</span>
+              <span className="text-lg font-bold text-[#111111]">₹{Number(order.total_price || 0).toLocaleString("en-IN")}</span>
+            </div>
+          </div>
+
+          {/* Prescription */}
+          {order.prescriptions?.[0] && (
+            <div className="bg-white border border-[#ECEFF5] rounded-2xl overflow-hidden">
+              <div className="flex items-center gap-2.5 px-6 py-4 border-b border-[#ECEFF5]">
+                <FileText size={15} className="text-[#004AAD]" />
+                <h2 className="text-sm font-semibold text-[#111111]">Prescription</h2>
+              </div>
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <InfoRow label="Left Eye" value={order.prescriptions[0].left_eye} />
+                  <InfoRow label="Right Eye" value={order.prescriptions[0].right_eye} />
+                  <InfoRow label="PD" value={order.prescriptions[0].pd?.toString()} />
+                  {order.prescriptions[0].file_url && (
+                    <a href={order.prescriptions[0].file_url} target="_blank"
+                      className="inline-flex items-center gap-2 text-sm font-semibold text-[#004AAD] hover:underline">
+                      <Download size={14} /> Download prescription
+                    </a>
+                  )}
+                </div>
+                {order.prescriptions[0].file_url && (
+                  <div className="aspect-[3/4] bg-[#F4F6F8] rounded-xl overflow-hidden border border-[#ECEFF5]">
+                    <img src={order.prescriptions[0].file_url} className="w-full h-full object-cover" alt="Prescription" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Return request alert */}
+          {(order as any).return_requested_at && (
+            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5">
+              <p className="text-sm font-semibold text-amber-700 mb-1">Return Requested</p>
+              <p className="text-xs text-amber-600">{(order as any).return_reason}</p>
+              <p className="text-[10px] text-amber-500 mt-2">
+                Requested: {new Date((order as any).return_requested_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Right Sidebar */}
+        <div className="space-y-6">
+
+          {/* Customer */}
+          <div className="bg-white border border-[#ECEFF5] rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[#ECEFF5]">
+              <User size={14} className="text-[#004AAD]" />
+              <h2 className="text-sm font-semibold text-[#111111]">Customer</h2>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-[#004AAD] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                  {user?.name?.[0]?.toUpperCase() || "C"}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#111111]">{user?.name || "Customer"}</p>
+                  <p className="text-xs text-[#888888]">{user?.email}</p>
+                </div>
+              </div>
+              {user?.phone && <InfoRow label="Phone" value={user.phone} />}
+            </div>
+          </div>
+
+          {/* Shipping */}
+          <div className="bg-white border border-[#ECEFF5] rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[#ECEFF5]">
+              <MapPin size={14} className="text-[#004AAD]" />
+              <h2 className="text-sm font-semibold text-[#111111]">Shipping Address</h2>
+            </div>
+            <div className="p-5 space-y-1">
+              {addr ? (
+                <>
+                  <p className="text-sm font-semibold text-[#111111]">{addr.full_name || user?.name}</p>
+                  <p className="text-sm text-[#444444] leading-relaxed">{addr.address}</p>
+                  <p className="text-sm text-[#444444]">{addr.city}, {addr.state} – {addr.pincode}</p>
+                  {addr.phone && <p className="text-sm text-[#666666]">{addr.phone}</p>}
+                </>
+              ) : (
+                <p className="text-sm text-[#AAAAAA]">No address on record</p>
               )}
-           </div>
+            </div>
+          </div>
 
-           <form action={async (formData) => {
-               "use server";
-               const status = formData.get("status") as string;
-               const payment_status = formData.get("payment_status") as string;
-               const tracking_id = formData.get("tracking_id") as string;
-               const courier = formData.get("courier") as string;
-               await updateOrderStatus(id, status, payment_status, tracking_id, courier);
-           }} className="flex flex-wrap items-center gap-4 bg-white border border-brand-navy/10 p-4 shadow-sm">
-               <div className="flex flex-col gap-1">
-                 <label className="text-[8px] font-black uppercase tracking-widest text-brand-navy/30">Order Status</label>
-                 <select name="status" defaultValue={order.status} className="bg-transparent text-[10px] font-bold uppercase tracking-widest outline-none border-b border-brand-navy/5 pb-1">
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="refunded">Refunded</option>
-                 </select>
-               </div>
-               
-               <div className="flex flex-col gap-1">
-                 <label className="text-[8px] font-black uppercase tracking-widest text-brand-navy/30">Payment Matrix</label>
-                 <select name="payment_status" defaultValue={order.payment_status} className="bg-transparent text-[10px] font-bold uppercase tracking-widest outline-none border-b border-brand-navy/5 pb-1">
-                    <option value="pending">Unpaid</option>
-                    <option value="paid">Paid</option>
-                    <option value="refunded">Refunded</option>
-                 </select>
-               </div>
-
-               <div className="flex flex-col gap-1">
-                 <label className="text-[8px] font-black uppercase tracking-widest text-brand-navy/30">Logistics ID</label>
-                 <input name="tracking_id" defaultValue={order.tracking_id} placeholder="Tracking ID..." className="bg-transparent text-[10px] font-bold uppercase tracking-widest outline-none border-b border-brand-navy/5 pb-1 w-32" />
-               </div>
-
-               <div className="flex flex-col gap-1">
-                 <label className="text-[8px] font-black uppercase tracking-widest text-brand-navy/30">Courier Node</label>
-                 <input name="courier" defaultValue={order.courier_partner} placeholder="Partner Name..." className="bg-transparent text-[10px] font-bold uppercase tracking-widest outline-none border-b border-brand-navy/5 pb-1 w-32" />
-               </div>
-
-               <button type="submit" className="bg-brand-navy text-white text-[10px] font-bold px-8 py-4 uppercase tracking-widest hover:bg-secondary transition-all shadow-lg ml-4">Commit Protocol</button>
-           </form>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        {/* Main Details */}
-        <div className="lg:col-span-2 space-y-12">
-           {/* Items Section */}
-           <section className="bg-white border border-brand-navy/5 shadow-sm p-10">
-              <div className="flex items-center gap-3 mb-10 border-b border-brand-navy/5 pb-6">
-                 <Package size={18} className="text-secondary" />
-                 <h2 className="text-sm font-bold uppercase tracking-[0.3em] text-brand-navy italic">Items Composition</h2>
-              </div>
-              <div className="space-y-8">
-                 {order.order_items.map((item: any) => (
-                    <div key={item.id} className="flex gap-8 group">
-                       <div className="w-24 h-24 bg-brand-background border border-brand-navy/5 p-2 overflow-hidden">
-                          <img 
-                            src={item.products.product_images?.[0]?.image_url || "/placeholder.jpg"} 
-                            alt={item.products.name}
-                            className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
-                          />
-                       </div>
-                       <div className="flex-1 space-y-4">
-                          <div className="flex justify-between items-start">
-                             <div>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-brand-navy/30 mb-1">{item.products.brand}</p>
-                                <h3 className="text-lg font-serif italic text-brand-navy font-black tracking-tight">{item.products.name}</h3>
-                             </div>
-                             <p className="text-sm font-serif italic text-secondary font-black italic">₹{(item.price || 0).toLocaleString()}</p>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4 border-t border-brand-navy/[0.03]">
-                             <div>
-                                <p className="text-[9px] uppercase font-bold text-brand-navy/30 tracking-widest mb-1">Optical Type</p>
-                                <p className="text-[10px] font-bold text-brand-navy/60 uppercase">{item.lenses?.name || item.lens_type || 'Frame Only'}</p>
-                             </div>
-                             <div>
-                                <p className="text-[9px] uppercase font-bold text-brand-navy/30 tracking-widest mb-1">Power Matrix</p>
-                                <p className="text-[10px] font-bold text-brand-navy/60 uppercase">
-                                  {item.prescription_json ? 
-                                    `L: ${item.prescription_json.os_sph || '0.00'} | R: ${item.prescription_json.od_sph || '0.00'}` : 
-                                    `L: ${item.power_left || 'PL'} | R: ${item.power_right || 'PL'}`}
-                                </p>
-                             </div>
-                             <div>
-                                <p className="text-[9px] uppercase font-bold text-brand-navy/30 tracking-widest mb-1">Quantity</p>
-                                <p className="text-[10px] font-bold text-brand-navy/60 uppercase">Unit: {item.quantity}</p>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-                 ))}
-              </div>
-           </section>
-
-           {/* Prescription Data */}
-           {order.prescriptions?.[0] && (
-             <section className="bg-brand-navy text-white p-10 shadow-xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-150 transition-transform duration-1000">
-                   <FileText size={120} />
+          {/* Payment */}
+          <div className="bg-white border border-[#ECEFF5] rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[#ECEFF5]">
+              <CreditCard size={14} className="text-[#004AAD]" />
+              <h2 className="text-sm font-semibold text-[#111111]">Payment & Delivery</h2>
+            </div>
+            <div className="p-5 space-y-4">
+              <InfoRow label="Payment Method" value={order.payment_method === "cod" ? "Cash on Delivery" : "Online (Razorpay)"} />
+              <InfoRow label="Payment ID" value={order.payment_id || order.payment_id} />
+              {order.courier_partner && <InfoRow label="Courier" value={order.courier_partner} />}
+              {order.tracking_id && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-[#AAAAAA] font-semibold mb-0.5">Tracking ID</p>
+                  <p className="text-sm font-mono font-semibold text-[#004AAD]">{order.tracking_id}</p>
                 </div>
-                <div className="relative">
-                  <div className="flex items-center gap-3 mb-10 border-b border-white/10 pb-6">
-                     <FileText size={18} className="text-secondary" />
-                     <h2 className="text-sm font-bold uppercase tracking-[0.3em] italic">Clinical Metadata</h2>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                     <div className="space-y-6">
-                        <div className="bg-white/5 p-6 border border-white/10">
-                           <p className="text-[9px] uppercase font-bold text-secondary tracking-widest mb-3">Power Details</p>
-                           <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">
-                              Left: {order.prescriptions[0].left_eye || 'Standard'}<br/>
-                              Right: {order.prescriptions[0].right_eye || 'Standard'}<br/>
-                              PD: {order.prescriptions[0].pd || 'Global Standard'}
-                           </p>
-                        </div>
-                        {order.prescriptions[0].file_url && (
-                          <a 
-                            href={order.prescriptions[0].file_url} 
-                            target="_blank"
-                            className="flex items-center gap-4 bg-secondary text-brand-navy p-5 text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all font-black"
-                          >
-                             <Download size={14} /> Download Clinical Report
-                          </a>
-                        )}
-                     </div>
-                     <div className="aspect-[3/4] bg-white/5 border border-white/10 p-4 relative group">
-                        {order.prescriptions[0].file_url ? (
-                          <img src={order.prescriptions[0].file_url} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-white/20">
-                             <AlertCircle size={48} className="mb-4 opacity-10" />
-                             <p className="text-[8px] uppercase font-bold tracking-widest italic">Visual Data Not Uploaded</p>
-                          </div>
-                        )}
-                     </div>
-                  </div>
-                </div>
-             </section>
-           )}
-        </div>
-
-        {/* Sidebar Data */}
-        <div className="space-y-12">
-           {/* Client Analytics */}
-           <section className="bg-white border border-brand-navy/5 shadow-sm p-10">
-              <div className="flex items-center gap-3 mb-8 border-b border-brand-navy/5 pb-6">
-                 <User size={18} className="text-secondary" />
-                 <h2 className="text-sm font-bold uppercase tracking-[0.3em] text-brand-navy italic">Client Matrix</h2>
-              </div>
-              <div className="space-y-6">
-                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-brand-navy text-white flex items-center justify-center font-black italic">{order.users?.name?.[0]}</div>
-                    <div>
-                       <p className="text-sm font-serif italic text-brand-navy font-black tracking-tight">{order.users?.name}</p>
-                       <p className="text-[9px] text-brand-navy/40 font-bold uppercase tracking-widest mt-1">{order.users?.email}</p>
-                    </div>
-                 </div>
-                 <div className="pt-6 border-t border-brand-navy/[0.03]">
-                    <p className="text-[9px] uppercase font-bold text-brand-navy/30 tracking-widest mb-2">Communication Hub</p>
-                    <p className="text-[10px] font-bold text-brand-navy/60 italic">{order.users?.phone || 'Encrypted'}</p>
-                 </div>
-              </div>
-           </section>
-
-           {/* Delivery Coordinates */}
-            <section className="bg-white border border-brand-navy/5 shadow-sm p-10 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-500">
-                  <Truck size={48} />
-              </div>
-              <div className="flex items-center gap-3 mb-8 border-b border-brand-navy/5 pb-6">
-                 <MapPin size={18} className="text-secondary" />
-                 <h2 className="text-sm font-bold uppercase tracking-[0.3em] text-brand-navy italic">Logistics Path</h2>
-              </div>
-              <div className="space-y-6">
-                 <p className="text-[11px] font-bold uppercase tracking-widest text-brand-navy/70 leading-relaxed italic">
-                    {order.addresses?.address}, <br/>
-                    {order.addresses?.city}, {order.addresses?.state} <br/>
-                    {order.addresses?.pincode}
-                 </p>
-                 <div className="pt-6 border-t border-brand-navy/[0.03]">
-                    <p className="text-[9px] uppercase font-bold text-brand-navy/30 tracking-widest mb-2">Carrier Partner</p>
-                    <p className="text-[10px] font-bold text-brand-navy uppercase tracking-widest leading-tight">{order.courier_partner || 'Assigning Carrier...'}</p>
-                 </div>
-                 {order.tracking_id && (
-                    <div className="mt-4 p-4 bg-brand-background border border-brand-navy/5 font-mono text-[10px] font-bold text-brand-navy break-all italic">
-                       TRANSIT_ID: {order.tracking_id}
-                    </div>
-                 )}
-              </div>
-            </section>
-
-           {/* Payment Status */}
-           <section className="bg-brand-background border border-brand-navy/5 p-10">
-              <div className="flex items-center gap-3 mb-8 border-b border-brand-navy/5 pb-6">
-                 <CreditCard size={18} className="text-secondary" />
-                 <h2 className="text-sm font-bold uppercase tracking-[0.3em] text-brand-navy italic">Financial Audit</h2>
-              </div>
-              <div className="space-y-4">
-                 <div className="flex justify-between items-center bg-white p-5 border border-brand-navy/5">
-                    <p className="text-[9px] uppercase font-black tracking-widest text-brand-navy/40 italic">Economic State</p>
-                    <span className={cn(
-                       "text-[9px] uppercase font-black italic tracking-widest",
-                       order.payment_status === 'paid' ? "text-secondary" : "text-brand-navy/30"
-                    )}>{order.payment_status}</span>
-                 </div>
-                 <p className="text-[8px] uppercase font-bold text-brand-navy/20 tracking-[0.2em] px-1 italic">Authorized via System Protocol</p>
-              </div>
-           </section>
+              )}
+              {(order as any).estimated_delivery_date && (
+                <InfoRow
+                  label="Est. Delivery"
+                  value={new Date((order as any).estimated_delivery_date).toLocaleDateString("en-IN", {
+                    day: "numeric", month: "long", year: "numeric"
+                  })}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

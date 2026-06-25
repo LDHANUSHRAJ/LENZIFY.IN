@@ -1,320 +1,447 @@
 import { createClient } from "@/lib/supabase/server";
-import { Package, Truck, CheckCircle2, ChevronLeft, Clock, AlertCircle, Eye, MapPin, CreditCard } from "lucide-react";
+import {
+  Package, Truck, CheckCircle2, ChevronLeft, AlertCircle,
+  MapPin, CreditCard, Clock, Download, RotateCcw, X, Calendar,
+} from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { cancelOrder, requestReturn } from "@/lib/db/order_actions";
+import { redirect } from "next/navigation";
+
+/* ─── Full tracking pipeline ─────────────────────────── */
+const PIPELINE = [
+  { key: "pending",           label: "Order Placed",             desc: "Your order has been received." },
+  { key: "confirmed",         label: "Order Confirmed",           desc: "Order confirmed and queued for processing." },
+  { key: "frame_reserved",    label: "Frame Reserved",            desc: "Your frame has been reserved." },
+  { key: "frame_preparing",   label: "Frame Being Prepared",      desc: "Frame is being cleaned and readied." },
+  { key: "lens_selected",     label: "Lens Selected",             desc: "Optimal lenses chosen for your prescription." },
+  { key: "lens_manufacturing",label: "Lenses Manufacturing",      desc: "Your custom lenses are being precision-cut." },
+  { key: "lens_fitting",      label: "Lens Fitting",              desc: "Lenses are being fitted into your frame." },
+  { key: "quality_check",     label: "Quality Inspection",        desc: "Final quality check by our optical experts." },
+  { key: "packed",            label: "Packed",                    desc: "Your order has been packed securely." },
+  { key: "waiting_shipment",  label: "Waiting for Shipment",      desc: "Package awaiting courier pickup." },
+  { key: "shipped",           label: "Shipped",                   desc: "On its way to you!" },
+  { key: "out_for_delivery",  label: "Out for Delivery",          desc: "Your order is almost there." },
+  { key: "delivered",         label: "Delivered",                 desc: "Order delivered successfully." },
+];
+
+const STATUS_STYLES: Record<string, string> = {
+  delivered: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  shipped:   "bg-blue-50 text-blue-700 border-blue-100",
+  confirmed: "bg-violet-50 text-violet-700 border-violet-100",
+  pending:   "bg-amber-50 text-amber-700 border-amber-100",
+  cancelled: "bg-red-50 text-red-600 border-red-100",
+  returned:  "bg-gray-50 text-gray-600 border-gray-200",
+  refunded:  "bg-gray-50 text-gray-600 border-gray-200",
+};
+
+const PAYMENT_STYLES: Record<string, string> = {
+  paid:    "bg-emerald-50 text-emerald-700 border-emerald-100",
+  pending: "bg-amber-50 text-amber-700 border-amber-100",
+  failed:  "bg-red-50 text-red-600 border-red-100",
+};
 
 export default async function OrderTrackingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // Try to find in orders first
-  const { data: standardOrder } = await supabase
+  if (!user) redirect("/auth/login?redirect=/orders/" + id);
+
+  // Fetch order
+  const { data: order } = await supabase
     .from("orders")
-    .select("*, order_items(*, products(*)), order_tracking(*)")
+    .select(`
+      *,
+      users(name, email, phone),
+      addresses(*),
+      order_items(*, products(name, brand, product_images(*))),
+      order_status_history(id, status, note, updated_by, created_at)
+    `)
     .eq("id", id)
+    .eq("user_id", user.id)
     .single();
 
-  // If not, try lens_replacement_orders
-  let order = standardOrder;
+  // Fallback: try lens replacement order
   let isReplacement = false;
-
+  let replacementOrder: any = null;
   if (!order) {
-    const { data: replacementOrder } = await supabase
+    const { data: repOrder } = await supabase
       .from("lens_replacement_orders")
-      .select("*, order_tracking(*)")
+      .select("*")
       .eq("id", id)
+      .eq("user_id", user.id)
       .single();
-    if (replacementOrder) {
-      order = replacementOrder;
+    if (repOrder) {
+      replacementOrder = repOrder;
       isReplacement = true;
     }
   }
 
-  if (!order) {
+  if (!order && !replacementOrder) {
     return (
       <div className="bg-[#F8F9FC] min-h-screen pt-28 flex items-center justify-center px-6">
-        <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-12 text-center max-w-md w-full">
+        <div className="bg-white rounded-3xl border border-[#ECECEC] p-12 text-center max-w-md w-full">
           <AlertCircle size={40} className="mx-auto text-[#ECECEC] mb-4" />
-          <h1 className="text-xl font-semibold text-[#111111] mb-2">Order Not Found</h1>
-          <p className="text-[#666666] text-sm mb-6">
-            The requested order could not be found. It may be invalid or belong to a different account.
-          </p>
-          <Link href="/orders" className="inline-block bg-[#03173D] text-white rounded-full px-6 py-3 font-semibold hover:bg-[#004AAD] transition-all text-sm">
-            Back to Orders
-          </Link>
+          <h1 className="text-xl font-semibold text-[#111111] mb-2">Order not found</h1>
+          <p className="text-[#666666] text-sm mb-6">This order doesn't exist or belongs to a different account.</p>
+          <Link href="/orders" className="inline-block bg-[#03173D] text-white rounded-full px-6 py-3 font-semibold hover:bg-[#004AAD] transition-all text-sm">Back to Orders</Link>
         </div>
       </div>
     );
   }
 
-  const steps = isReplacement ? [
-    { key: "Order Placed", label: "Order Placed", icon: Package },
-    { key: "Pickup Scheduled", label: "Pickup Scheduled", icon: Clock },
-    { key: "Picked Up", label: "Frame Picked Up", icon: Truck },
-    { key: "Processing", label: "In Lab", icon: Eye },
-    { key: "Ready", label: "Quality Check", icon: CheckCircle2 },
-    { key: "Out for Delivery", label: "Out for Delivery", icon: Truck },
-    { key: "Delivered", label: "Delivered", icon: CheckCircle2 },
-  ] : [
-    { key: "pending", label: "Order Placed", icon: Package },
-    { key: "confirmed", label: "Confirmed", icon: CheckCircle2 },
-    { key: "processing", label: "Processing", icon: Clock },
-    { key: "shipped", label: "Shipped", icon: Truck },
-    { key: "delivered", label: "Delivered", icon: CheckCircle2 },
-  ];
+  const displayOrder = order || replacementOrder;
+  const currentStatus = displayOrder.status;
 
-  const currentStepIndex = steps.findIndex(s => s.key === order.status);
-  const activeStep = currentStepIndex !== -1 ? currentStepIndex : 0;
+  // Build timeline
+  const historyMap: Record<string, { note: string | null; created_at: string; updated_by: string }> = {};
+  if (order?.order_status_history) {
+    for (const h of order.order_status_history) {
+      // keep earliest occurrence for each status
+      if (!historyMap[h.status] || h.created_at < historyMap[h.status].created_at) {
+        historyMap[h.status] = h;
+      }
+    }
+  }
+  // Always include the order creation as "pending"
+  if (!historyMap["pending"] && !isReplacement) {
+    historyMap["pending"] = { note: null, created_at: displayOrder.created_at, updated_by: "system" };
+  }
 
-  const statusBadge = (status: string) => {
-    if (status === "delivered")
-      return "bg-green-50 text-green-700 border border-green-200";
-    if (status === "processing" || status === "confirmed" || status === "shipped")
-      return "bg-blue-50 text-[#004AAD] border border-blue-200";
-    return "bg-amber-50 text-amber-700 border border-amber-200";
-  };
+  const currentPipelineIdx = PIPELINE.findIndex(s => s.key === currentStatus);
+
+  const isCancelled = ["cancelled", "returned", "refunded"].includes(currentStatus);
+  const canCancel = ["pending", "confirmed"].includes(currentStatus);
+  const canReturn = currentStatus === "delivered";
+  const hasReturnRequest = !!displayOrder.return_requested_at;
+
+  const addr = order?.addresses as any;
+  const estDelivery = order?.estimated_delivery_date;
 
   return (
     <div className="bg-[#F8F9FC] min-h-screen pt-28 pb-16">
-      <div className="max-w-4xl mx-auto px-6 lg:px-12 space-y-6">
-        {/* Back link */}
-        <Link
-          href="/orders"
-          className="inline-flex items-center gap-2 text-[#004AAD] text-sm font-semibold hover:underline"
-        >
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+
+        {/* Back */}
+        <Link href="/orders" className="inline-flex items-center gap-2 text-[#004AAD] text-sm font-semibold hover:underline">
           <ChevronLeft size={16} /> Back to Orders
         </Link>
 
-        {/* Order Header Card */}
-        <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-8">
+        {/* Header */}
+        <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-1">Order</p>
               <h1 className="text-2xl font-[var(--font-hero)] italic text-[#111111]">
-                #{order.id.slice(0, 12).toUpperCase()}
+                #{displayOrder.id.slice(0, 12).toUpperCase()}
               </h1>
               <p className="text-[#666666] text-sm mt-1">
                 Placed on{" "}
-                {new Date(order.created_at).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
+                {new Date(displayOrder.created_at).toLocaleDateString("en-IN", {
+                  day: "numeric", month: "long", year: "numeric",
                 })}
               </p>
+              {estDelivery && (
+                <p className="text-sm text-[#111111] mt-2 flex items-center gap-2">
+                  <Calendar size={14} className="text-[#004AAD]" />
+                  <span>
+                    <span className="text-[#666666]">Est. delivery: </span>
+                    <span className="font-semibold">
+                      {new Date(estDelivery).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                    </span>
+                  </span>
+                </p>
+              )}
             </div>
-            <span className={cn("text-sm font-semibold px-4 py-2 rounded-full capitalize self-start", statusBadge(order.status))}>
-              {order.status}
-            </span>
+            <div className="flex flex-col items-start sm:items-end gap-2">
+              <span className={cn(
+                "text-xs font-semibold px-3 py-1.5 rounded-full capitalize border",
+                STATUS_STYLES[currentStatus] ?? "bg-gray-50 text-gray-600 border-gray-200"
+              )}>
+                {currentStatus.replace(/_/g, " ")}
+              </span>
+              <span className="text-lg font-bold text-[#111111]">
+                ₹{Number(displayOrder.total_price || 0).toLocaleString("en-IN")}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Order Timeline */}
-        <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-8">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-8">Order Progress</p>
+        {/* Timeline */}
+        {!isCancelled && !isReplacement && (
+          <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-6 sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-6">Order Progress</p>
+            <div className="space-y-0">
+              {PIPELINE.map((stage, i) => {
+                const history = historyMap[stage.key];
+                const isCompleted = currentPipelineIdx > i || !!history;
+                const isCurrent = stage.key === currentStatus;
+                const isPending = !isCompleted && !isCurrent;
 
-          {/* Horizontal timeline on md+, vertical on mobile */}
-          <div className="hidden md:flex justify-between items-start relative">
-            {/* Track line */}
-            <div className="absolute top-4 left-0 right-0 h-0.5 bg-[#ECECEC] z-0" />
-            <div
-              className="absolute top-4 left-0 h-0.5 bg-[#03173D] z-0 transition-all duration-700"
-              style={{ width: `${(activeStep / (steps.length - 1)) * 100}%` }}
-            />
-
-            {steps.map((step, i) => {
-              const isCompleted = i < activeStep;
-              const isCurrent = i === activeStep;
-              const Icon = step.icon;
-              return (
-                <div key={step.key} className="flex flex-col items-center gap-3 z-10 flex-1">
-                  <div
-                    className={cn(
-                      "w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-500",
-                      isCurrent
-                        ? "border-[#03173D] bg-white shadow-[0_0_0_4px_rgba(3,23,61,0.1)]"
-                        : isCompleted
-                        ? "border-[#03173D] bg-[#03173D]"
-                        : "border-[#ECECEC] bg-white"
-                    )}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle2 size={14} className="text-white" />
-                    ) : isCurrent ? (
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#03173D]" />
-                    ) : (
-                      <div className="w-2 h-2 rounded-full bg-[#ECECEC]" />
-                    )}
-                  </div>
-                  <p
-                    className={cn(
-                      "text-xs font-semibold text-center leading-tight max-w-[80px]",
-                      isCurrent ? "text-[#03173D]" : isCompleted ? "text-[#111111]" : "text-[#ECECEC]"
-                    )}
-                  >
-                    {step.label}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Vertical timeline (mobile) */}
-          <div className="md:hidden space-y-0">
-            {steps.map((step, i) => {
-              const isCompleted = i < activeStep;
-              const isCurrent = i === activeStep;
-              const Icon = step.icon;
-              return (
-                <div key={step.key} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={cn(
-                        "w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                return (
+                  <div key={stage.key} className="flex gap-4">
+                    {/* Spine */}
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300 flex-shrink-0",
                         isCurrent
-                          ? "border-[#03173D] bg-white"
+                          ? "border-[#004AAD] bg-white shadow-[0_0_0_4px_rgba(0,74,173,0.1)]"
                           : isCompleted
-                          ? "border-[#03173D] bg-[#03173D]"
+                          ? "border-[#004AAD] bg-[#004AAD]"
                           : "border-[#ECECEC] bg-white"
-                      )}
-                    >
-                      {isCompleted ? (
-                        <CheckCircle2 size={14} className="text-white" />
-                      ) : (
-                        <div className={cn("w-2 h-2 rounded-full", isCurrent ? "bg-[#03173D]" : "bg-[#ECECEC]")} />
+                      )}>
+                        {isCompleted && !isCurrent ? (
+                          <CheckCircle2 size={14} className="text-white" />
+                        ) : isCurrent ? (
+                          <div className="w-2.5 h-2.5 rounded-full bg-[#004AAD] animate-pulse" />
+                        ) : (
+                          <div className="w-2 h-2 rounded-full bg-[#ECECEC]" />
+                        )}
+                      </div>
+                      {i < PIPELINE.length - 1 && (
+                        <div className={cn(
+                          "w-0.5 flex-1 min-h-[24px] my-1 transition-all",
+                          isCompleted ? "bg-[#004AAD]" : "bg-[#ECECEC]"
+                        )} />
                       )}
                     </div>
-                    {i < steps.length - 1 && (
-                      <div className={cn("w-0.5 flex-1 min-h-[24px] my-1", isCompleted ? "bg-[#03173D]" : "bg-[#ECECEC]")} />
-                    )}
-                  </div>
-                  <div className="pb-4">
-                    <p className={cn("text-sm font-semibold", isCurrent ? "text-[#03173D]" : isCompleted ? "text-[#111111]" : "text-[#666666]")}>
-                      {step.label}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* Order Items */}
-        {!isReplacement && order.order_items?.length > 0 && (
-          <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-8">
+                    {/* Content */}
+                    <div className={cn("pb-5 flex-1", i === PIPELINE.length - 1 ? "pb-0" : "")}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className={cn(
+                            "text-sm font-semibold leading-tight",
+                            isCurrent ? "text-[#004AAD]" : isCompleted ? "text-[#111111]" : "text-[#CCCCCC]"
+                          )}>
+                            {stage.label}
+                          </p>
+                          {(isCurrent || isCompleted) && (
+                            <p className="text-xs text-[#888888] mt-0.5 leading-snug">
+                              {history?.note || stage.desc}
+                            </p>
+                          )}
+                        </div>
+                        {history && (
+                          <p className="text-[10px] text-[#AAAAAA] flex-shrink-0 mt-0.5">
+                            {new Date(history.created_at).toLocaleDateString("en-IN", {
+                              day: "numeric", month: "short",
+                            })}{" "}
+                            {new Date(history.created_at).toLocaleTimeString("en-IN", {
+                              hour: "2-digit", minute: "2-digit",
+                            })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Cancelled state */}
+        {isCancelled && (
+          <div className="bg-red-50 border border-red-100 rounded-3xl p-6 sm:p-8 flex items-start gap-4">
+            <X size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-red-700">
+                Order {currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}
+              </p>
+              {displayOrder.cancel_reason && (
+                <p className="text-sm text-red-600 mt-1">{displayOrder.cancel_reason}</p>
+              )}
+              {currentStatus === "cancelled" && displayOrder.payment_status === "paid" && (
+                <p className="text-sm text-red-600 mt-2">
+                  Refund will be processed to your original payment method within 5-7 business days.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tracking info */}
+        {(order?.tracking_id || order?.courier_partner) && !isCancelled && (
+          <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-6 sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-4">Shipment Details</p>
+            <div className="flex flex-col sm:flex-row gap-6">
+              {order?.courier_partner && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#AAAAAA] mb-1">Courier</p>
+                  <p className="font-semibold text-[#111111]">{order.courier_partner}</p>
+                </div>
+              )}
+              {order?.tracking_id && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#AAAAAA] mb-1">Tracking ID</p>
+                  <p className="font-mono font-semibold text-[#004AAD]">{order.tracking_id}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Order items */}
+        {!isReplacement && order?.order_items?.length > 0 && (
+          <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-6 sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-6">Items Ordered</p>
-            <div className="space-y-4">
+            <div className="space-y-5 divide-y divide-[#F5F5F5]">
               {order.order_items.map((item: any) => (
-                <div key={item.id} className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-[#F8F9FC] border border-[#ECECEC] rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0">
+                <div key={item.id} className="flex items-center gap-4 pt-5 first:pt-0">
+                  <div className="w-16 h-16 bg-[#F8F9FC] border border-[#ECECEC] rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0">
                     <img
                       src={item.products?.product_images?.[0]?.image_url || "/placeholder.jpg"}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain p-1"
                       alt={item.products?.name}
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-[#111111] truncate">{item.products?.name}</p>
-                    <p className="text-[#666666] text-sm">Qty: {item.quantity}</p>
+                    <p className="font-semibold text-[#111111] truncate text-sm">{item.products?.name}</p>
+                    <p className="text-[#666666] text-xs mt-0.5">{item.products?.brand} · Qty: {item.quantity}</p>
                   </div>
-                  <p className="font-semibold text-[#111111] flex-shrink-0">₹{(item.price || 0).toLocaleString()}</p>
+                  <p className="font-semibold text-[#111111] text-sm flex-shrink-0">₹{Number(item.price || 0).toLocaleString("en-IN")}</p>
                 </div>
               ))}
+            </div>
+            <div className="flex justify-between items-center pt-5 mt-5 border-t border-[#ECECEC]">
+              <span className="text-sm text-[#666666]">Order Total</span>
+              <span className="text-lg font-bold text-[#111111]">₹{Number(displayOrder.total_price || 0).toLocaleString("en-IN")}</span>
             </div>
           </div>
         )}
 
-        {/* Tracking Events */}
-        {order.order_tracking?.length > 0 && (
-          <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-8">
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-6">Shipment Updates</p>
-            <div className="space-y-4">
-              {order.order_tracking.map((track: any) => (
-                <div key={track.id} className="flex gap-4 items-start">
-                  <div className="w-10 h-10 bg-[#F8F9FC] border border-[#ECECEC] rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Truck size={16} className="text-[#004AAD]" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-[#111111] text-sm">{track.checkpoint_location}</p>
-                    <p className="text-[#666666] text-xs mt-0.5">
-                      {new Date(track.created_at).toLocaleString("en-IN")}
-                    </p>
-                    {track.status_description && (
-                      <p className="text-[#666666] text-sm mt-1">{track.status_description}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Carrier info */}
-            <div className="mt-6 pt-6 border-t border-[#ECECEC] flex flex-col sm:flex-row justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#666666] mb-1">Carrier</p>
-                <p className="font-semibold text-[#111111]">
-                  {order.order_tracking[order.order_tracking.length - 1]?.courier_name || "Standard Network"}
-                </p>
+        {/* Replacement service info */}
+        {isReplacement && (
+          <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-6 sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-4">Service Details</p>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-[#F8F9FC] border border-[#ECECEC] rounded-2xl flex items-center justify-center">
+                <Package size={22} className="text-[#004AAD]" />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#666666] mb-1">Tracking ID</p>
-                <p className="font-mono font-semibold text-[#111111]">
-                  {order.order_tracking[order.order_tracking.length - 1]?.tracking_id || "N/A"}
-                </p>
+                <p className="font-semibold text-[#111111]">Lens Replacement Service</p>
+                <p className="text-[#666666] text-sm">Frame: {replacementOrder?.frame_type}</p>
+                {replacementOrder?.pickup_date && (
+                  <p className="text-[#666666] text-xs mt-0.5">Pickup: {new Date(replacementOrder.pickup_date).toLocaleDateString("en-IN")}</p>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* Summary Card */}
-        <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-8">
+        {/* Summary */}
+        <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-6 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-6">Order Summary</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Shipping Address */}
-            {order.shipping_address && (
+            {/* Address */}
+            {(addr || displayOrder.shipping_address) && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <MapPin size={14} className="text-[#004AAD]" />
                   <p className="text-xs font-semibold uppercase tracking-widest text-[#666666]">Shipping Address</p>
                 </div>
-                <div className="bg-[#F8F9FC] rounded-xl border border-[#E8EAF2] p-4 text-sm text-[#111111] leading-relaxed">
-                  {typeof order.shipping_address === "object" ? (
+                <div className="bg-[#F8F9FC] rounded-2xl border border-[#ECECEC] p-4 text-sm text-[#111111] leading-relaxed">
+                  {addr ? (
                     <>
-                      <p className="font-semibold">{order.shipping_address.name}</p>
-                      <p className="text-[#666666]">{order.shipping_address.address}</p>
-                      <p className="text-[#666666]">
-                        {order.shipping_address.city}, {order.shipping_address.state} - {order.shipping_address.pincode}
-                      </p>
-                      <p className="text-[#666666]">{order.shipping_address.phone}</p>
+                      <p className="font-semibold">{addr.name}</p>
+                      <p className="text-[#666666]">{addr.address}</p>
+                      <p className="text-[#666666]">{addr.city}, {addr.state} — {addr.pincode}</p>
+                      {addr.phone && <p className="text-[#666666]">{addr.phone}</p>}
                     </>
                   ) : (
-                    <p className="text-[#666666]">{order.shipping_address}</p>
+                    <p className="text-[#666666]">{JSON.stringify(displayOrder.shipping_address)}</p>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Payment & Total */}
+            {/* Payment */}
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <CreditCard size={14} className="text-[#004AAD]" />
                 <p className="text-xs font-semibold uppercase tracking-widest text-[#666666]">Payment</p>
               </div>
-              <div className="bg-[#F8F9FC] rounded-xl border border-[#E8EAF2] p-4 space-y-3">
+              <div className="bg-[#F8F9FC] rounded-2xl border border-[#ECECEC] p-4 space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-[#666666]">Method</span>
                   <span className="font-semibold text-[#111111] capitalize">
-                    {order.payment_method || "Online Payment"}
+                    {displayOrder.payment_method === "cod" ? "Cash on Delivery" : "Online Payment"}
                   </span>
                 </div>
-                <div className="border-t border-[#ECECEC] pt-3 flex justify-between">
-                  <span className="font-semibold text-[#111111]">Total</span>
-                  <span className="font-bold text-[#111111] text-lg">
-                    ₹{(order.total_price || 0).toLocaleString()}
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#666666]">Status</span>
+                  <span className={cn(
+                    "text-xs font-semibold px-2.5 py-1 rounded-full border capitalize",
+                    PAYMENT_STYLES[displayOrder.payment_status] ?? "bg-gray-50 text-gray-600 border-gray-200"
+                  )}>
+                    {displayOrder.payment_status}
                   </span>
+                </div>
+                <div className="pt-2 border-t border-[#ECECEC] flex justify-between">
+                  <span className="font-semibold text-[#111111]">Total</span>
+                  <span className="font-bold text-[#111111] text-lg">₹{Number(displayOrder.total_price || 0).toLocaleString("en-IN")}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Actions */}
+        <div className="bg-white rounded-3xl border border-[#ECECEC] shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-6 sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-4">Actions</p>
+          <div className="flex flex-wrap gap-3">
+
+            {/* Cancel order */}
+            {canCancel && (
+              <form action={async () => {
+                "use server";
+                await cancelOrder(id, "Cancelled by customer");
+              }}>
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors"
+                >
+                  <X size={14} />
+                  Cancel Order
+                </button>
+              </form>
+            )}
+
+            {/* Return request */}
+            {canReturn && !hasReturnRequest && (
+              <form action={async () => {
+                "use server";
+                await requestReturn(id, "Return requested by customer");
+              }}>
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#ECECEC] text-[#666666] text-sm font-semibold hover:border-[#004AAD] hover:text-[#004AAD] transition-colors"
+                >
+                  <RotateCcw size={14} />
+                  Request Return
+                </button>
+              </form>
+            )}
+
+            {hasReturnRequest && (
+              <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-amber-50 border border-amber-100 text-amber-700 text-sm font-semibold">
+                <Clock size={14} />
+                Return Requested — We'll contact you soon
+              </div>
+            )}
+
+            {/* Contact support */}
+            <Link
+              href="/contact"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#ECECEC] text-[#666666] text-sm font-semibold hover:border-[#004AAD] hover:text-[#004AAD] transition-colors"
+            >
+              Contact Support
+            </Link>
+          </div>
+        </div>
+
       </div>
     </div>
   );

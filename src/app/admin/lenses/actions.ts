@@ -91,6 +91,15 @@ export async function deleteLens(id: string) {
   revalidatePath("/admin/lenses");
 }
 
+export async function updateLensPrice(id: string, price: number) {
+  const supabase = await createAdminClient();
+  const { error } = await supabase.from("lenses").update({ price }).eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/lenses");
+  revalidatePath(`/lenses/${id}`);
+  return { success: true };
+}
+
 export async function toggleLensStatus(id: string, currentStatus: boolean) {
   const supabase = await createAdminClient();
   const { error } = await supabase

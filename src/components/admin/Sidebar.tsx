@@ -9,146 +9,209 @@ import {
   Layers,
   Users,
   Warehouse,
-  Ticket,
-  MessageSquare,
   BarChart3,
   Settings,
-  ChevronRight,
   LogOut,
-  Zap,
-  Globe,
   Search,
-  Shield,
   PlusCircle,
   FolderTree,
   Tag,
   Star,
-  Home
+  Home,
+  RefreshCw,
+  Eye,
+  FileText,
+  Image,
+  Megaphone,
+  MessageSquare,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/auth/actions";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 
-const menuItems = [
-  { name: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
-  { name: "Products", icon: Package, href: "/admin/products" },
-  { name: "Add Product", icon: PlusCircle, href: "/admin/products/new" },
-  { name: "Optical Lenses", icon: Layers, href: "/admin/lenses" },
-  { name: "Lens Coatings", icon: Shield, href: "/admin/coatings" },
-  { name: "Categories", icon: FolderTree, href: "/admin/categories" },
-  { name: "Orders", icon: ShoppingCart, href: "/admin/orders" },
-  { name: "Try at Home", icon: Home, href: "/admin/try-at-home" },
-  { name: "Replacements", icon: Settings, href: "/admin/replacements" },
-  { name: "Customers", icon: Users, href: "/admin/customers" },
-  { name: "Reports", icon: BarChart3, href: "/admin/reports" },
-  { name: "Brands", icon: Tag, href: "/admin/brands" },
-  { name: "Collections", icon: Star, href: "/admin/collections" },
-  { name: "Inventory", icon: Warehouse, href: "/admin/inventory" },
-  { name: "Settings", icon: Settings, href: "/admin/settings" },
+const NAV_GROUPS = [
+  {
+    label: "Overview",
+    items: [
+      { name: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
+    ],
+  },
+  {
+    label: "Catalog",
+    items: [
+      { name: "Products", icon: Package, href: "/admin/products" },
+      { name: "Add Product", icon: PlusCircle, href: "/admin/products/new" },
+      { name: "Optical Lenses", icon: Eye, href: "/admin/lenses" },
+      { name: "Lens Coatings", icon: Layers, href: "/admin/coatings" },
+      { name: "Categories", icon: FolderTree, href: "/admin/categories" },
+      { name: "Brands", icon: Tag, href: "/admin/brands" },
+      { name: "Collections", icon: Star, href: "/admin/collections" },
+    ],
+  },
+  {
+    label: "Commerce",
+    items: [
+      { name: "Orders", icon: ShoppingCart, href: "/admin/orders" },
+      { name: "Try at Home", icon: Home, href: "/admin/try-at-home" },
+      { name: "Replacements", icon: RefreshCw, href: "/admin/replacements" },
+      { name: "Customers", icon: Users, href: "/admin/customers" },
+      { name: "Inventory", icon: Warehouse, href: "/admin/inventory" },
+      { name: "Coupons & Offers", icon: Megaphone, href: "/admin/offers" },
+    ],
+  },
+  {
+    label: "Store",
+    items: [
+      { name: "Homepage", icon: Image, href: "/admin/homepage" },
+      { name: "Reviews", icon: MessageSquare, href: "/admin/reviews" },
+      { name: "Reports", icon: BarChart3, href: "/admin/reports" },
+      { name: "Notifications", icon: Bell, href: "/admin/notifications" },
+      { name: "Settings", icon: Settings, href: "/admin/settings" },
+    ],
+  },
 ];
+
+function NavItem({
+  item,
+  pathname,
+}: {
+  item: { name: string; icon: any; href: string };
+  pathname: string;
+}) {
+  const isActive =
+    pathname === item.href ||
+    (item.href !== "/admin/dashboard" && pathname.startsWith(item.href));
+  const Icon = item.icon;
+
+  return (
+    <Link
+      href={item.href}
+      className={cn(
+        "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-100 group",
+        isActive
+          ? "bg-[#EEF2FF] text-[#004AAD] font-semibold"
+          : "text-[#555555] hover:bg-[#F4F6F8] hover:text-[#111111] font-medium"
+      )}
+    >
+      <Icon
+        size={15}
+        strokeWidth={isActive ? 2.5 : 2}
+        className={cn(
+          "flex-shrink-0 transition-colors",
+          isActive ? "text-[#004AAD]" : "text-[#999999] group-hover:text-[#555555]"
+        )}
+      />
+      <span className="flex-1 truncate">{item.name}</span>
+      {isActive && (
+        <div className="w-1.5 h-1.5 rounded-full bg-[#004AAD] flex-shrink-0" />
+      )}
+    </Link>
+  );
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const [search, setSearch] = useState("");
+
+  const allItems = NAV_GROUPS.flatMap((g) => g.items);
+  const filtered = search.trim()
+    ? allItems.filter((i) =>
+        i.name.toLowerCase().includes(search.toLowerCase())
+      )
+    : null;
 
   return (
-    <aside className="w-64 h-screen fixed left-0 top-0 bg-[#0F1115] border-r border-white/5 hidden lg:flex flex-col z-[100] overflow-hidden font-sans">
-      {/* Brand Header: High Contrast Terminal Style */}
-      <div className="p-8 border-b border-white/5 bg-gradient-to-br from-white/[0.02] to-transparent">
-        <Link href="/admin/dashboard" className="group block">
-          <div className="flex items-center gap-3">
-             <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-brand-navy shadow-[0_0_20px_rgba(var(--brand-gold-rgb),0.3)] group-hover:scale-110 transition-transform duration-500">
-                <Zap size={16} strokeWidth={3} />
-             </div>
-             <div>
-                <h2 className="text-xl font-black text-white tracking-widest leading-none">LENZIFY</h2>
-                <p className="text-[7px] uppercase font-bold tracking-[0.4em] text-white/30 mt-1 italic">Command Nexus</p>
-             </div>
+    <aside className="w-60 h-screen fixed left-0 top-0 bg-white border-r border-[#ECEFF5] hidden lg:flex flex-col z-[100]">
+      {/* Logo */}
+      <div className="h-14 px-4 flex items-center gap-3 border-b border-[#ECEFF5] flex-shrink-0">
+        <Link href="/admin/dashboard" className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-[#004AAD] flex items-center justify-center flex-shrink-0">
+            <Eye size={13} className="text-white" strokeWidth={2.5} />
+          </div>
+          <div className="leading-none">
+            <p className="font-serif italic font-bold text-[15px] text-[#111111] tracking-tight">
+              LENZIFY
+            </p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#AAAAAA] mt-0.5">
+              Admin
+            </p>
           </div>
         </Link>
+      </div>
 
-        {/* Operational Search - Integrated */}
-        <div className="mt-8 px-2">
-          <div className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-xl px-4 py-2.5 group focus-within:border-secondary/30 transition-all duration-500">
-            <Search size={14} className="text-white/20 group-focus-within:text-secondary transition-colors" />
-            <input 
-              type="text" 
-              placeholder="SEARCH COMMANDS..." 
-              className="bg-transparent text-[8px] font-black tracking-[0.2em] uppercase focus:outline-none placeholder:text-white/10 text-white w-full"
-              suppressHydrationWarning
-            />
-          </div>
+      {/* Search */}
+      <div className="px-3 py-2.5 border-b border-[#ECEFF5] flex-shrink-0">
+        <div className="flex items-center gap-2 bg-[#F4F6F8] rounded-lg px-3 py-2">
+          <Search size={13} className="text-[#BBBBBB] flex-shrink-0" />
+          <input
+            type="text"
+            placeholder="Search nav..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-transparent text-xs text-[#111111] placeholder:text-[#CCCCCC] focus:outline-none w-full"
+            suppressHydrationWarning
+          />
         </div>
       </div>
 
-      {/* Navigation Matrix */}
-      <nav className="flex-1 overflow-y-auto py-8 px-4 space-y-1 custom-scrollbar">
-        {menuItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
-          const Icon = item.icon;
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center justify-between px-4 py-3.5 rounded-xl transition-all duration-500 group relative overflow-hidden",
-                isActive 
-                  ? "bg-secondary text-brand-navy shadow-[0_10px_20px_rgba(var(--brand-gold-rgb),0.15)]" 
-                  : "text-white/40 hover:text-white hover:bg-white/[0.03]"
-              )}
-            >
-              {/* Active Glow Effect */}
-              {isActive && <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>}
-              
-              <div className="flex items-center gap-4 relative z-10">
-                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} className={cn("transition-transform duration-500 group-hover:scale-110", isActive ? "text-brand-navy" : "group-hover:text-white")} />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em]">{item.name}</span>
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-4">
+        {filtered ? (
+          <div className="space-y-0.5">
+            {filtered.length === 0 ? (
+              <p className="text-xs text-[#AAAAAA] px-3 py-6 text-center">
+                No results
+              </p>
+            ) : (
+              filtered.map((item) => (
+                <NavItem key={item.href} item={item} pathname={pathname} />
+              ))
+            )}
+          </div>
+        ) : (
+          NAV_GROUPS.map((group) => (
+            <div key={group.label}>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#CCCCCC] px-3 mb-1">
+                {group.label}
+              </p>
+              <div className="space-y-0.5">
+                {group.items.map((item) => (
+                  <NavItem key={item.href} item={item} pathname={pathname} />
+                ))}
               </div>
-              
-              {isActive && <ChevronRight size={14} className="relative z-10 animate-pulse" />}
-            </Link>
-          );
-        })}
+            </div>
+          ))
+        )}
       </nav>
 
-      {/* System Footer: Matrix Metadata */}
-      <div className="p-6 border-t border-white/5 bg-white/[0.01]">
-        <div className="mb-6 px-4 space-y-4">
-           <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                 <span className="text-[8px] font-bold text-white/30 uppercase tracking-widest italic">System v4.2 Stable</span>
-              </div>
-           </div>
-        </div>
-
-        {/* Identity Signature - Integrated */}
-        <div className="mb-6 px-4 py-4 bg-white/[0.03] rounded-2xl border border-white/5 group transform transition-all duration-500 hover:bg-white/[0.05]">
-          <div className="flex items-center gap-4">
-             <div className="w-10 h-10 bg-gradient-to-br from-white/10 to-transparent rounded-xl flex items-center justify-center text-white ring-1 ring-white/10 shadow-2xl relative overflow-hidden">
-                <Shield size={18} className="relative z-10 text-secondary" />
-             </div>
-             <div className="flex-1 min-w-0">
-                <p className="text-[9px] font-black text-white tracking-widest uppercase truncate mb-0.5 italic">
-                  {user?.user_metadata?.name || "Root Admin"}
-                </p>
-                <div className="flex items-center gap-1.5">
-                   <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]"></div>
-                   <p className="text-[6px] font-bold text-white/20 tracking-[0.2em] uppercase truncate">Verified Instance</p>
-                </div>
-             </div>
+      {/* Footer */}
+      <div className="border-t border-[#ECEFF5] p-2 flex-shrink-0 space-y-1">
+        <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[#F4F6F8] transition-colors cursor-default">
+          <div className="w-7 h-7 rounded-full bg-[#004AAD] flex items-center justify-center flex-shrink-0">
+            <span className="text-[10px] font-bold text-white">
+              {(user?.user_metadata?.name || user?.email || "A")[0].toUpperCase()}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-[#111111] truncate">
+              {user?.user_metadata?.name || "Admin"}
+            </p>
+            <p className="text-[10px] text-[#AAAAAA] truncate leading-tight">
+              {user?.email || ""}
+            </p>
           </div>
         </div>
-        
+
         <form action={logout}>
-          <button 
-            className="w-full flex items-center gap-4 px-5 py-4 bg-red-500/5 border border-red-500/10 rounded-xl text-red-400 hover:bg-red-500 hover:text-white transition-all duration-700 text-[10px] font-black uppercase tracking-[0.3em] group shadow-lg"
+          <button
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[#EF4444] hover:bg-red-50 transition-colors text-xs font-medium"
             suppressHydrationWarning
           >
-            <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
-            <span>Terminate</span>
+            <LogOut size={13} />
+            Log out
           </button>
         </form>
       </div>

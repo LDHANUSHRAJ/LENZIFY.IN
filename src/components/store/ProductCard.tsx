@@ -26,6 +26,8 @@ interface ProductCardProps {
     slug?: string;
     discount_price?: number;
     colors?: string[];
+    stock?: number;
+    availability?: string;
   };
 }
 
@@ -61,12 +63,21 @@ export default function ProductCard({ product }: ProductCardProps) {
   const originalPrice = rawPrice;
   const hasDiscount = hasValidDiscount;
 
+  const isOutOfStock = product.stock === 0 || product.availability === "unavailable" || product.availability === "discontinued";
+  const isLowStock = !isOutOfStock && typeof product.stock === "number" && product.stock > 0 && product.stock <= 5;
+  const isComingSoon = product.availability === "coming_soon";
+
   const handleQuickAdd = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!user) {
       router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+
+    if (isOutOfStock || isComingSoon) {
+      toast.error("This product is currently unavailable.");
       return;
     }
 
@@ -192,12 +203,37 @@ export default function ProductCard({ product }: ProductCardProps) {
           />
         </Link>
 
-        {/* Sale Badge */}
-        {hasDiscount && (
-          <div className="absolute top-3 left-3 bg-[#004AAD] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full z-20 pointer-events-none">
-            Sale
+        {/* Out of Stock overlay */}
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-white/60 z-20 pointer-events-none flex items-center justify-center">
+            <span className="bg-white border border-[#ECECEC] text-[#444444] text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full shadow-sm">
+              Out of Stock
+            </span>
           </div>
         )}
+
+        {/* Coming Soon overlay */}
+        {isComingSoon && !isOutOfStock && (
+          <div className="absolute inset-0 bg-white/50 z-20 pointer-events-none flex items-center justify-center">
+            <span className="bg-[#004AAD] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full shadow-sm">
+              Coming Soon
+            </span>
+          </div>
+        )}
+
+        {/* Top badges */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1 z-20 pointer-events-none">
+          {hasDiscount && !isOutOfStock && (
+            <span className="bg-[#004AAD] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+              Sale
+            </span>
+          )}
+          {isLowStock && (
+            <span className="bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+              Only {product.stock} left
+            </span>
+          )}
+        </div>
 
         {/* Wishlist Button */}
         <button
@@ -211,15 +247,21 @@ export default function ProductCard({ product }: ProductCardProps) {
           <Heart size={16} fill={wishlisted ? "currentColor" : "none"} />
         </button>
 
-        {/* Quick Add Button */}
-        <button
-          suppressHydrationWarning
-          onClick={handleQuickAdd}
-          className="absolute bottom-0 left-0 right-0 bg-[#03173D] text-white text-xs font-semibold py-3 translate-y-full group-hover:translate-y-0 transition-all duration-300 z-20 flex items-center justify-center gap-2 rounded-b-2xl hover:bg-[#004AAD]"
-        >
-          <ShoppingBag size={14} />
-          Quick Add
-        </button>
+        {/* Quick Add / Out of Stock Button */}
+        {isOutOfStock ? (
+          <div className="absolute bottom-0 left-0 right-0 bg-[#F8F9FC] border-t border-[#ECECEC] text-[#888888] text-xs font-semibold py-3 translate-y-full group-hover:translate-y-0 transition-all duration-300 z-20 flex items-center justify-center gap-2 rounded-b-2xl">
+            Notify Me
+          </div>
+        ) : (
+          <button
+            suppressHydrationWarning
+            onClick={handleQuickAdd}
+            className="absolute bottom-0 left-0 right-0 bg-[#03173D] text-white text-xs font-semibold py-3 translate-y-full group-hover:translate-y-0 transition-all duration-300 z-20 flex items-center justify-center gap-2 rounded-b-2xl hover:bg-[#004AAD]"
+          >
+            <ShoppingBag size={14} />
+            Quick Add
+          </button>
+        )}
       </div>
 
       {/* Info Area */}

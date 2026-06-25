@@ -21,7 +21,7 @@ export default function ReportExporter({ data, activeTab }: { data: any[], activ
     const doc = new jsPDF("landscape");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
-    doc.text(`LENZIFY ${activeTab.toUpperCase()} PROTOCOL`, 14, 20);
+    doc.text(`Lenzify — ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Report`, 14, 20);
     
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
@@ -80,7 +80,7 @@ export default function ReportExporter({ data, activeTab }: { data: any[], activ
       sections: [{
         properties: {},
         children: [
-          new Paragraph({ text: `LENZIFY ${activeTab.toUpperCase()} INTELLIGENCE`, heading: HeadingLevel.HEADING_1 }),
+          new Paragraph({ text: `Lenzify — ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Report`, heading: HeadingLevel.HEADING_1 }),
           new Paragraph({ text: `Generated: ${new Date().toLocaleString()}\n` }),
           table
         ],
@@ -101,19 +101,19 @@ export default function ReportExporter({ data, activeTab }: { data: any[], activ
          )}
        >
           <Download size={16} />
-          Compile Export
+          Export
        </button>
 
        {isOpen && (
          <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-brand-navy/10 shadow-2xl z-50 flex flex-col p-2 space-y-1 animate-in fade-in slide-in-from-top-2">
             <button onClick={() => { exportExcel(); setIsOpen(false); }} className="w-full flex items-center gap-4 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-[#107C41] hover:bg-[#107C41]/10 transition-colors">
-               <FileSpreadsheet size={16} /> Data Matrix (.xlsx)
+               <FileSpreadsheet size={16} /> Excel (.xlsx)
             </button>
             <button onClick={() => { exportPDF(); setIsOpen(false); }} className="w-full flex items-center gap-4 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-[#E3242B] hover:bg-[#E3242B]/10 transition-colors">
-               <FileText size={16} /> Static Report (.pdf)
+               <FileText size={16} /> PDF (.pdf)
             </button>
             <button onClick={() => { exportWord(); setIsOpen(false); }} className="w-full flex items-center gap-4 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-[#185ABD] hover:bg-[#185ABD]/10 transition-colors">
-               <FileBadge size={16} /> Briefing (.docx)
+               <FileBadge size={16} /> Word (.docx)
             </button>
          </div>
        )}

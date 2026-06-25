@@ -10,8 +10,8 @@ export default async function AdminCouponsPage() {
     <div className="space-y-12">
       <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 pb-10 border-b border-brand-navy/5">
         <div>
-           <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-secondary italic mb-2">Discount Engines</p>
-          <h1 className="text-4xl font-serif italic text-brand-navy tracking-tight uppercase">Promotion <span className="text-secondary">Matrix</span></h1>
+           <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-secondary italic mb-2">Commerce</p>
+          <h1 className="text-4xl font-serif italic text-brand-navy tracking-tight uppercase">Coupons <span className="text-secondary">&amp; Discounts</span></h1>
         </div>
       </header>
 
@@ -21,12 +21,12 @@ export default async function AdminCouponsPage() {
           <section className="bg-brand-navy p-8 lg:p-10 text-white shadow-xl">
              <div className="flex items-center gap-4 border-b border-white/10 pb-6 mb-8">
                 <KeySquare size={16} className="text-secondary" />
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary">New Key</h3>
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary">New Coupon</h3>
              </div>
              
              <form action={async (formData) => { "use server"; await createCoupon(formData); }} className="space-y-8">
                 <div className="space-y-2 group">
-                   <label className="text-[9px] font-bold uppercase tracking-widest text-white/50 italic">Coupon Alias</label>
+                   <label className="text-[9px] font-bold uppercase tracking-widest text-white/50 italic">Coupon Code</label>
                    <input required name="code" placeholder="WINTER20" className="w-full bg-white/5 border border-white/10 px-4 py-3 text-[11px] font-bold tracking-widest outline-none focus:border-secondary transition-all uppercase placeholder:text-white/20" />
                 </div>
                 
@@ -61,7 +61,7 @@ export default async function AdminCouponsPage() {
                 </div>
 
                 <button type="submit" className="w-full bg-secondary text-brand-navy hover:bg-white text-[10px] font-bold uppercase tracking-[0.4em] py-5 shadow-xl transition-all duration-500 mt-4 flex items-center justify-center gap-3">
-                  <Plus size={14} /> Instantiate
+                  <Plus size={14} /> Create Coupon
                 </button>
              </form>
           </section>
@@ -83,19 +83,19 @@ export default async function AdminCouponsPage() {
                           {c.discount_type === 'percentage' ? `${c.discount_value}% OFF` : `₹${c.discount_value} FLAT`}
                         </p>
                         {isExpired && (
-                          <span className="inline-block mt-2 text-[8px] bg-red-50 text-red-600 px-2 py-1 uppercase tracking-widest font-black">Expired Engine</span>
+                          <span className="inline-block mt-2 text-[8px] bg-red-50 text-red-600 px-2 py-1 uppercase tracking-widest font-black">Expired</span>
                         )}
                      </div>
                   </div>
 
                   <div className="flex items-center gap-10 w-full md:w-auto px-6 py-4 md:py-0 border-y md:border-y-0 md:border-l border-brand-navy/5">
                      <div className="space-y-2">
-                        <p className="text-[8px] text-brand-navy/30 uppercase font-bold tracking-[0.3em] flex items-center gap-1"><Target size={10}/> Boundary</p>
-                        <p className="text-[11px] font-mono text-brand-navy font-bold">MIN: ₹{c.min_order}</p>
+                        <p className="text-[8px] text-brand-navy/30 uppercase font-bold tracking-[0.3em] flex items-center gap-1"><Target size={10}/> Min. Order</p>
+                        <p className="text-[11px] font-mono text-brand-navy font-bold">₹{c.min_order || 0}</p>
                      </div>
                      <div className="space-y-2">
-                        <p className="text-[8px] text-brand-navy/30 uppercase font-bold tracking-[0.3em] flex items-center gap-1"><CalendarDays size={10}/> Limit</p>
-                        <p className="text-[11px] font-mono text-brand-navy font-bold">{c.usage_limit} TOTAL</p>
+                        <p className="text-[8px] text-brand-navy/30 uppercase font-bold tracking-[0.3em] flex items-center gap-1"><CalendarDays size={10}/> Usage Limit</p>
+                        <p className="text-[11px] font-mono text-brand-navy font-bold">{c.usage_limit ?? '∞'} uses</p>
                      </div>
                   </div>
 

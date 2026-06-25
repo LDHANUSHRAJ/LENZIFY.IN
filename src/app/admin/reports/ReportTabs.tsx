@@ -3,18 +3,18 @@ import { cn } from "@/lib/utils";
 
 export default function ReportTabs({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (t: any) => void }) {
   const tabs = [
-    { id: "sales", label: "Sales Matrix", icon: BarChart3 },
-    { id: "orders", label: "Global Orders", icon: ShoppingCart },
-    { id: "products", label: "Product Performance", icon: Package },
-    { id: "customers", label: "Customer Manifest", icon: Users },
-    { id: "inventory", label: "Inventory Audit", icon: Warehouse },
-    { id: "lenses", label: "Lens Exchange", icon: Search },
+    { id: "sales", label: "Sales", icon: BarChart3 },
+    { id: "orders", label: "All Orders", icon: ShoppingCart },
+    { id: "products", label: "Products", icon: Package },
+    { id: "customers", label: "Customers", icon: Users },
+    { id: "inventory", label: "Inventory", icon: Warehouse },
+    { id: "lenses", label: "Lens Replacements", icon: Search },
   ];
 
   return (
     <div className="bg-brand-navy text-white p-6 space-y-2 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/10 blur-[50px]"></div>
-      <h3 className="text-xs font-bold uppercase tracking-widest mb-8 border-b border-white/10 pb-4 italic">Filter Perspectives</h3>
+      <h3 className="text-xs font-bold uppercase tracking-widest mb-8 border-b border-white/10 pb-4">Report Type</h3>
       <div className="space-y-2 relative z-10">
         {tabs.map(t => (
           <button

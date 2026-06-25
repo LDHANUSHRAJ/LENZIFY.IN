@@ -1,11 +1,4 @@
-import { 
-  Plus,
-  Tag,
-  Layers,
-  ShoppingBag,
-  ChevronRight,
-  Calendar
-} from "lucide-react";
+import { Plus, Tag, Layers, ShoppingBag, ChevronRight, ArrowRight, Package, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { getDashboardStats } from "@/lib/db/admin_actions";
@@ -14,171 +7,189 @@ import DashboardStats from "@/components/admin/DashboardStats";
 import DashboardCharts from "@/components/admin/DashboardCharts";
 import TopProducts from "@/components/admin/TopProducts";
 
-export default async function AdminDashboardOverview() {
+const STATUS_STYLES: Record<string, string> = {
+  delivered: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  shipped:   "bg-blue-50 text-blue-700 border-blue-100",
+  confirmed: "bg-violet-50 text-violet-700 border-violet-100",
+  pending:   "bg-amber-50 text-amber-700 border-amber-100",
+  cancelled: "bg-red-50 text-red-600 border-red-100",
+};
+
+function greet() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+export default async function AdminDashboardPage() {
   const statsData = await getDashboardStats();
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const name = user?.user_metadata?.name?.split(" ")[0] || "Admin";
 
   const quickActions = [
-    { name: "Deploy Model", icon: Plus, href: "/admin/products/new", color: "bg-brand-navy" },
-    { name: "Sector Registry", icon: Layers, href: "/admin/categories/new", color: "bg-brand-navy" },
-    { name: "Offer Matrix", icon: Tag, href: "/admin/offers/new", color: "bg-secondary" },
-    { name: "Generate Coupon", icon: ShoppingBag, href: "/admin/offers/coupons/new", color: "bg-secondary" },
+    { label: "Add Product",    icon: Plus,      href: "/admin/products/new",      color: "bg-blue-50 text-blue-600" },
+    { label: "Add Category",   icon: Layers,    href: "/admin/categories/new",    color: "bg-purple-50 text-purple-600" },
+    { label: "Create Offer",   icon: Tag,       href: "/admin/offers/new",        color: "bg-emerald-50 text-emerald-600" },
+    { label: "New Coupon",     icon: ShoppingBag, href: "/admin/offers/coupons/new", color: "bg-orange-50 text-orange-600" },
   ];
 
-
-
   return (
-    <div className="space-y-12 text-brand-navy">
-      <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 border-b border-brand-navy/5 pb-10">
-        <div className="space-y-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-secondary italic">Step 01: Global Overview</p>
-          <h1 className="text-4xl md:text-5xl font-serif italic text-brand-navy tracking-tight">Management <span className="text-secondary">Terminal</span></h1>
-          
-          {process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('localhost') && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-100 rounded-lg flex items-center gap-4 text-red-600">
-               <span className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
-               <div className="space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-widest">CRITICAL: Environment Misconfiguration</p>
-                  <p className="text-[9px] font-medium opacity-80 uppercase tracking-wider leading-relaxed">
-                    Your Supabase URL in <code className="bg-red-100 px-1">.env.local</code> is pointing to localhost. 
-                    Unless you are running a local proxy, please update it to your Supabase Project URL.
-                  </p>
-               </div>
-            </div>
-          )}
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-[#888888]">{greet()},</p>
+          <h1 className="text-2xl font-bold text-[#111111] mt-0.5">{name}</h1>
         </div>
-        <div className="flex gap-4">
-          <div className="px-8 py-4 bg-white border border-brand-navy/10 text-[10px] font-bold uppercase tracking-widest text-brand-navy flex items-center gap-4 shadow-sm">
-             <span className="w-2 h-2 bg-secondary rounded-full animate-pulse" />
-             Live Network Protocol Active
-          </div>
-        </div>
-      </header>
+        <Link
+          href="/admin/orders"
+          className="flex items-center gap-1.5 text-xs font-semibold text-[#004AAD] hover:underline"
+        >
+          View all orders <ArrowRight size={13} />
+        </Link>
+      </div>
 
-      {/* Real-time Stats Grid */}
+      {/* KPI Cards */}
       <DashboardStats initialStats={{
         totalSales: statsData.totalSales,
         totalOrders: statsData.totalOrders,
         totalCustomers: statsData.totalCustomers,
         lowStockCount: statsData.lowStockCount,
-        abandonedCarts: statsData.abandonedCarts
+        abandonedCarts: statsData.abandonedCarts,
       }} />
 
       {/* Quick Actions */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        {quickActions.map((action, i) => (
-          <Link 
-            key={i} 
-            href={action.href}
-            className="group relative bg-white border border-brand-navy/5 p-6 overflow-hidden hover:border-secondary transition-all duration-500 shadow-sm"
-          >
-            <div className="flex items-center gap-4 z-10 relative">
-               <div className={cn("p-3 text-white transition-transform group-hover:scale-110", action.color)}>
-                  <action.icon size={18} />
-               </div>
-               <span className="text-[10px] font-bold uppercase tracking-widest text-brand-navy">{action.name}</span>
-            </div>
-            <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-10 transition-opacity">
-               <action.icon size={48} />
-            </div>
-          </Link>
-        ))}
-      </section>
+      <div>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-[#AAAAAA] mb-3">Quick Actions</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {quickActions.map((a) => (
+            <Link
+              key={a.href}
+              href={a.href}
+              className="bg-white border border-[#ECEFF5] rounded-2xl p-4 flex items-center gap-3 hover:shadow-sm hover:border-[#D0D7E8] transition-all group"
+            >
+              <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0", a.color)}>
+                <a.icon size={15} strokeWidth={2} />
+              </div>
+              <span className="text-sm font-medium text-[#111111] group-hover:text-[#004AAD] transition-colors">
+                {a.label}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
 
-      {/* Analytics Charts */}
+      {/* Charts */}
       <DashboardCharts data={statsData.chartData} />
 
-      {/* Main Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        {/* Recent Transactions */}
-        <div className="lg:col-span-8 bg-white border border-brand-navy/5 p-10 lg:p-14 space-y-10 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-brand-navy/[0.02] -mr-32 -mt-32 rounded-full blur-3xl"></div>
-          
-          <div className="flex items-center justify-between border-b border-brand-navy/5 pb-8">
-             <div className="space-y-1">
-                <h2 className="text-2xl font-serif italic text-brand-navy uppercase tracking-tight">Order <span className="text-secondary">Pipeline</span></h2>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted italic">Real-time synchronized tactical feed</p>
-             </div>
-             <Link href="/admin/orders" className="text-[10px] font-bold uppercase tracking-widest text-secondary hover:text-brand-navy transition-colors border-b border-secondary/20 pb-1">View Full Log</Link>
+      {/* Bottom Grid: Recent Orders + Side Panel */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Recent Orders */}
+        <div className="lg:col-span-2 bg-white border border-[#ECEFF5] rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#ECEFF5]">
+            <h2 className="text-sm font-semibold text-[#111111]">Recent Orders</h2>
+            <Link href="/admin/orders" className="text-xs text-[#004AAD] font-medium hover:underline flex items-center gap-1">
+              View all <ChevronRight size={12} />
+            </Link>
           </div>
-          
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="text-[10px] uppercase tracking-[0.2em] text-brand-text-muted border-b border-brand-navy/5">
-                  <th className="pb-6 font-bold">ID</th>
-                  <th className="pb-6 font-bold">Client</th>
-                  <th className="pb-6 font-bold text-right">Value</th>
-                  <th className="pb-6 font-bold text-right">State</th>
+                <tr className="text-[10px] uppercase tracking-widest text-[#AAAAAA] border-b border-[#ECEFF5]">
+                  <th className="px-6 py-3 font-semibold">Order</th>
+                  <th className="px-6 py-3 font-semibold">Customer</th>
+                  <th className="px-6 py-3 font-semibold text-right">Amount</th>
+                  <th className="px-6 py-3 font-semibold text-right">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-brand-navy/[0.03]">
-                {statsData.recentOrders?.map((order) => (
-                  <tr key={order.id} className="group hover:bg-brand-background transition-colors">
-                    <td className="py-6 text-xs font-bold text-brand-navy tracking-widest uppercase">{order.id.slice(0, 8)}</td>
-                    <td className="py-6">
-                      <p className="text-xs font-bold text-brand-navy italic uppercase font-serif">{(order.users as any)?.name || "Generic Client"}</p>
-                      <p className="text-[9px] text-brand-text-muted uppercase tracking-widest font-bold mt-1">
-                        <Calendar size={10} className="inline mr-1 opacity-20" />
-                        {new Date(order.created_at).toLocaleDateString()}
-                      </p>
-                    </td>
-                    <td className="py-6 text-xs font-serif italic text-brand-navy text-right font-bold">₹{order.total_price.toLocaleString()}</td>
-                    <td className="py-6 text-right">
-                       <span className={cn(
-                         "text-[9px] uppercase font-bold tracking-[0.2em] px-4 py-2 border transition-all italic",
-                         order.status === "delivered" ? "bg-secondary text-white border-secondary shadow-[0_0_10px_rgba(var(--brand-gold-rgb),0.3)]" : 
-                         order.status === "shipped" ? "border-secondary text-secondary" : 
-                         order.status === "confirmed" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                         "border-brand-navy/10 text-brand-navy/40 animate-pulse"
-                       )}>
-                         {order.status}
-                       </span>
+              <tbody className="divide-y divide-[#F5F5F5]">
+                {(statsData.recentOrders || []).length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-10 text-center text-sm text-[#AAAAAA]">
+                      No orders yet
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  statsData.recentOrders.map((order: any) => (
+                    <tr key={order.id} className="hover:bg-[#FAFAFA] transition-colors">
+                      <td className="px-6 py-3.5">
+                        <Link href={`/admin/orders/${order.id}`} className="text-xs font-mono font-semibold text-[#004AAD] hover:underline">
+                          #{order.id.slice(0, 8).toUpperCase()}
+                        </Link>
+                        <p className="text-[10px] text-[#AAAAAA] mt-0.5">
+                          {new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                        </p>
+                      </td>
+                      <td className="px-6 py-3.5 text-sm text-[#333333]">
+                        {(order.users as any)?.name || "Customer"}
+                      </td>
+                      <td className="px-6 py-3.5 text-sm font-semibold text-[#111111] text-right">
+                        ₹{Number(order.total_price).toLocaleString("en-IN")}
+                      </td>
+                      <td className="px-6 py-3.5 text-right">
+                        <span className={cn(
+                          "inline-block text-[10px] font-semibold capitalize px-2.5 py-1 rounded-full border",
+                          STATUS_STYLES[order.status] ?? "bg-gray-50 text-gray-600 border-gray-100"
+                        )}>
+                          {order.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* Side Panel Analysis */}
-        <div className="lg:col-span-4 space-y-12">
-           <TopProducts products={statsData.topProducts} />
+        {/* Side: Top Products + Low Stock */}
+        <div className="space-y-6">
+          <TopProducts products={statsData.topProducts} />
 
-           <div className="bg-[#000000] text-white p-10 lg:p-14 space-y-10 relative overflow-hidden group shadow-2xl">
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-secondary/10 blur-[100px] group-hover:bg-secondary/20 transition-all duration-1000"></div>
-              <div className="space-y-4">
-                 <h2 className="text-2xl font-serif italic text-secondary uppercase tracking-tight">Stock <span className="text-white">Alerts</span></h2>
-                 <div className="h-px w-12 bg-secondary"></div>
-                 <p className="text-[9px] text-white/30 uppercase tracking-widest font-bold italic italic">Critical stock levels in {statsData.lowStockCount} units.</p>
+          {/* Low Stock */}
+          <div className="bg-white border border-[#ECEFF5] rounded-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#ECEFF5]">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={14} className="text-amber-500" />
+                <h2 className="text-sm font-semibold text-[#111111]">Low Stock</h2>
               </div>
-              <div className="space-y-6">
-                 {statsData.lowStockProducts?.map((item: any) => (
-                   <div key={item.id} className="flex justify-between items-center border-b border-white/5 pb-5 group/item">
-                      <div className="space-y-1">
-                         <p className="text-[9px] text-white/30 uppercase tracking-widest font-bold group-hover/item:text-secondary/50 transition-colors">{item.brand}</p>
-                         <p className="text-xs font-serif italic text-white tracking-wide truncate max-w-[150px]">{item.name}</p>
-                      </div>
-                      <div className="text-right">
-                         <p className="text-[12px] font-black text-secondary">{item.stock}</p>
-                         <p className="text-[7px] text-white/20 uppercase font-black italic">Remaining</p>
-                      </div>
-                   </div>
-                 ))}
-                 
-                 {statsData.lowStockProducts?.length === 0 && (
-                    <div className="py-10 text-center space-y-4 opacity-20">
-                       <ShoppingBag className="mx-auto" size={32} />
-                       <p className="text-[9px] uppercase font-bold tracking-widest">Inventory Fully Sustained</p>
+              <span className="text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-100 px-2 py-0.5 rounded-full">
+                {statsData.lowStockCount} items
+              </span>
+            </div>
+            <div className="divide-y divide-[#F5F5F5]">
+              {(statsData.lowStockProducts || []).length === 0 ? (
+                <p className="px-5 py-6 text-sm text-[#AAAAAA] text-center">All products well-stocked</p>
+              ) : (
+                statsData.lowStockProducts.map((item: any) => (
+                  <div key={item.id} className="flex items-center justify-between px-5 py-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-[#111111] truncate max-w-[160px]">{item.name}</p>
+                      <p className="text-[10px] text-[#AAAAAA]">{item.brand}</p>
                     </div>
-                 )}
-              </div>
-              <Link href="/admin/products" className="w-full py-5 border border-secondary/20 text-[10px] font-bold uppercase tracking-[0.3em] text-secondary hover:bg-secondary hover:text-white transition-all flex items-center justify-center gap-3 group/btn">
-                 <span>REPLENISH MATRIX</span>
-                 <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                    <span className={cn(
+                      "text-xs font-bold tabular-nums ml-2",
+                      item.stock === 0 ? "text-red-500" : "text-amber-500"
+                    )}>
+                      {item.stock} left
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="px-5 py-3 border-t border-[#ECEFF5]">
+              <Link
+                href="/admin/inventory"
+                className="text-xs font-medium text-[#004AAD] hover:underline flex items-center gap-1"
+              >
+                Manage inventory <ChevronRight size={12} />
               </Link>
-           </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

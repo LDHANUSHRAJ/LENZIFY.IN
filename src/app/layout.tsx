@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     default: "LENZIFY | Premium Eyewear Store — Spectacles, Sunglasses, Contact Lenses",
     template: "%s | LENZIFY",
   },
-  description: "Shop premium eyeglasses, sunglasses, contact lenses & accessories online. Free shipping, virtual try-on, and lens replacement services. India's visionary eyewear destination.",
+  description: "Shop premium eyeglasses, sunglasses, contact lenses & accessories online. Free shipping and lens replacement services. India's visionary eyewear destination.",
   keywords: ["eyeglasses", "sunglasses", "contact lenses", "eyewear online", "spectacles", "optical store", "buy glasses online India", "prescription glasses", "reading glasses", "computer glasses", "lenzify"],
   authors: [{ name: "Lenzify" }],
   creator: "Lenzify",
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     url: siteUrl,
     siteName: 'LENZIFY',
     title: 'LENZIFY — Premium Eyewear Store',
-    description: 'Shop premium eyeglasses, sunglasses & contact lenses online. Free shipping & virtual try-on.',
+    description: 'Shop premium eyeglasses, sunglasses & contact lenses online. Free shipping & lens replacement.',
     images: [
       {
         url: `${siteUrl}/images/og-banner.png`,
@@ -85,7 +85,6 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from "@/components/providers/AuthProvider";
-import VirtualTryOnModal from "@/components/try-on/VirtualTryOnModal";
 import GoogleAnalytics from "@/components/seo/GoogleAnalytics";
 import CookieConsent from "@/components/layout/CookieConsent";
 import { OrganizationJsonLd } from "@/components/seo/JsonLd";
@@ -127,7 +126,6 @@ export default async function RootLayout({
                {children}
             </DynamicThemeProvider>
           </ConditionalWrapper>
-          <VirtualTryOnModal />
           <CookieConsent />
         </AuthProvider>
       </body>

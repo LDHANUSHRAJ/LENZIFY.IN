@@ -1,35 +1,86 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import {
+  motion,
+  useMotionValue,
+  useSpring,
+  useTransform,
+  AnimatePresence,
+} from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
+// ─── Images ───────────────────────────────────────────────────────────────────
+const FRAMES = [
+  { src: "/images/hero/hero1.jpg", label: "Editorial Luxe" },
+  { src: "/images/hero/hero6.jpg", label: "Dark Fashion" },
+  { src: "/images/hero/hero8.jpg", label: "Artisan Craft" },
+  { src: "/images/hero/hero5.jpg", label: "Classic Frame" },
+  { src: "/images/hero/hero7.jpg", label: "Street Style" },
+  { src: "/images/hero/hero2.jpg", label: "Modern Lifestyle" },
+];
+
+const N = FRAMES.length; // 6
+
+// ─── Desktop stack / fan positions ────────────────────────────────────────────
+const STACK_DESKTOP = [
+  { x: -90, y: 48, rotate: -8, scale: 0.72, opacity: 0.20 },
+  { x:  80, y: 40, rotate:  8, scale: 0.79, opacity: 0.32 },
+  { x: -55, y: 30, rotate: -5, scale: 0.86, opacity: 0.48 },
+  { x:  48, y: 20, rotate:  4, scale: 0.91, opacity: 0.65 },
+  { x: -20, y: 10, rotate: -2, scale: 0.96, opacity: 0.82 },
+  { x:   0, y:  0, rotate:  0, scale: 1.00, opacity: 1.00 },
+];
+
+const FAN_DESKTOP = [
+  { x: -480, y: 38, rotate: -20, scale: 0.82 },
+  { x: -288, y: 16, rotate: -12, scale: 0.88 },
+  { x:  -96, y:  4, rotate:  -4, scale: 0.94 },
+  { x:   96, y:  4, rotate:   4, scale: 0.94 },
+  { x:  288, y: 16, rotate:  12, scale: 0.88 },
+  { x:  480, y: 38, rotate:  20, scale: 0.82 },
+];
+
+// ─── Mobile stack / fan positions (tighter) ───────────────────────────────────
+const STACK_MOBILE = [
+  { x: -45, y: 24, rotate: -8, scale: 0.72, opacity: 0.20 },
+  { x:  40, y: 20, rotate:  8, scale: 0.79, opacity: 0.32 },
+  { x: -28, y: 15, rotate: -5, scale: 0.86, opacity: 0.48 },
+  { x:  24, y: 10, rotate:  4, scale: 0.91, opacity: 0.65 },
+  { x: -10, y:  5, rotate: -2, scale: 0.96, opacity: 0.82 },
+  { x:   0, y:  0, rotate:  0, scale: 1.00, opacity: 1.00 },
+];
+
+const FAN_MOBILE = [
+  { x: -210, y: 18, rotate: -18, scale: 0.82 },
+  { x: -126, y:  8, rotate: -10, scale: 0.88 },
+  { x:  -42, y:  2, rotate:  -3, scale: 0.94 },
+  { x:   42, y:  2, rotate:   3, scale: 0.94 },
+  { x:  126, y:  8, rotate:  10, scale: 0.88 },
+  { x:  210, y: 18, rotate:  18, scale: 0.82 },
+];
+
+// ─── LetterReveal ─────────────────────────────────────────────────────────────
 function LetterReveal({
   text,
   delay = 0,
-  className = "",
   style = {},
 }: {
   text: string;
   delay?: number;
-  className?: string;
   style?: React.CSSProperties;
 }) {
   return (
-    <span className={className} style={{ display: "block", ...style }}>
+    <span style={{ display: "block", ...style }}>
       {text.split("").map((char, i) => (
         <motion.span
           key={i}
           style={{ display: "inline-block" }}
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{
-            duration: 0.5,
-            delay: delay + i * 0.035,
-            ease: [0.22, 1, 0.36, 1],
-          }}
+          transition={{ duration: 0.5, delay: delay + i * 0.032, ease: [0.22, 1, 0.36, 1] }}
         >
           {char === " " ? " " : char}
         </motion.span>
@@ -38,311 +89,458 @@ function LetterReveal({
   );
 }
 
-export default function HomeHero() {
-  const [mounted, setMounted] = useState(false);
+// ─── Solitaire Stack ──────────────────────────────────────────────────────────
+function SolitaireStack() {
+  const [heroIdx, setHeroIdx] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [activeInFan, setActiveInFan] = useState(N - 1);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Mouse parallax (desktop only)
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 40, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 40, damping: 20 });
-  const rotateX = useTransform(springY, [-300, 300], [4, -4]);
-  const rotateY = useTransform(springX, [-500, 500], [-6, 6]);
+  const springX = useSpring(mouseX, { stiffness: 25, damping: 30 });
+  const springY = useSpring(mouseY, { stiffness: 25, damping: 30 });
+  const rotateX = useTransform(springY, [-300, 300], [6, -6]);
+  const rotateY = useTransform(springX, [-500, 500], [-8, 8]);
 
   useEffect(() => {
-    setMounted(true);
-    const handleMouseMove = (e: MouseEvent) => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
       mouseX.set(e.clientX - window.innerWidth / 2);
       mouseY.set(e.clientY - window.innerHeight / 2);
     };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
   }, [mouseX, mouseY]);
 
-  const scrollDown = () => {
-    window.scrollTo({ top: window.innerHeight, behavior: "smooth" });
+  // Auto-cycle
+  useEffect(() => {
+    const fanMode = isHovered && !isMobile;
+    const interval = setInterval(() => {
+      if (fanMode) {
+        setActiveInFan((i) => (i + 1) % N);
+      } else {
+        setHeroIdx((i) => (i + 1) % N);
+      }
+    }, fanMode ? 2000 : 5000);
+    return () => clearInterval(interval);
+  }, [isHovered, isMobile]);
+
+  const handleMouseLeave = () => {
+    if (isMobile) return;
+    setIsHovered(false);
+    const newHero = (heroIdx + N - 1 - activeInFan + N) % N;
+    setHeroIdx(newHero);
+    setActiveInFan(N - 1);
   };
 
-  return (
-    <section
-      className="relative w-full min-h-screen overflow-hidden flex flex-col items-center justify-center"
-      style={{
-        background:
-          "linear-gradient(135deg, #020229 0%, #02104A 25%, #042F80 60%, #0097FF 85%, #00D4FF 100%)",
-      }}
-    >
-      {/* Radial glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(0,175,255,0.20) 0%, transparent 70%)",
-          }}
-        />
-        <div
-          className="absolute top-1/4 right-1/3 w-80 h-80 rounded-full blur-3xl"
-          style={{ background: "rgba(0,216,255,0.08)" }}
-        />
-        <div
-          className="absolute bottom-1/3 left-1/4 w-60 h-60 rounded-full blur-3xl"
-          style={{ background: "rgba(0,151,255,0.08)" }}
-        />
-      </div>
+  // Responsive dimensions
+  const cardW = isMobile ? 264 : 520;
+  const cardH = isMobile ? 184 : 360;
+  const STACK = isMobile ? STACK_MOBILE : STACK_DESKTOP;
+  const FAN   = isMobile ? FAN_MOBILE   : FAN_DESKTOP;
 
-      {/* Floating particles */}
-      {mounted &&
-        [...Array(18)].map((_, i) => (
+  const imageAt = (slotIdx: number) =>
+    FRAMES[(heroIdx + (N - 1 - slotIdx) + N * 2) % N];
+
+  const isFrontSlot    = (slotIdx: number) => slotIdx === N - 1;
+  const isActiveInFan  = (slotIdx: number) => isHovered && !isMobile && slotIdx === activeInFan;
+
+  return (
+    <div
+      style={{ perspective: 1200, perspectiveOrigin: "50% 40%" }}
+      className="relative flex items-center justify-center"
+    >
+      <motion.div
+        style={{
+          rotateX: isMobile ? 0 : rotateX,
+          rotateY: isMobile ? 0 : rotateY,
+          transformStyle: "preserve-3d",
+          position: "relative",
+          width: cardW,
+          height: cardH + (isMobile ? 40 : 80),
+          margin: "0 auto",
+        }}
+        onMouseEnter={() => {
+          if (!isMobile) { setIsHovered(true); setActiveInFan(N - 1); }
+        }}
+        onMouseLeave={handleMouseLeave}
+        // Mobile: tap whole stack to advance
+        onClick={() => {
+          if (isMobile) setHeroIdx((i) => (i + 1) % N);
+        }}
+      >
+        {STACK.map((stackPos, slotIdx) => {
+          const frame     = imageAt(slotIdx);
+          const fanPos    = FAN[slotIdx];
+          const inFanMode = isHovered && !isMobile;
+          const pos       = inFanMode ? fanPos : stackPos;
+          const isFront   = isFrontSlot(slotIdx);
+          const isActive  = isActiveInFan(slotIdx);
+          const shadowBlur  = isFront || isActive ? 60 : 20;
+          const shadowAlpha = isFront || isActive ? 0.18 : 0.07;
+
+          return (
+            <motion.div
+              key={slotIdx}
+              animate={{
+                x:       pos.x,
+                y:       inFanMode ? pos.y : stackPos.y,
+                rotate:  pos.rotate,
+                scale:   isActive ? 1.06 : (inFanMode ? pos.scale : stackPos.scale),
+                opacity: inFanMode ? (isActive ? 1 : 0.72) : stackPos.opacity,
+              }}
+              transition={{ type: "spring", stiffness: 260, damping: 26, mass: 0.8 }}
+              onClick={(e) => {
+                if (inFanMode) { e.stopPropagation(); setActiveInFan(slotIdx); }
+              }}
+              style={{
+                position: "absolute",
+                left: "50%",
+                top: 0,
+                marginLeft: -cardW / 2,
+                width:  cardW,
+                height: cardH,
+                zIndex: inFanMode ? (isActive ? 20 : slotIdx + 1) : slotIdx + 1,
+                cursor: isMobile ? "pointer" : (inFanMode ? "pointer" : "default"),
+                transformOrigin: "center bottom",
+              }}
+            >
+              <div
+                className="w-full h-full relative overflow-hidden"
+                style={{
+                  borderRadius: isMobile ? 20 : 28,
+                  border: isFront || isActive
+                    ? "1px solid rgba(0,0,0,0.06)"
+                    : "1px solid rgba(0,0,0,0.04)",
+                  boxShadow: `0 ${shadowBlur}px ${shadowBlur * 2}px rgba(0,0,0,${shadowAlpha}), 0 4px 12px rgba(0,0,0,0.04)`,
+                  background: "#f5f5f5",
+                }}
+              >
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={frame.src + slotIdx}
+                    className="absolute inset-0"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.65 }}
+                  >
+                    <Image
+                      src={frame.src}
+                      alt={frame.label}
+                      fill
+                      className="object-cover"
+                      sizes={`${cardW}px`}
+                      priority={isFront}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    borderRadius: isMobile ? 20 : 28,
+                    background: "linear-gradient(to top, rgba(0,0,0,0.42) 0%, transparent 50%)",
+                    opacity: isFront || isActive ? 1 : 0.6,
+                  }}
+                />
+
+                {(isFront || isActive) && (
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={frame.label}
+                      className="absolute left-5"
+                      style={{ bottom: isMobile ? 14 : 20 }}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.4, delay: 0.15 }}
+                    >
+                      <p
+                        className="font-black uppercase tracking-[0.45em]"
+                        style={{ fontSize: isMobile ? 8 : 10, color: "rgba(255,255,255,0.72)" }}
+                      >
+                        {frame.label}
+                      </p>
+                    </motion.div>
+                  </AnimatePresence>
+                )}
+
+                {isActive && (
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      borderRadius: isMobile ? 20 : 28,
+                      boxShadow: "inset 0 0 0 2px rgba(0,174,239,0.5)",
+                    }}
+                  />
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+
+        <AnimatePresence>
+          {!isHovered && (
+            <motion.p
+              key="hint"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="absolute text-center w-full font-bold uppercase tracking-[0.4em]"
+              style={{
+                fontSize: 9,
+                bottom: isMobile ? -20 : -36,
+                color: "rgba(0,0,0,0.22)",
+                left: 0,
+              }}
+            >
+              {isMobile ? "Tap to explore" : "Hover to explore"}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Progress dots */}
+      <div
+        className="absolute flex gap-2 pointer-events-none"
+        style={{ bottom: isMobile ? -44 : -64, left: "50%", transform: "translateX(-50%)" }}
+      >
+        {FRAMES.map((_, i) => (
           <motion.div
             key={i}
-            className="absolute rounded-full"
-            style={{
-              width: i % 3 === 0 ? 3 : 2,
-              height: i % 3 === 0 ? 3 : 2,
-              left: `${8 + ((i * 5.3) % 84)}%`,
-              top: `${6 + ((i * 7.9) % 86)}%`,
-              background:
-                i % 2 === 0
-                  ? "rgba(0,212,255,0.45)"
-                  : "rgba(255,255,255,0.25)",
+            className="rounded-full"
+            animate={{
+              width: i === heroIdx ? 22 : 6,
+              background: i === heroIdx ? "#00AEEF" : "rgba(0,0,0,0.14)",
             }}
-            animate={{ y: [-8, 8, -8], opacity: [0.3, 0.8, 0.3] }}
-            transition={{
-              duration: 2.5 + (i % 4),
-              repeat: Infinity,
-              delay: i * 0.15,
+            style={{ height: 3 }}
+            transition={{ duration: 0.35 }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Spectacle Background ─────────────────────────────────────────────────────
+function SpectacleBackground() {
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springX = useSpring(mouseX, { stiffness: 16, damping: 55 });
+  const springY = useSpring(mouseY, { stiffness: 16, damping: 55 });
+  const parallaxX = useTransform(springX, [-700, 700], [-18, 18]);
+  const parallaxY = useTransform(springY, [-500, 500], [-11, 11]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX - window.innerWidth / 2);
+      mouseY.set(e.clientY - window.innerHeight / 2);
+    };
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, [mouseX, mouseY]);
+
+  return (
+    <div
+      className="absolute inset-0 pointer-events-none flex justify-center overflow-hidden"
+      style={{ zIndex: 5, alignItems: "flex-start", paddingTop: "calc(18vh + 30px)" }}
+    >
+      <motion.div
+        style={{
+          x: parallaxX,
+          y: parallaxY,
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {/* Concentric halo rings */}
+        {[
+          { w: 520, h: 210, opacity: 0.10, blur: 2 },
+          { w: 680, h: 275, opacity: 0.06, blur: 4 },
+          { w: 840, h: 340, opacity: 0.04, blur: 7 },
+        ].map(({ w, h, opacity, blur }, i) => (
+          <motion.div
+            key={i}
+            animate={{ scale: [1, 1.018, 1], opacity: [opacity, opacity * 1.5, opacity] }}
+            transition={{ duration: 9 + i * 2, repeat: Infinity, ease: "easeInOut", delay: i * 0.6 }}
+            style={{
+              position: "absolute",
+              width: w,
+              height: h,
+              borderRadius: "50%",
+              border: "1.5px solid rgba(0, 74, 173, 0.9)",
+              opacity,
+              filter: `blur(${blur}px)`,
             }}
           />
         ))}
 
+        {/* Glasses silhouette */}
+        <motion.div
+          animate={{
+            y: [0, -10, 0],
+            scale: [1, 1.026, 1],
+            rotate: [-1.2, 1.2, -1.2],
+          }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", times: [0, 0.5, 1] }}
+          style={{
+            filter: "blur(5px)",
+            opacity: 0.28,
+            color: "#004AAD",
+          }}
+        >
+          <svg
+            viewBox="0 0 800 240"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ width: 860, height: "auto", overflow: "visible" }}
+          >
+            <rect x="48"  y="28" width="280" height="178" rx="44" ry="44" stroke="currentColor" strokeWidth="2.5" />
+            <rect x="472" y="28" width="280" height="178" rx="44" ry="44" stroke="currentColor" strokeWidth="2.5" />
+            <path d="M 328 82 C 363 128 437 128 472 82" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+            <path d="M 48 152 Q -56 167 -210 186"  stroke="currentColor" strokeWidth="2"   strokeLinecap="round" fill="none" />
+            <path d="M 752 152 Q 856 167 1010 186" stroke="currentColor" strokeWidth="2"   strokeLinecap="round" fill="none" />
+            <path d="M 322 90 L 314 115" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            <path d="M 478 90 L 486 115" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            <circle cx="49"  cy="117" r="5" stroke="currentColor" strokeWidth="1.8" />
+            <circle cx="751" cy="117" r="5" stroke="currentColor" strokeWidth="1.8" />
+            <rect x="64"  y="44" width="248" height="146" rx="34" ry="34" stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
+            <rect x="488" y="44" width="248" height="146" rx="34" ry="34" stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
+          </svg>
+        </motion.div>
+
+        {/* Radial glow */}
+        <div
+          style={{
+            position: "absolute",
+            width: 760,
+            height: 300,
+            background: "radial-gradient(ellipse at center, rgba(0, 100, 255, 0.09) 0%, transparent 68%)",
+            filter: "blur(40px)",
+          }}
+        />
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Main Hero ────────────────────────────────────────────────────────────────
+export default function HomeHero() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  return (
+    <section
+      className="relative w-full min-h-screen overflow-x-hidden flex flex-col"
+      style={{ background: "#FFFFFF" }}
+    >
+      {/* Ambient radial glow */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 50% at 50% 60%, rgba(0,130,255,0.055) 0%, transparent 100%)",
+        }}
+      />
+
+      {/* Spectacle silhouette background */}
+      <SpectacleBackground />
+
       {/* Content */}
-      <div className="relative z-10 max-w-screen-2xl mx-auto px-6 lg:px-12 w-full flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-20 pt-24 pb-16">
-        {/* Left: Text */}
-        <div className="flex-1 text-center lg:text-left">
-          {/* Eyebrow */}
-          <motion.span
-            initial={{ opacity: 0, y: -10 }}
+      <div className="relative z-10 flex flex-col items-center flex-1 pt-28 pb-24 px-6">
+
+        {/* Typography block */}
+        <div className="text-center mb-14 md:mb-18">
+          <motion.p
+            initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="block text-[11px] font-black uppercase tracking-[0.5em] mb-8"
-            style={{ color: "#00D4FF" }}
+            transition={{ duration: 0.7, delay: 0.15 }}
+            className="text-[10px] font-black uppercase tracking-[0.55em] mb-10"
+            style={{ color: "#00AEEF" }}
           >
             Lenzify.in — Premium Eyewear
-          </motion.span>
+          </motion.p>
 
-          {/* Hero headline — Bodoni Moda italic */}
           <h1
-            className="mb-10 text-left font-serif italic tracking-tighter"
+            className="font-serif italic tracking-tight mb-8"
             style={{
               fontWeight: 900,
-              lineHeight: 0.9,
-              fontSize: "clamp(42px, 5vw, 76px)",
+              lineHeight: 0.88,
+              fontSize: "clamp(52px, 8vw, 104px)",
             }}
           >
-            <LetterReveal
-              text="See The"
-              delay={0.4}
-              style={{
-                color: "#FFFFFF",
-                textShadow: "0 0 30px rgba(0,180,255,0.15)",
-              }}
-            />
-            <LetterReveal
-              text="World"
-              delay={0.7}
-              style={{
-                background: "linear-gradient(90deg, #00D9FF, #0090FF)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            />
-            <LetterReveal
-              text="Differently"
-              delay={1.0}
-              style={{
-                color: "#FFFFFF",
-                textShadow: "0 0 30px rgba(0,180,255,0.15)",
-              }}
-            />
+            <LetterReveal text="See The"     delay={0.3}  style={{ color: "#111111" }} />
+            <LetterReveal text="World"       delay={0.55} style={{ color: "#00AEEF" }} />
+            <LetterReveal text="Differently" delay={0.82} style={{ color: "#111111" }} />
           </h1>
 
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 1.4 }}
-            className="text-white/55 text-sm md:text-base leading-relaxed max-w-md mb-10 mx-auto lg:mx-0 font-medium"
+            className="text-[#666666] text-sm md:text-[15px] leading-relaxed max-w-md mx-auto mb-10 font-medium"
           >
             Premium eyewear crafted for vision, style, and everyday comfort.
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+            transition={{ duration: 0.7, delay: 1.65 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
           >
             <Link
               href="/products"
-              className="px-10 py-5 text-[11px] font-black uppercase tracking-[0.3em] text-[#020229] rounded-full transition-all duration-300 hover:scale-105 text-center"
+              className="px-10 py-4 text-[11px] font-black uppercase tracking-[0.3em] rounded-full transition-all duration-300 hover:scale-105 text-center whitespace-nowrap"
               style={{
-                background: "linear-gradient(135deg, #00D4FF, #00AFFF)",
-                boxShadow: "0 0 30px rgba(0,212,255,0.35)",
+                background: "#111111",
+                color: "#FFFFFF",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
               }}
             >
               Shop Collection
             </Link>
-            <button
-              suppressHydrationWarning
-              onClick={() =>
-                document.dispatchEvent(new CustomEvent("open-virtual-tryon"))
-              }
-              className="px-10 py-5 text-[11px] font-black uppercase tracking-[0.3em] text-white rounded-full border border-white/25 backdrop-blur-sm hover:border-[#00D4FF] hover:text-[#00D4FF] transition-all duration-300"
-            >
-              Virtual Try-On
-            </button>
           </motion.div>
         </div>
 
-        {/* Right: Floating product images with 3D parallax */}
+        {/* Solitaire card stack */}
         <motion.div
-          className="flex-1 relative flex items-center justify-center h-[380px] md:h-[500px] lg:h-[580px] w-full"
-          style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 1.1, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full flex flex-col items-center"
+          style={{ paddingBottom: 80 }}
         >
-          {/* Glow rings */}
-          <div
-            className="absolute w-80 h-80 md:w-96 md:h-96 rounded-full border border-[#00AFFF]/20"
-            style={{ animation: "spin 20s linear infinite" }}
-          />
-          <div
-            className="absolute w-56 h-56 md:w-72 md:h-72 rounded-full border border-[#00D4FF]/12"
-            style={{ animation: "spin 14s linear infinite reverse" }}
-          />
-
-          {/* Left product */}
-          <motion.div
-            animate={{ y: [-10, 10, -10] }}
-            transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute left-0 md:left-4 top-1/2 -translate-y-1/2"
-          >
-            <div
-              className="w-40 h-28 md:w-52 md:h-32 rounded-2xl overflow-hidden relative border border-white/15"
-              style={{ boxShadow: "0 20px 50px rgba(0,175,255,0.3)" }}
-            >
-              <Image
-                src="https://images.unsplash.com/photo-1577803645773-f96470509666?q=80&w=400&auto=format&fit=crop"
-                alt="Sunglasses"
-                fill
-                unoptimized
-                className="object-cover"
-              />
-            </div>
-          </motion.div>
-
-          {/* Center hero */}
-          <motion.div
-            animate={{ y: [8, -8, 8] }}
-            transition={{
-              duration: 6,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0.5,
-            }}
-            className="relative z-10"
-          >
-            <div
-              className="w-64 h-40 md:w-80 md:h-52 rounded-3xl overflow-hidden relative border border-white/20"
-              style={{ boxShadow: "0 30px 80px rgba(0,175,255,0.45)" }}
-            >
-              <Image
-                src="https://images.unsplash.com/photo-1574258495973-f010dfbb5371?q=80&w=600&auto=format&fit=crop"
-                alt="Eyeglasses"
-                fill
-                unoptimized
-                className="object-cover"
-              />
-            </div>
-          </motion.div>
-
-          {/* Right product */}
-          <motion.div
-            animate={{ y: [12, -12, 12] }}
-            transition={{
-              duration: 4.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 1,
-            }}
-            className="absolute right-0 md:right-4 top-1/2 -translate-y-1/2"
-          >
-            <div
-              className="w-40 h-28 md:w-52 md:h-32 rounded-2xl overflow-hidden relative border border-white/15"
-              style={{ boxShadow: "0 20px 50px rgba(0,212,255,0.3)" }}
-            >
-              <Image
-                src="https://images.unsplash.com/photo-1591076482161-42ce6da69f67?q=80&w=400&auto=format&fit=crop"
-                alt="Smart Glasses"
-                fill
-                unoptimized
-                className="object-cover"
-              />
-            </div>
-          </motion.div>
-
-          {/* Floating badges */}
-          <motion.div
-            animate={{ y: [-5, 5, -5] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-6 right-4 md:right-10 rounded-2xl px-5 py-4 border border-white/20"
-            style={{
-              background: "rgba(255,255,255,0.08)",
-              backdropFilter: "blur(12px)",
-            }}
-          >
-            <p className="text-white text-[10px] font-black uppercase tracking-widest">
-              500+ Frames
-            </p>
-            <p className="text-sm font-black mt-0.5" style={{ color: "#00D4FF" }}>
-              In Stock
-            </p>
-          </motion.div>
-
-          <motion.div
-            animate={{ y: [5, -5, 5] }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0.8,
-            }}
-            className="absolute bottom-6 left-4 md:left-10 rounded-2xl px-5 py-4 border border-white/20"
-            style={{
-              background: "rgba(255,255,255,0.08)",
-              backdropFilter: "blur(12px)",
-            }}
-          >
-            <p className="text-white text-[10px] font-black uppercase tracking-widest">
-              AI Try-On
-            </p>
-            <p className="text-sm font-black mt-0.5" style={{ color: "#00D4FF" }}>
-              Free
-            </p>
-          </motion.div>
+          {mounted && <SolitaireStack />}
         </motion.div>
       </div>
 
       {/* Scroll indicator */}
       <motion.button
         suppressHydrationWarning
-        onClick={scrollDown}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer bg-transparent border-0"
+        onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer bg-transparent border-0 z-20"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 2 }}
+        transition={{ delay: 2.4 }}
       >
-        <span className="text-[9px] font-black uppercase tracking-[0.4em] text-white/30">
+        <span className="text-[9px] font-black uppercase tracking-[0.45em]" style={{ color: "rgba(0,0,0,0.22)" }}>
           Scroll
         </span>
-        <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.4, repeat: Infinity }}>
-          <ChevronDown className="w-5 h-5" style={{ color: "#00D4FF" }} />
+        <motion.div animate={{ y: [0, 7, 0] }} transition={{ duration: 1.4, repeat: Infinity }}>
+          <ChevronDown className="w-5 h-5" style={{ color: "#00AEEF" }} />
         </motion.div>
       </motion.button>
     </section>
