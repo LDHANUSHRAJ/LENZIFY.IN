@@ -1,6 +1,8 @@
 "use server";
 
-import { sendEmail } from "@/lib/mail";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendContactMessage(data: {
   name: string;
@@ -49,15 +51,23 @@ export async function sendContactMessage(data: {
     </div>
   `;
 
-  const result = await sendEmail({
-    to: "lenzify.in@gmail.com",
-    subject: `[Contact] ${data.subject} — ${data.name}`,
-    html,
-  });
+  try {
+    const { error } = await resend.emails.send({
+      from: "Lenzify Contact <onboarding@resend.dev>",
+      to: "lenzify.in@gmail.com",
+      replyTo: data.email,
+      subject: `[Contact] ${data.subject} — ${data.name}`,
+      html,
+    });
 
-  if (!result.success) {
+    if (error) {
+      console.error("[CONTACT] Resend error:", error);
+      return { error: "Failed to send message. Please try again or call us directly." };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("[CONTACT] Unexpected error:", err.message);
     return { error: "Failed to send message. Please try again or call us directly." };
   }
-
-  return { success: true };
 }
