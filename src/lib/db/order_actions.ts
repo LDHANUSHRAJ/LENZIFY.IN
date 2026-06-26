@@ -68,19 +68,22 @@ export async function placeOrder(data: {
   const { error: itemsError } = await adminSupabase.from("order_items").insert(orderItems);
   if (itemsError) return { error: "Item batch insert failure: " + itemsError.message };
 
-  // 3b. Decrement stock at order creation using safe atomic function.
-  // decrement_inventory_safe returns false if stock < qty (prevents oversell).
-  // Requires launch_migrations.sql to be applied to the DB.
+  // 3b. Decrement stock. If payment is already received (razorpay), never
+  // roll back the order — log the issue and let admin handle it manually.
+  const paymentAlreadyReceived = data.payment.method === "razorpay";
   for (const item of data.items) {
     const { data: decremented, error: stockErr } = await adminSupabase.rpc(
       "decrement_inventory_safe",
       { p_id: item.id, p_qty: item.quantity }
     );
     if (stockErr || decremented === false) {
-      // Roll back: delete the order we just created
-      await adminSupabase.from("order_items").delete().eq("order_id", order.id);
-      await adminSupabase.from("orders").delete().eq("id", order.id);
-      return { error: "One or more items in your cart are out of stock. Please refresh your cart." };
+      if (!paymentAlreadyReceived) {
+        await adminSupabase.from("order_items").delete().eq("order_id", order.id);
+        await adminSupabase.from("orders").delete().eq("id", order.id);
+        return { error: "One or more items in your cart are out of stock. Please refresh your cart." };
+      }
+      // Payment already taken — keep the order, flag it for admin review
+      console.error(`[ORDER] Stock issue for product ${item.id} on paid order ${order.id}. Manual review needed.`);
     }
   }
 
