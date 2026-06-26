@@ -187,8 +187,8 @@ export async function updateOrderStatus(
   if (status === "cancelled" && ["pending", "confirmed", "frame_reserved", "frame_preparing"].includes(oldStatus)) {
     for (const item of order.order_items) {
       await adminSupabase.rpc("increment_stock", {
-        product_id: item.product_id,
-        quantity: item.quantity,
+        p_id: item.product_id,
+        p_qty: item.quantity,
       });
     }
   }
@@ -268,8 +268,8 @@ export async function cancelOrder(orderId: string, reason?: string) {
   for (const item of order.order_items) {
     try {
       await supabase.rpc("increment_stock", {
-        product_id: item.product_id,
-        quantity: item.quantity,
+        p_id: item.product_id,
+        p_qty: item.quantity,
       });
     } catch {}
   }

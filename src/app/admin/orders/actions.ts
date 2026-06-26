@@ -35,8 +35,8 @@ export async function cancelOrder(orderId: string, reason?: string) {
   for (const item of order.order_items ?? []) {
     try {
       await supabase.rpc("increment_stock", {
-        product_id: item.product_id,
-        quantity: item.quantity,
+        p_id: item.product_id,
+        p_qty: item.quantity,
       });
     } catch {}
   }

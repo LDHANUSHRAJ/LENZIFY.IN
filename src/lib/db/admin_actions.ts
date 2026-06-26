@@ -28,7 +28,7 @@ export async function updateInventoryAudit(
   // 2. Update actual product stock
   const { error: updateError } = await supabase.rpc('increment_stock', {
     p_id: productId,
-    p_amount: changeAmount
+    p_qty: changeAmount
   });
 
   if (updateError) return { error: updateError.message };
