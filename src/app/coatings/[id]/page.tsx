@@ -58,7 +58,7 @@ export default async function CoatingDetailPage({ params }: { params: Promise<{ 
         <div className="container mx-auto px-6 lg:px-12 relative z-10">
           <div className="max-w-4xl space-y-8">
             <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary italic">Molecular Enhancement Protocol</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary italic">Lens Coating</p>
               <h1 className="text-7xl md:text-[100px] font-serif italic tracking-tighter leading-none">
                 {coating.name.split(' ').map((word: string, i: number) => (
                   <span key={i} className={i === 1 ? "text-secondary block" : ""}>{word} </span>
@@ -74,7 +74,7 @@ export default async function CoatingDetailPage({ params }: { params: Promise<{ 
         {/* Technical Floating Indicators */}
         <div className="absolute bottom-12 right-12 hidden lg:flex flex-col gap-6 text-right items-end">
           <div className="h-px w-32 bg-brand-navy/20"></div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-brand-navy/40 italic">Signature Enhancement: {id.slice(0, 6)}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-brand-navy/40 italic">Premium Optical Coating</p>
           <div className="flex gap-4">
              <div className="w-10 h-10 border border-brand-navy/10 flex items-center justify-center rounded-full"><Microscope size={14} /></div>
              <div className="w-10 h-10 border border-brand-navy/10 flex items-center justify-center rounded-full"><Beaker size={14} /></div>
@@ -88,7 +88,7 @@ export default async function CoatingDetailPage({ params }: { params: Promise<{ 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start">
             <div className="space-y-20">
               <div className="space-y-8">
-                <h2 className="text-[12px] font-black uppercase tracking-[0.3em] text-brand-navy/40 border-b border-brand-navy/5 pb-4 w-fit">Scientific Synthesis</h2>
+                <h2 className="text-[12px] font-black uppercase tracking-[0.3em] text-brand-navy/40 border-b border-brand-navy/5 pb-4 w-fit">About This Coating</h2>
                 <div className="space-y-6">
                   <p className="text-3xl font-serif italic leading-relaxed text-brand-navy/90">
                     {editorial.description}
@@ -141,9 +141,9 @@ export default async function CoatingDetailPage({ params }: { params: Promise<{ 
       <section className="py-48 bg-surface-container-low relative">
         <div className="container mx-auto px-6 lg:px-12 text-center space-y-24">
           <div className="space-y-8 max-w-3xl mx-auto">
-            <h2 className="text-5xl md:text-7xl font-serif italic leading-none">The <span className="text-secondary">Protection</span> Matrix</h2>
+            <h2 className="text-5xl md:text-7xl font-serif italic leading-none">The <span className="text-secondary">Protection</span> Promise</h2>
             <div className="h-1 w-20 bg-secondary mx-auto"></div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.4em] text-brand-navy/40 italic text-center">Incorporate {coating.name} into your optical protocol</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.4em] text-brand-navy/40 italic text-center">Add {coating.name} to your next order</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
@@ -188,7 +188,7 @@ export default async function CoatingDetailPage({ params }: { params: Promise<{ 
         </div>
       </section>
 
-      {/* 4. Trust Matrix */}
+      {/* 4. Quality Assurance */}
       <section className="py-32 bg-brand-navy text-white/90">
         <div className="container mx-auto px-6 lg:px-12 grid grid-cols-1 md:grid-cols-3 gap-16 border-t border-white/5 pt-16">
             <div className="space-y-4">

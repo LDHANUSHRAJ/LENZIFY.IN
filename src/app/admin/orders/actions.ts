@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { updateOrderStatus } from "@/lib/db/order_actions";
 
@@ -21,7 +21,47 @@ export async function updatePaymentStatus(orderId: string, payment_status: strin
 }
 
 export async function cancelOrder(orderId: string, reason?: string) {
-  return updateOrderStatus(orderId, "cancelled", undefined, undefined, undefined);
+  // Admin cancel: bypasses ownership check, restores stock, records history
+  const supabase = await createAdminClient();
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("*, order_items(*)")
+    .eq("id", orderId)
+    .single();
+
+  if (!order) return { error: "Order not found." };
+
+  for (const item of order.order_items ?? []) {
+    try {
+      await supabase.rpc("increment_stock", {
+        product_id: item.product_id,
+        quantity: item.quantity,
+      });
+    } catch {}
+  }
+
+  const { error } = await supabase.from("orders").update({
+    status: "cancelled",
+    cancelled_at: new Date().toISOString(),
+    cancel_reason: reason || "Cancelled by admin",
+    updated_at: new Date().toISOString(),
+  }).eq("id", orderId);
+
+  if (error) return { error: error.message };
+
+  try {
+    await supabase.from("order_status_history").insert({
+      order_id: orderId,
+      status: "cancelled",
+      note: reason || "Cancelled by admin",
+      updated_by: "admin",
+    });
+  } catch {}
+
+  revalidatePath("/admin/orders");
+  revalidatePath(`/admin/orders/${orderId}`);
+  return { success: true };
 }
 
 export async function refundOrder(orderId: string) {

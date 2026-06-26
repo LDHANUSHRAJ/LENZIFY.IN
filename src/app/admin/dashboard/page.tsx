@@ -32,8 +32,8 @@ export default async function AdminDashboardPage() {
   const quickActions = [
     { label: "Add Product",    icon: Plus,      href: "/admin/products/new",      color: "bg-blue-50 text-blue-600" },
     { label: "Add Category",   icon: Layers,    href: "/admin/categories/new",    color: "bg-purple-50 text-purple-600" },
-    { label: "Create Offer",   icon: Tag,       href: "/admin/offers/new",        color: "bg-emerald-50 text-emerald-600" },
-    { label: "New Coupon",     icon: ShoppingBag, href: "/admin/offers/coupons/new", color: "bg-orange-50 text-orange-600" },
+    { label: "Create Coupon",  icon: Tag,       href: "/admin/coupons",           color: "bg-emerald-50 text-emerald-600" },
+    { label: "Manage Offers",  icon: ShoppingBag, href: "/admin/offers",            color: "bg-orange-50 text-orange-600" },
   ];
 
   return (

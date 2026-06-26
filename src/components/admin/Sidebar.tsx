@@ -25,6 +25,9 @@ import {
   Megaphone,
   MessageSquare,
   Bell,
+  TrendingUp,
+  MapPin,
+  Truck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/auth/actions";
@@ -62,10 +65,18 @@ const NAV_GROUPS = [
     ],
   },
   {
+    label: "Logistics",
+    items: [
+      { name: "Shipping", icon: Truck, href: "/admin/shipping" },
+      { name: "Stores", icon: MapPin, href: "/admin/stores" },
+    ],
+  },
+  {
     label: "Store",
     items: [
       { name: "Homepage", icon: Image, href: "/admin/homepage" },
       { name: "Reviews", icon: MessageSquare, href: "/admin/reviews" },
+      { name: "Analytics", icon: TrendingUp, href: "/admin/analytics" },
       { name: "Reports", icon: BarChart3, href: "/admin/reports" },
       { name: "Notifications", icon: Bell, href: "/admin/notifications" },
       { name: "Settings", icon: Settings, href: "/admin/settings" },

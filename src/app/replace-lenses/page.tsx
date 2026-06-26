@@ -69,8 +69,8 @@ function ReplaceLensesContent() {
     payment_method: "online"
   });
 
-  const pickupFee = 50;
-  const deliveryFee = 50;
+  const [pickupFee, setPickupFee] = useState(50);
+  const [deliveryFee, setDeliveryFee] = useState(50);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -84,12 +84,18 @@ function ReplaceLensesContent() {
     });
 
     async function fetchData() {
-      const [lensesData, coatingsData] = await Promise.all([
+      const [lensesData, coatingsData, settingsRes] = await Promise.all([
         getLenses(),
-        getCoatings()
+        getCoatings(),
+        supabase.from("store_settings").select("base_shipping_charge").eq("id", 1).single(),
       ]);
       setLenses(lensesData);
       setCoatings(coatingsData);
+      if (settingsRes.data?.base_shipping_charge) {
+        const fee = Number(settingsRes.data.base_shipping_charge);
+        setPickupFee(fee);
+        setDeliveryFee(fee);
+      }
 
       const prefillLensId = searchParams.get("lensId");
       if (prefillLensId) {
