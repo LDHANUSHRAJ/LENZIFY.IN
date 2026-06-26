@@ -548,28 +548,15 @@ export default function CheckoutPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <button
-                        onClick={() => setPaymentMethod("upi")}
-                        className={cn(
-                          "p-5 border-2 rounded-2xl text-left transition-all",
-                          paymentMethod === "upi"
-                            ? "border-[#03173D] bg-[#F0F4FF]"
-                            : "border-[#ECECEC] hover:border-[#E8EAF2] bg-white"
-                        )}
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <CreditCard size={22} className={paymentMethod === "upi" ? "text-[#03173D]" : "text-[#666666]"} />
-                          {paymentMethod === "upi" && (
-                            <div className="w-5 h-5 rounded-full bg-[#03173D] flex items-center justify-center">
-                              <CheckCircle2 size={12} className="text-white" />
-                            </div>
-                          )}
-                        </div>
+                    <div className="p-5 border-2 border-[#03173D] bg-[#F0F4FF] rounded-2xl flex items-center gap-4">
+                      <CreditCard size={22} className="text-[#03173D] shrink-0" />
+                      <div>
                         <p className="font-semibold text-[#111111] text-sm">UPI / Card / Net Banking</p>
                         <p className="text-[#666666] text-xs mt-0.5">Instant payment via Razorpay</p>
-                      </button>
-
+                      </div>
+                      <div className="ml-auto w-5 h-5 rounded-full bg-[#03173D] flex items-center justify-center shrink-0">
+                        <CheckCircle2 size={12} className="text-white" />
+                      </div>
                     </div>
 
                     <p className="text-[#666666] text-xs leading-relaxed">
