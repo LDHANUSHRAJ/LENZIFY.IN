@@ -262,11 +262,11 @@ export default function Navbar() {
       className={cn(
         "fixed top-0 w-full z-50 transition-all duration-500 print:hidden",
         isWhiteMode
-          ? "bg-white shadow-[0_2px_20px_rgba(0,0,0,0.08)] py-4"
-          : "bg-transparent py-6"
+          ? "bg-white shadow-[0_2px_20px_rgba(0,0,0,0.08)] py-2.5 md:py-4"
+          : "bg-transparent py-3 md:py-6"
       )}
     >
-      <nav className="flex justify-between items-center px-6 lg:px-12 max-w-screen-2xl mx-auto">
+      <nav className="flex justify-between items-center px-3 sm:px-6 lg:px-12 max-w-screen-2xl mx-auto">
         <div className="flex items-center gap-4">
           {/* Back Button (Conditional) */}
           {pathname !== "/" && (
@@ -420,7 +420,7 @@ export default function Navbar() {
         </div>
 
         {/* Right Side Actions */}
-        <div className="flex items-center gap-3 sm:gap-6">
+        <div className="flex items-center gap-2 sm:gap-6">
           {/* Search */}
           <div
             className={cn(

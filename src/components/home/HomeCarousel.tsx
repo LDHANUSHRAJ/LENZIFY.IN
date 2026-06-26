@@ -443,7 +443,7 @@ export default function HomeHero() {
 
   return (
     <section
-      className="relative w-full min-h-[600px] md:min-h-screen overflow-x-hidden flex flex-col"
+      className="relative w-full overflow-hidden md:min-h-screen md:flex md:flex-col"
       style={{ background: "#FFFFFF" }}
     >
       {/* Ambient radial glow */}
@@ -455,28 +455,28 @@ export default function HomeHero() {
         }}
       />
 
-      {/* Spectacle silhouette background — desktop only to avoid overflow on mobile */}
+      {/* Spectacle silhouette background — desktop only */}
       <div className="hidden md:block">
         <SpectacleBackground />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center flex-1 pt-20 pb-16 md:pt-28 md:pb-24 px-4 sm:px-6">
+      <div className="relative z-10 flex flex-col items-center md:flex-1 pt-20 pb-10 md:pt-28 md:pb-24 px-4 sm:px-6">
 
         {/* Typography block */}
-        <div className="text-center mb-8 md:mb-14">
+        <div className="text-center mb-6 md:mb-14">
           <motion.p
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15 }}
-            className="text-[10px] font-black uppercase tracking-[0.55em] mb-10"
+            className="text-[9px] font-black uppercase tracking-[0.4em] mb-4 md:mb-10"
             style={{ color: "#00AEEF" }}
           >
             Lenzify.in — Premium Eyewear
           </motion.p>
 
           <h1
-            className="font-serif italic tracking-tight mb-6 md:mb-8"
+            className="font-serif italic tracking-tight mb-4 md:mb-8"
             style={{
               fontWeight: 900,
               lineHeight: 0.88,
@@ -492,7 +492,7 @@ export default function HomeHero() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 1.4 }}
-            className="text-[#666666] text-sm md:text-[15px] leading-relaxed max-w-md mx-auto mb-10 font-medium"
+            className="text-[#666666] text-sm md:text-[15px] leading-relaxed max-w-sm md:max-w-md mx-auto mb-6 md:mb-10 font-medium"
           >
             Premium eyewear crafted for vision, style, and everyday comfort.
           </motion.p>
@@ -505,7 +505,7 @@ export default function HomeHero() {
           >
             <Link
               href="/products"
-              className="px-10 py-4 text-[11px] font-black uppercase tracking-[0.3em] rounded-full transition-all duration-300 hover:scale-105 text-center whitespace-nowrap"
+              className="px-8 md:px-10 py-3.5 md:py-4 text-[11px] font-black uppercase tracking-[0.3em] rounded-full transition-all duration-300 hover:scale-105 text-center whitespace-nowrap"
               style={{
                 background: "#111111",
                 color: "#FFFFFF",
@@ -523,28 +523,28 @@ export default function HomeHero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 1.1, ease: [0.22, 1, 0.36, 1] }}
           className="w-full flex flex-col items-center"
-          style={{ paddingBottom: 80 }}
+          style={{ paddingBottom: 48 }}
         >
           {mounted && <SolitaireStack />}
         </motion.div>
-      </div>
 
-      {/* Scroll indicator */}
-      <motion.button
-        suppressHydrationWarning
-        onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer bg-transparent border-0 z-20"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2.4 }}
-      >
-        <span className="text-[9px] font-black uppercase tracking-[0.45em]" style={{ color: "rgba(0,0,0,0.22)" }}>
-          Scroll
-        </span>
-        <motion.div animate={{ y: [0, 7, 0] }} transition={{ duration: 1.4, repeat: Infinity }}>
-          <ChevronDown className="w-5 h-5" style={{ color: "#00AEEF" }} />
-        </motion.div>
-      </motion.button>
+        {/* Scroll indicator — inline on mobile, absolute on desktop */}
+        <motion.button
+          suppressHydrationWarning
+          onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
+          className="md:absolute md:bottom-8 md:left-1/2 md:-translate-x-1/2 flex flex-col items-center gap-1.5 cursor-pointer bg-transparent border-0 z-20 mt-8 md:mt-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 2.4 }}
+        >
+          <span className="text-[9px] font-black uppercase tracking-[0.45em]" style={{ color: "rgba(0,0,0,0.22)" }}>
+            Scroll
+          </span>
+          <motion.div animate={{ y: [0, 7, 0] }} transition={{ duration: 1.4, repeat: Infinity }}>
+            <ChevronDown className="w-5 h-5" style={{ color: "#00AEEF" }} />
+          </motion.div>
+        </motion.button>
+      </div>
     </section>
   );
 }
