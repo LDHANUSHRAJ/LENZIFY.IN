@@ -443,7 +443,7 @@ export default function HomeHero() {
 
   return (
     <section
-      className="relative w-full overflow-hidden md:min-h-screen md:flex md:flex-col"
+      className="relative w-full overflow-hidden"
       style={{ background: "#FFFFFF" }}
     >
       {/* Ambient radial glow */}
@@ -460,27 +460,27 @@ export default function HomeHero() {
         <SpectacleBackground />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center md:flex-1 pt-20 pb-10 md:pt-28 md:pb-24 px-4 sm:px-6">
+      {/* Content — no flex-1, no min-h-screen: height is always content-driven */}
+      <div className="relative z-10 flex flex-col items-center pt-20 pb-10 md:pt-28 md:pb-16 px-4 sm:px-6">
 
         {/* Typography block */}
-        <div className="text-center mb-6 md:mb-14">
+        <div className="text-center mb-6 md:mb-12">
           <motion.p
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15 }}
-            className="text-[9px] font-black uppercase tracking-[0.4em] mb-4 md:mb-10"
+            className="text-[9px] font-black uppercase tracking-[0.35em] mb-4 md:mb-8"
             style={{ color: "#00AEEF" }}
           >
             Lenzify.in — Premium Eyewear
           </motion.p>
 
           <h1
-            className="font-serif italic tracking-tight mb-4 md:mb-8"
+            className="font-serif italic tracking-tight mb-4 md:mb-6"
             style={{
               fontWeight: 900,
               lineHeight: 0.88,
-              fontSize: "clamp(40px, 8vw, 104px)",
+              fontSize: "clamp(38px, 7vw, 100px)",
             }}
           >
             <LetterReveal text="See The"     delay={0.3}  style={{ color: "#111111" }} />
@@ -492,7 +492,7 @@ export default function HomeHero() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 1.4 }}
-            className="text-[#666666] text-sm md:text-[15px] leading-relaxed max-w-sm md:max-w-md mx-auto mb-6 md:mb-10 font-medium"
+            className="text-[#666666] text-sm leading-relaxed max-w-xs sm:max-w-md mx-auto mb-6 md:mb-8 font-medium"
           >
             Premium eyewear crafted for vision, style, and everyday comfort.
           </motion.p>
@@ -501,11 +501,10 @@ export default function HomeHero() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 1.65 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
           >
             <Link
               href="/products"
-              className="px-8 md:px-10 py-3.5 md:py-4 text-[11px] font-black uppercase tracking-[0.3em] rounded-full transition-all duration-300 hover:scale-105 text-center whitespace-nowrap"
+              className="inline-block px-8 py-3.5 text-[11px] font-black uppercase tracking-[0.3em] rounded-full transition-all duration-300 hover:scale-105 text-center whitespace-nowrap"
               style={{
                 background: "#111111",
                 color: "#FFFFFF",
@@ -517,22 +516,21 @@ export default function HomeHero() {
           </motion.div>
         </div>
 
-        {/* Solitaire card stack */}
+        {/* Solitaire card stack — no extra padding, stack determines its own height */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 1.1, ease: [0.22, 1, 0.36, 1] }}
           className="w-full flex flex-col items-center"
-          style={{ paddingBottom: 48 }}
         >
           {mounted && <SolitaireStack />}
         </motion.div>
 
-        {/* Scroll indicator — inline on mobile, absolute on desktop */}
+        {/* Scroll indicator — always inline, never absolute */}
         <motion.button
           suppressHydrationWarning
           onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
-          className="md:absolute md:bottom-8 md:left-1/2 md:-translate-x-1/2 flex flex-col items-center gap-1.5 cursor-pointer bg-transparent border-0 z-20 mt-8 md:mt-0"
+          className="flex flex-col items-center gap-1.5 cursor-pointer bg-transparent border-0 z-20 mt-10 md:mt-14"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 2.4 }}
