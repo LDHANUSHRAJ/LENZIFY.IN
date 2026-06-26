@@ -26,7 +26,7 @@ function SuccessContent() {
       .select("*, order_items(*, products(name, product_images(image_url)))")
       .eq("id", orderId)
       .single()
-      .then(({ data }) => setOrder(data));
+      .then(({ data: orderData }) => setOrder(orderData));
   }, [orderId]);
 
   return (
