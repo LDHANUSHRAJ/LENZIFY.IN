@@ -216,7 +216,7 @@ export default function TryAtHome() {
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="relative aspect-[4/5] bg-white/10 rounded-3xl overflow-hidden group"
           >
-            <Image src="https://static1.lenskart.com/media/desktop/img/rebrand/HomeBanner.jpg" alt="At Home" fill className="object-cover opacity-80 group-hover:scale-105 transition-transform duration-[2s]" />
+            <Image src="/images/hero/hero4.jpg" alt="Try at home eyewear session" fill className="object-cover opacity-80 group-hover:scale-105 transition-transform duration-[2s]" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#03173D]/60 via-transparent to-transparent" />
             <div className="absolute bottom-8 left-8 right-8 bg-white/90 backdrop-blur-sm rounded-2xl p-6">
               <Zap size={20} className="text-[#004AAD] mb-2" />
