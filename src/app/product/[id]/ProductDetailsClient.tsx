@@ -180,7 +180,7 @@ export default function ProductDetailsClient({
       <ProductJsonLd product={product} url={`${siteUrl}/product/${product.id}`} />
 
       {/* Breadcrumb */}
-      <nav className="bg-white pt-24 pb-0 px-6 lg:px-16 max-w-screen-2xl mx-auto">
+      <nav className="bg-white pt-20 md:pt-24 pb-0 px-4 sm:px-6 lg:px-16 max-w-screen-2xl mx-auto">
         <div className="flex items-center gap-2 text-sm text-[#666666] py-4">
           <Link href="/" className="hover:text-[#004AAD] transition-colors">Home</Link>
           <span className="text-[#ECECEC]">/</span>

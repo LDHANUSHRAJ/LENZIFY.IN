@@ -42,7 +42,7 @@ export default function WishlistPage() {
         return (
             <div className="bg-[#F8F9FC] min-h-screen">
                 {/* Header skeleton */}
-                <div className="bg-white border-b border-[#ECECEC] pt-28 pb-8 px-6 lg:px-12">
+                <div className="bg-white border-b border-[#ECECEC] pt-20 md:pt-28 pb-6 md:pb-8 px-4 sm:px-6 lg:px-12">
                     <div className="max-w-screen-xl mx-auto">
                         <div className="h-3 w-24 bg-[#ECECEC] rounded-full animate-pulse mb-4" />
                         <div className="h-10 w-64 bg-[#ECECEC] rounded-full animate-pulse mb-2" />
@@ -62,7 +62,7 @@ export default function WishlistPage() {
     if (wishlistItems.length === 0) {
         return (
             <div className="bg-[#F8F9FC] min-h-screen">
-                <div className="bg-white border-b border-[#ECECEC] pt-28 pb-8 px-6 lg:px-12">
+                <div className="bg-white border-b border-[#ECECEC] pt-20 md:pt-28 pb-6 md:pb-8 px-4 sm:px-6 lg:px-12">
                     <div className="max-w-screen-xl mx-auto">
                         <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-2">Your Wishlist</p>
                         <h1 className="text-4xl font-[var(--font-hero)] italic text-[#111111]">Saved Items</h1>
@@ -92,7 +92,7 @@ export default function WishlistPage() {
     return (
         <div className="bg-[#F8F9FC] min-h-screen">
             {/* Header */}
-            <div className="bg-white border-b border-[#ECECEC] pt-28 pb-8 px-6 lg:px-12">
+            <div className="bg-white border-b border-[#ECECEC] pt-20 md:pt-28 pb-6 md:pb-8 px-4 sm:px-6 lg:px-12">
                 <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-2">Your Wishlist</p>

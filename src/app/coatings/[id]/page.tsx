@@ -83,7 +83,7 @@ export default async function CoatingDetailPage({ params }: { params: Promise<{ 
       </section>
 
       {/* 2. Performance Narrative Section */}
-      <section className="py-32 bg-white">
+      <section className="py-16 md:py-24 bg-white">
         <div className="container mx-auto px-6 lg:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start">
             <div className="space-y-20">
@@ -138,7 +138,7 @@ export default async function CoatingDetailPage({ params }: { params: Promise<{ 
       </section>
 
       {/* 3. Integration Pathway */}
-      <section className="py-48 bg-surface-container-low relative">
+      <section className="py-16 md:py-28 bg-surface-container-low relative">
         <div className="container mx-auto px-6 lg:px-12 text-center space-y-24">
           <div className="space-y-8 max-w-3xl mx-auto">
             <h2 className="text-5xl md:text-7xl font-serif italic leading-none">The <span className="text-secondary">Protection</span> Promise</h2>
@@ -189,7 +189,7 @@ export default async function CoatingDetailPage({ params }: { params: Promise<{ 
       </section>
 
       {/* 4. Quality Assurance */}
-      <section className="py-32 bg-brand-navy text-white/90">
+      <section className="py-16 md:py-24 bg-brand-navy text-white/90">
         <div className="container mx-auto px-6 lg:px-12 grid grid-cols-1 md:grid-cols-3 gap-16 border-t border-white/5 pt-16">
             <div className="space-y-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-secondary italic">Certification</p>

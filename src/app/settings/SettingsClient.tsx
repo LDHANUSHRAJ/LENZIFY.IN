@@ -44,7 +44,7 @@ export default function SettingsClient({ userId, email, currentName, currentPhon
   };
 
   return (
-    <div className="bg-[#F8F9FC] min-h-screen pt-28 pb-16">
+    <div className="bg-[#F8F9FC] min-h-screen pt-20 md:pt-28 pb-16">
       <div className="max-w-6xl mx-auto px-6 lg:px-12">
         <div className="mb-8">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-2">Account</p>

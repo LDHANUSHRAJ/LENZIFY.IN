@@ -443,7 +443,7 @@ export default function HomeHero() {
 
   return (
     <section
-      className="relative w-full min-h-screen overflow-x-hidden flex flex-col"
+      className="relative w-full min-h-[600px] md:min-h-screen overflow-x-hidden flex flex-col"
       style={{ background: "#FFFFFF" }}
     >
       {/* Ambient radial glow */}
@@ -455,14 +455,16 @@ export default function HomeHero() {
         }}
       />
 
-      {/* Spectacle silhouette background */}
-      <SpectacleBackground />
+      {/* Spectacle silhouette background — desktop only to avoid overflow on mobile */}
+      <div className="hidden md:block">
+        <SpectacleBackground />
+      </div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center flex-1 pt-28 pb-24 px-6">
+      <div className="relative z-10 flex flex-col items-center flex-1 pt-20 pb-16 md:pt-28 md:pb-24 px-4 sm:px-6">
 
         {/* Typography block */}
-        <div className="text-center mb-14 md:mb-18">
+        <div className="text-center mb-8 md:mb-14">
           <motion.p
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -474,11 +476,11 @@ export default function HomeHero() {
           </motion.p>
 
           <h1
-            className="font-serif italic tracking-tight mb-8"
+            className="font-serif italic tracking-tight mb-6 md:mb-8"
             style={{
               fontWeight: 900,
               lineHeight: 0.88,
-              fontSize: "clamp(52px, 8vw, 104px)",
+              fontSize: "clamp(40px, 8vw, 104px)",
             }}
           >
             <LetterReveal text="See The"     delay={0.3}  style={{ color: "#111111" }} />

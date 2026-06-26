@@ -365,7 +365,7 @@ function ReplaceLensesContent() {
   );
 
   return (
-    <div className="min-h-screen bg-white pt-32 pb-24">
+    <div className="min-h-screen bg-white pt-24 md:pt-32 pb-16 md:pb-24">
       {/* Hero */}
       <div className="bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] pb-16 pt-8 mb-12">
         <div className="max-w-6xl mx-auto px-6 lg:px-12">

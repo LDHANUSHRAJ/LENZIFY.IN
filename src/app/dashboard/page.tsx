@@ -71,7 +71,7 @@ export default async function CustomerDashboardPage() {
   ];
 
   return (
-    <div className="bg-[#F8F9FC] min-h-screen pt-28">
+    <div className="bg-[#F8F9FC] min-h-screen pt-20 md:pt-28">
       {/* Welcome Header */}
       <div className="bg-white border-b border-[#ECECEC] pb-8 px-6 lg:px-12">
         <div className="max-w-6xl mx-auto">

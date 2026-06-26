@@ -22,7 +22,7 @@ export default function CategoryPage() {
         : baseProducts;
 
     return (
-        <div className="min-h-screen bg-[#0B1C2D] pt-32 pb-20 overflow-hidden">
+        <div className="min-h-screen bg-[#0B1C2D] pt-24 md:pt-32 pb-14 md:pb-20 overflow-hidden">
             {/* Cinematic Hero */}
             <div className="max-w-[1400px] mx-auto px-8 mb-20 relative">
                 <motion.div

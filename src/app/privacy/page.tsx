@@ -98,7 +98,7 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] pt-40 pb-20">
+      <section className="bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] pt-28 md:pt-40 pb-14 md:pb-20">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 space-y-5">
           <p className="text-white/70 text-xs font-semibold uppercase tracking-widest">Legal</p>
           <h1 className="font-[var(--font-hero)] italic text-white text-5xl md:text-8xl leading-none">

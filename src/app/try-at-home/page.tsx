@@ -187,8 +187,8 @@ export default function TryAtHome() {
       </AnimatePresence>
 
       {/* 1. Hero */}
-      <section className="bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] pt-40 pb-20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <section className="bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] pt-28 md:pt-40 pb-14 md:pb-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -228,8 +228,8 @@ export default function TryAtHome() {
       </section>
 
       {/* 2. How It Works */}
-      <section className="py-20 md:py-28 bg-[#F8F9FC]">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12">
+      <section className="py-12 md:py-20 bg-[#F8F9FC]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
           <div className="text-center mb-14">
             <p className="text-[#004AAD] text-xs font-semibold uppercase tracking-widest mb-3">The Process</p>
             <h2 className="font-[var(--font-hero)] italic text-[#111111] text-4xl md:text-6xl leading-tight">How It Works</h2>
@@ -268,8 +268,8 @@ export default function TryAtHome() {
       </section>
 
       {/* 3. Features */}
-      <section className="py-20 md:py-28 bg-white">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12">
+      <section className="py-12 md:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
           <div className="text-center mb-14">
             <p className="text-[#004AAD] text-xs font-semibold uppercase tracking-widest mb-3">Why Choose Us</p>
             <h2 className="font-[var(--font-hero)] italic text-[#111111] text-4xl md:text-6xl leading-tight">What&apos;s Included</h2>
@@ -299,8 +299,8 @@ export default function TryAtHome() {
       </section>
 
       {/* 4. FAQ */}
-      <section className="py-20 md:py-28 bg-[#F8F9FC]">
-        <div className="max-w-4xl mx-auto px-6 lg:px-12">
+      <section className="py-12 md:py-20 bg-[#F8F9FC]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12">
           <div className="text-center mb-14">
             <HelpCircle size={36} className="text-[#004AAD]/30 mx-auto mb-5" strokeWidth={1.5} />
             <p className="text-[#004AAD] text-xs font-semibold uppercase tracking-widest mb-3">Got Questions?</p>

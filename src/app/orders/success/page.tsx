@@ -11,7 +11,7 @@ function SuccessContent() {
   const orderId = searchParams.get("id");
 
   return (
-    <main className="max-w-4xl mx-auto px-8 py-20 pb-32 space-y-16">
+    <main className="max-w-4xl mx-auto px-4 sm:px-8 py-12 md:py-20 pb-24 md:pb-32 space-y-10 md:space-y-16">
       <header className="text-center space-y-8">
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}

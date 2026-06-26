@@ -700,7 +700,7 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
       {/* ------------------------------------------------------------------ */}
       {/* Page Header                                                          */}
       {/* ------------------------------------------------------------------ */}
-      <div className="bg-white pt-28 pb-8 px-6 lg:px-12 border-b border-[#ECECEC]">
+      <div className="bg-white pt-20 md:pt-28 pb-6 md:pb-8 px-4 sm:px-6 lg:px-12 border-b border-[#ECECEC]">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-xs text-[#666666] mb-4">
           <Link href="/" className="hover:text-[#004AAD] transition-colors">
@@ -718,7 +718,7 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
         </nav>
 
         <h1
-          className="text-4xl font-[var(--font-hero)] italic text-[#111111] mb-2"
+          className="text-2xl md:text-4xl font-[var(--font-hero)] italic text-[#111111] mb-2"
           style={{ fontFamily: "var(--font-hero, serif)" }}
         >
           {pageTitle}
@@ -732,7 +732,7 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
       {/* Sticky Toolbar                                                        */}
       {/* ------------------------------------------------------------------ */}
       <div className="bg-white border-b border-[#ECECEC] sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        <div className="px-6 lg:px-12 py-4 flex items-center gap-3 flex-wrap">
+        <div className="px-4 sm:px-6 lg:px-12 py-3 md:py-4 flex items-center gap-2 md:gap-3 flex-wrap">
           {/* Mobile filter toggle */}
           <button
             className="lg:hidden flex items-center gap-2 rounded-full border border-[#E8EAF2] text-[#111111] text-sm px-4 py-2.5 hover:border-[#004AAD] transition-colors"
@@ -753,7 +753,7 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
             placeholder="Search eyewear..."
             defaultValue={routerSearch}
             readOnly
-            className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-full px-4 py-2.5 text-sm w-56 text-[#111111] focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 outline-none cursor-default"
+            className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-full px-4 py-2.5 text-sm w-36 sm:w-56 text-[#111111] focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 outline-none cursor-default"
           />
 
           {/* Spacer */}
@@ -857,7 +857,7 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
       {/* ------------------------------------------------------------------ */}
       {/* Main Content                                                          */}
       {/* ------------------------------------------------------------------ */}
-      <div className="max-w-screen-2xl mx-auto px-6 lg:px-12 py-10 flex gap-8">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 py-6 md:py-10 flex gap-8">
         {/* Desktop Sidebar */}
         <aside className="hidden lg:block w-72 flex-shrink-0">
           <div className="bg-white border border-[#ECECEC] rounded-3xl p-6 space-y-2 sticky top-24">

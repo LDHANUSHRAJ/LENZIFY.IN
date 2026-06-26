@@ -339,12 +339,12 @@ export default function CheckoutPage() {
   const activeVisibleIndex = visibleSteps.findIndex(s => s.id === activeStep);
 
   return (
-    <div className="bg-[#F8F9FC] min-h-screen pt-28 pb-16">
-      <div className="max-w-6xl mx-auto px-6 lg:px-12">
+    <div className="bg-[#F8F9FC] min-h-screen pt-20 md:pt-28 pb-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-12">
         {/* Page Header */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-2">Checkout</p>
-          <h1 className="text-4xl font-[var(--font-hero)] italic text-[#111111]">Complete Your Order</h1>
+          <h1 className="text-2xl md:text-4xl font-[var(--font-hero)] italic text-[#111111]">Complete Your Order</h1>
         </div>
 
         {/* Step Indicator */}

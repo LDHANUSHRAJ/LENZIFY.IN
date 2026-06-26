@@ -37,7 +37,7 @@ function TopCategoriesStrip() {
   ];
 
   return (
-    <section className="bg-white py-10 px-6 border-b border-[#E8EAF2]">
+    <section className="bg-white py-8 px-4 sm:px-6 border-b border-[#E8EAF2]">
       <div className="max-w-5xl mx-auto">
         <div className="flex gap-3 overflow-x-auto no-scrollbar">
           {cats.map((cat, i) => (
@@ -106,18 +106,18 @@ function CollectionShowcase() {
   ];
 
   return (
-    <section className="py-20 md:py-28 px-6 bg-white">
+    <section className="py-12 md:py-20 px-4 sm:px-6 bg-white">
       <div className="max-w-7xl mx-auto lg:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-10 md:mb-16"
         >
-          <span className="text-xs font-semibold uppercase tracking-widest mb-4 block text-[#004AAD]">
+          <span className="text-xs font-semibold uppercase tracking-widest mb-3 block text-[#004AAD]">
             Collections
           </span>
-          <h2 className="font-serif italic text-4xl md:text-5xl text-[#111111]">
+          <h2 className="font-serif italic text-3xl md:text-4xl lg:text-5xl text-[#111111]">
             Explore Collections
           </h2>
           <p className="text-[#666666] text-sm mt-4 font-medium">
@@ -206,8 +206,8 @@ function ProductRow({
 
   if (loading) {
     return (
-      <section className={`py-20 md:py-28 ${gray ? "bg-[#F8F9FC]" : "bg-white"}`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-12">
+      <section className={`py-12 md:py-20 ${gray ? "bg-[#F8F9FC]" : "bg-white"}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((p) => (
               <div
@@ -224,19 +224,19 @@ function ProductRow({
   if (products.length === 0) return null;
 
   return (
-    <section className={`py-20 md:py-28 px-6 ${gray ? "bg-[#F8F9FC]" : "bg-white"}`}>
+    <section className={`py-12 md:py-20 px-4 sm:px-6 ${gray ? "bg-[#F8F9FC]" : "bg-white"}`}>
       <div className="max-w-7xl mx-auto lg:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="flex justify-between items-end mb-16"
+          className="flex justify-between items-end mb-10 md:mb-14"
         >
           <div>
             <span className="text-xs font-semibold uppercase tracking-widest mb-2 block text-[#004AAD]">
               {subtitle || "Curated"}
             </span>
-            <h2 className="font-serif italic text-4xl md:text-5xl text-[#111111]">
+            <h2 className="font-serif italic text-3xl md:text-4xl lg:text-5xl text-[#111111]">
               {title}
             </h2>
           </div>
@@ -272,7 +272,7 @@ function PremiumBrandBanner() {
 
   return (
     <section
-      className="py-20 md:py-28 px-6 relative overflow-hidden"
+      className="py-12 md:py-20 px-4 sm:px-6 relative overflow-hidden"
       style={{ background: "linear-gradient(135deg, #03173D 0%, #004AAD 60%, #009DFF 100%)" }}
     >
       {/* Subtle pattern overlay */}
@@ -289,10 +289,10 @@ function PremiumBrandBanner() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="text-xs font-semibold uppercase tracking-widest mb-4 block text-white/60">
+          <span className="text-xs font-semibold uppercase tracking-widest mb-3 block text-white/60">
             Premium Partners
           </span>
-          <h2 className="font-serif italic text-4xl md:text-5xl text-white mb-4">
+          <h2 className="font-serif italic text-3xl md:text-4xl lg:text-5xl text-white mb-4">
             Discover Premium Brands
           </h2>
           <p className="text-white/60 text-sm font-medium max-w-xl mx-auto">
@@ -391,8 +391,8 @@ function WhyLenzify() {
   ];
 
   return (
-    <section className="py-20 md:py-28 px-6 bg-white overflow-hidden">
-      <div className="max-w-7xl mx-auto lg:px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+    <section className="py-12 md:py-20 px-4 sm:px-6 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto lg:px-6 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
         <motion.div
           initial={{ opacity: 0, x: -40 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -431,10 +431,10 @@ function WhyLenzify() {
           <span className="text-xs font-semibold uppercase tracking-widest mb-4 block text-[#004AAD]">
             Why Choose Us
           </span>
-          <h2 className="font-serif italic text-4xl md:text-5xl text-[#111111] mb-4">
+          <h2 className="font-serif italic text-3xl md:text-4xl lg:text-5xl text-[#111111] mb-4">
             India&apos;s Most Trusted Optical Brand
           </h2>
-          <p className="text-[#666666] text-sm leading-relaxed mb-12 max-w-md">
+          <p className="text-[#666666] text-sm leading-relaxed mb-8 md:mb-12 max-w-md">
             From clinical eye tests to the latest smart eyewear, we combine cutting-edge
             technology with unmatched personal care.
           </p>
@@ -514,18 +514,18 @@ function Testimonials() {
   const next = () => setActive((p) => (p + 1) % reviews.length);
 
   return (
-    <section className="py-20 md:py-28 px-6 bg-[#F8F9FC]">
+    <section className="py-12 md:py-20 px-4 sm:px-6 bg-[#F8F9FC]">
       <div className="max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-12 md:mb-16"
+          className="text-center mb-8 md:mb-12"
         >
-          <span className="text-xs font-semibold uppercase tracking-widest mb-4 block text-[#004AAD]">
+          <span className="text-xs font-semibold uppercase tracking-widest mb-3 block text-[#004AAD]">
             Testimonials
           </span>
-          <h2 className="font-serif italic text-4xl md:text-5xl text-[#111111]">
+          <h2 className="font-serif italic text-3xl md:text-4xl lg:text-5xl text-[#111111]">
             What Our Customers Say
           </h2>
         </motion.div>
@@ -744,7 +744,7 @@ function NewsletterSection() {
   const [email, setEmail] = useState("");
   return (
     <section
-      className="py-20 md:py-28 px-6 relative overflow-hidden"
+      className="py-12 md:py-20 px-4 sm:px-6 relative overflow-hidden"
       style={{
         background: "linear-gradient(135deg, #03173D 0%, #004AAD 100%)",
       }}
@@ -762,14 +762,14 @@ function NewsletterSection() {
         <span className="text-xs font-semibold uppercase tracking-widest mb-4 block text-white/60">
           Newsletter
         </span>
-        <h2 className="font-serif italic text-4xl md:text-5xl text-white mb-4">
+        <h2 className="font-serif italic text-3xl md:text-4xl lg:text-5xl text-white mb-4">
           Get Exclusive Offers
         </h2>
-        <p className="text-white/60 text-sm font-medium mb-10 leading-relaxed">
+        <p className="text-white/60 text-sm font-medium mb-8 leading-relaxed">
           Join 10,000+ visionaries. Early access to new drops, member-only discounts, and
           insider style guides.
         </p>
-        <div className="flex gap-3 max-w-md mx-auto">
+        <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
           <input
             suppressHydrationWarning
             type="email"
@@ -793,7 +793,7 @@ function NewsletterSection() {
 // ─── Replace Lenses CTA ────────────────────────────────────────────────────────
 function ReplaceLensesCTA() {
   return (
-    <section className="py-20 md:py-28 px-6 bg-[#F8F9FC]">
+    <section className="py-12 md:py-20 px-4 sm:px-6 bg-[#F8F9FC]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -803,7 +803,7 @@ function ReplaceLensesCTA() {
         <span className="text-xs font-semibold uppercase tracking-widest mb-4 block text-[#004AAD]">
           Service
         </span>
-        <h2 className="font-serif italic text-4xl md:text-5xl text-[#111111] mb-4">
+        <h2 className="font-serif italic text-3xl md:text-4xl lg:text-5xl text-[#111111] mb-4">
           Replace Your Lenses
         </h2>
         <p className="text-[#666666] text-sm leading-relaxed max-w-xl mx-auto mb-10">

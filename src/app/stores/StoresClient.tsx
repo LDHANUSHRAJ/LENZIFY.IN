@@ -34,7 +34,7 @@ export default function StoresClient({ stores }: { stores: Store[] }) {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] pt-40 pb-20">
+      <section className="bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] pt-28 md:pt-40 pb-14 md:pb-20">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

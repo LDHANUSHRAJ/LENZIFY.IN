@@ -42,7 +42,7 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] pt-40 pb-28">
+      <section className="bg-gradient-to-br from-[#03173D] via-[#004AAD] to-[#009DFF] pt-28 md:pt-40 pb-16 md:pb-28">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 text-center">
           <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-4">Our Story</p>
           <h1 className="font-[var(--font-hero)] italic text-white text-5xl md:text-8xl leading-none mb-6">

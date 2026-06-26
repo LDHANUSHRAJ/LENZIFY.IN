@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-06-25T16:46:29.602Z",
+  "supabase_url": "https://lglknxmkgoixyhksfbjy.supabase.co",
+  "tables": [
+    {
+      "table": "orders",
+      "rows": 1,
+      "file": "C:\\Users\\Dhanu\\.gemini\\antigravity\\scratch\\lenzify\\backups\\2026-06-25T16-46-27\\orders.json"
+    },
+    {
+      "table": "order_items",
+      "rows": 1,
+      "file": "C:\\Users\\Dhanu\\.gemini\\antigravity\\scratch\\lenzify\\backups\\2026-06-25T16-46-27\\order_items.json"
+    },
+    {
+      "table": "order_status_history",
+      "rows": null,
+      "error": "[order_status_history] Could not find the table 'public.order_status_history' in the schema cache"
+    },
+    {
+      "table": "products",
+      "rows": 3,
+      "file": "C:\\Users\\Dhanu\\.gemini\\antigravity\\scratch\\lenzify\\backups\\2026-06-25T16-46-27\\products.json"
+    }
+  ]
+}

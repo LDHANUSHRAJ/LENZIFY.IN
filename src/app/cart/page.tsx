@@ -145,16 +145,16 @@ export default function CartPage() {
   return (
     <div className="bg-[#F8F9FC] min-h-screen pb-20">
       {/* Page title area */}
-      <div className="bg-white pt-32 pb-6 border-b border-[#E8EAF2]">
-        <main className="max-w-screen-2xl mx-auto px-8">
+      <div className="bg-white pt-24 md:pt-32 pb-6 border-b border-[#E8EAF2]">
+        <main className="max-w-screen-2xl mx-auto px-4 sm:px-8">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-2">Shopping cart</p>
-          <h1 className="text-5xl md:text-6xl font-[var(--font-hero)] italic text-[#111111] leading-tight">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-[var(--font-hero)] italic text-[#111111] leading-tight">
             Your Cart
           </h1>
         </main>
       </div>
 
-      <main className="max-w-screen-2xl mx-auto px-8 py-12">
+      <main className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-8 md:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Cart Items */}
           <div className="lg:col-span-8 space-y-4">
@@ -283,7 +283,7 @@ export default function CartPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6 }}
-                  className="py-40 text-center bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-16 space-y-6"
+                  className="py-20 md:py-40 text-center bg-white rounded-3xl border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)] p-8 md:p-16 space-y-6"
                 >
                   <div className="space-y-3">
                     <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD]">

@@ -51,7 +51,7 @@ export default function ProfileOrdersPage() {
 
   return (
     <div className="bg-surface text-brand-navy min-h-screen pt-24 font-sans">
-      <main className="max-w-6xl mx-auto px-8 py-12 lg:py-20 pb-32 space-y-20">
+      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8 md:py-12 lg:py-20 pb-24 md:pb-32 space-y-20">
         <header className="space-y-6">
            <Link href="/" className="inline-flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-brand-navy/30 hover:text-secondary transition-all group">
               <ArrowLeft size={14} className="group-hover:-translate-x-2 transition-transform" />
