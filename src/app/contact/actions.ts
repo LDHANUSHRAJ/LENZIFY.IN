@@ -53,8 +53,8 @@ export async function sendContactMessage(data: {
 
   try {
     const { error } = await resend.emails.send({
-      from: "Lenzify Contact <onboarding@resend.dev>",
-      to: process.env.CONTACT_RECIPIENT || "virtuosodhanush@gmail.com",
+      from: "Lenzify Contact <noreply@lenzify.in>",
+      to: "lenzify.in@gmail.com",
       replyTo: data.email,
       subject: `[Contact] ${data.subject} — ${data.name}`,
       html,
