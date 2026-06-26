@@ -9,6 +9,7 @@ import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { createClient } from "@/lib/supabase/client";
 import UserMenu from "./UserMenu";
+import NotificationBell from "./NotificationBell";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { getCart, getWishlist } from "@/lib/db/customer_actions";
 
@@ -461,6 +462,9 @@ export default function Navbar() {
               />
             </form>
           </div>
+
+          {/* Notifications */}
+          <NotificationBell />
 
           {/* Wishlist */}
           <Link href="/wishlist" className="relative group p-1 transition-transform hover:scale-110">

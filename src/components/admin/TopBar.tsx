@@ -2,16 +2,39 @@
 
 import { Search, Bell, Settings, Command, Plus, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 export default function TopBar() {
   const { user } = useAuth();
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("read", false);
+      setUnreadCount(count || 0);
+    };
+
+    fetchUnread();
+
+    const channel = supabase
+      .channel("admin_notifs_count")
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, fetchUnread)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,13 +87,18 @@ export default function TopBar() {
           Add Product
         </Link>
 
-        <button
+        <Link
+          href="/admin/notifications"
           className="relative p-2 rounded-lg text-[#888888] hover:bg-[#F4F6F8] hover:text-[#111111] transition-colors"
           title="Notifications"
         >
           <Bell size={17} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-        </button>
+          {unreadCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 min-w-[8px] h-2 flex items-center justify-center rounded-full bg-red-500 border-2 border-white text-[7px] font-bold text-white px-0.5">
+              {unreadCount > 9 ? "9+" : unreadCount > 1 ? unreadCount : ""}
+            </span>
+          )}
+        </Link>
 
         <Link
           href="/admin/settings"
