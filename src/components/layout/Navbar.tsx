@@ -259,6 +259,7 @@ export default function Navbar() {
   return (
     <header
       ref={navRef}
+      style={{ maxWidth: "100vw" }}
       className={cn(
         "fixed top-0 w-full z-50 transition-all duration-500 print:hidden",
         isWhiteMode

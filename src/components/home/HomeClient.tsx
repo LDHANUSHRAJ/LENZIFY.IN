@@ -278,7 +278,7 @@ function PremiumBrandBanner() {
       {/* Subtle pattern overlay */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-white/3 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2" />
       </div>
 
@@ -394,8 +394,8 @@ function WhyLenzify() {
     <section className="py-12 md:py-20 px-4 sm:px-6 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto lg:px-6 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
         <motion.div
-          initial={{ opacity: 0, x: -40 }}
-          whileInView={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.9 }}
           className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden border border-[#ECECEC] shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
@@ -423,8 +423,8 @@ function WhyLenzify() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, x: 40 }}
-          whileInView={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.9, delay: 0.2 }}
         >

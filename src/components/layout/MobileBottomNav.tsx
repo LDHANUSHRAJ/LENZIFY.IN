@@ -24,7 +24,7 @@ export default function MobileBottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white border-t border-[#E8EAF2] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white border-t border-[#E8EAF2] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]" style={{ maxWidth: "100vw", width: "100vw" }}>
       <div className="flex items-center justify-around px-1 pt-1.5 pb-[max(env(safe-area-inset-bottom,6px),6px)]">
         {tabs.map(({ href, icon: Icon, label, badge }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);

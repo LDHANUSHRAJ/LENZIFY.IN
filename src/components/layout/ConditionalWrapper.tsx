@@ -28,7 +28,7 @@ export default function ConditionalWrapper({ children }: { children: React.React
   return (
     <SmoothScroll>
       <Navbar />
-      <main className="min-h-screen pb-[60px] lg:pb-0">
+      <main className="min-h-screen pb-[60px] lg:pb-0 overflow-x-hidden">
         {children}
       </main>
       <Footer />
