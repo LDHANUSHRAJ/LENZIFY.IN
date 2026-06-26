@@ -175,11 +175,20 @@ export async function updateOrderStatus(
 
   const { data: order } = await adminSupabase
     .from("orders")
-    .select("*, order_items(*), users(email, name)")
+    .select("*, order_items(*)")
     .eq("id", orderId)
     .single();
 
   if (!order) return { error: "Order not found" };
+
+  // Fetch customer email from auth
+  let customerEmail: string | null = null;
+  let customerName = "Customer";
+  try {
+    const { data: userData } = await adminSupabase.auth.admin.getUserById(order.user_id);
+    customerEmail = userData?.user?.email ?? null;
+    customerName = userData?.user?.user_metadata?.full_name || userData?.user?.email?.split("@")[0] || "Customer";
+  } catch {}
 
   const oldStatus = order.status;
 
@@ -223,21 +232,52 @@ export async function updateOrderStatus(
     });
   } catch {}
 
-  // Email notification (fire-and-forget)
-  try {
-    const customerEmail = (order.users as any)?.email;
-    const customerName = (order.users as any)?.name || "Customer";
-    if (customerEmail) {
-      const { sendEmail, getOrderStatusUpdateHtml } = await import("@/lib/mail");
+  // Email notification via Resend (fire-and-forget)
+  if (customerEmail) {
+    try {
+      const { Resend } = await import("resend");
+      const resend = new Resend(process.env.RESEND_API_KEY);
       const statusLabel = status.replace(/_/g, " ");
-      await sendEmail({
+      const displayStatus = statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1);
+      const shortId = orderId.slice(0, 8).toUpperCase();
+
+      const trackingSection = trackingId
+        ? `<p style="margin:8px 0;color:#333"><strong>Tracking ID:</strong> ${trackingId}${courier ? ` (${courier})` : ""}</p>`
+        : "";
+      const deliverySection = estimatedDeliveryDate
+        ? `<p style="margin:8px 0;color:#333"><strong>Estimated Delivery:</strong> ${estimatedDeliveryDate}</p>`
+        : "";
+      const noteSection = note
+        ? `<p style="margin:8px 0;color:#555;font-style:italic">${note}</p>`
+        : "";
+
+      const html = `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333">
+          <div style="background:#03173D;padding:24px;text-align:center;border-radius:12px 12px 0 0">
+            <h1 style="color:#fff;margin:0;font-size:24px;font-style:italic">LENZIFY</h1>
+            <p style="color:#fff;opacity:0.7;margin:4px 0 0;font-size:13px">Order Update</p>
+          </div>
+          <div style="background:#fff;padding:32px;border:1px solid #eee;border-top:none;border-radius:0 0 12px 12px">
+            <p style="color:#333">Hi ${customerName},</p>
+            <p style="color:#333">Your order <strong>#${shortId}</strong> has been updated to:</p>
+            <div style="background:#f0f5ff;border-left:4px solid #004AAD;padding:12px 16px;margin:16px 0;border-radius:4px">
+              <strong style="color:#004AAD;font-size:16px">${displayStatus}</strong>
+            </div>
+            ${trackingSection}${deliverySection}${noteSection}
+            <p style="color:#333;margin-top:24px">Thank you for shopping with Lenzify!</p>
+          </div>
+        </div>
+      `;
+
+      await resend.emails.send({
+        from: "Lenzify Orders <noreply@lenzify.in>",
         to: customerEmail,
-        subject: `Order #${orderId.slice(0, 8).toUpperCase()} — ${statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1)}`,
-        html: getOrderStatusUpdateHtml(orderId, status, customerName, estimatedDeliveryDate, trackingId, courier, note),
+        subject: `Order #${shortId} — ${displayStatus}`,
+        html,
       });
+    } catch (mailErr) {
+      console.error("[ORDER] Status email failed:", mailErr);
     }
-  } catch (mailErr) {
-    console.error("[ORDER] Status email failed:", mailErr);
   }
 
   revalidatePath("/admin/orders");

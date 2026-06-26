@@ -1,7 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
   Package, User, MapPin, CreditCard, Truck,
-  ChevronLeft, FileText, Download, AlertTriangle, AlertCircle, Clock,
+  ChevronLeft, FileText, Download, AlertTriangle, AlertCircle, Clock, CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import { updateOrderStatus } from "@/lib/db/order_actions";
@@ -44,15 +44,16 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function OrderDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string }> }) {
   const { id } = await params;
+  const { saved } = await searchParams;
   const supabase = await createClient();
+  const adminSupabase = await createAdminClient();
 
   const { data: order, error } = await supabase
     .from("orders")
     .select(`
       *,
-      users(name, email, phone),
       addresses(*),
       order_items(*, products(name, brand, product_images(*)), lenses(name)),
       prescriptions(*),
@@ -75,7 +76,20 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   }
 
   const addr = order.addresses as any;
-  const user = order.users as any;
+
+  // Fetch customer info from auth (not public.users)
+  let user: { name: string; email: string; phone?: string } = { name: "Customer", email: "" };
+  try {
+    const { data: userData } = await adminSupabase.auth.admin.getUserById(order.user_id);
+    if (userData?.user) {
+      user = {
+        name: userData.user.user_metadata?.full_name || userData.user.email?.split("@")[0] || "Customer",
+        email: userData.user.email || "",
+        phone: userData.user.user_metadata?.phone,
+      };
+    }
+  } catch {}
+
   const history: any[] = ((order as any).order_status_history || []).sort(
     (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
@@ -87,6 +101,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="space-y-6">
+      {/* Save success banner */}
+      {saved && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-5 py-3 flex items-center gap-2 text-emerald-700 text-sm font-semibold">
+          <CheckCircle2 size={16} /> Order updated and customer notified.
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -119,6 +140,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       <form
         action={async (formData) => {
           "use server";
+          const { redirect } = await import("next/navigation");
           const status = formData.get("status") as string;
           const payment_status = formData.get("payment_status") as string;
           const tracking_id = formData.get("tracking_id") as string;
@@ -129,6 +151,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             id, status, payment_status || undefined, tracking_id || undefined,
             courier || undefined, estimated_delivery_date || undefined, note || undefined
           );
+          redirect(`/admin/orders/${id}?saved=1`);
         }}
         className="bg-white border border-[#ECEFF5] rounded-2xl p-5"
       >
@@ -192,16 +215,17 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
         <div className="flex gap-2 mt-4 pt-4 border-t border-[#ECEFF5] justify-end">
           {order.payment_status === "paid" && (
-            <form action={async () => {
-              "use server";
-              const { refundOrder } = await import("@/app/admin/orders/actions");
-              await refundOrder(id);
-            }}>
-              <button type="submit"
-                className="px-4 py-2.5 rounded-lg bg-red-50 text-red-600 border border-red-100 text-sm font-semibold hover:bg-red-100 transition-colors flex items-center gap-2">
-                <AlertCircle size={14} /> Issue Refund
-              </button>
-            </form>
+            <button
+              type="submit"
+              formAction={async () => {
+                "use server";
+                const { refundOrder } = await import("@/app/admin/orders/actions");
+                await refundOrder(id);
+              }}
+              className="px-4 py-2.5 rounded-lg bg-red-50 text-red-600 border border-red-100 text-sm font-semibold hover:bg-red-100 transition-colors flex items-center gap-2"
+            >
+              <AlertCircle size={14} /> Issue Refund
+            </button>
           )}
           <button type="submit"
             className="px-6 py-2.5 rounded-lg bg-[#004AAD] text-white text-sm font-semibold hover:bg-[#003d99] transition-colors">
