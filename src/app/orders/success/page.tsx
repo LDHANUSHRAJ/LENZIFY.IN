@@ -1,118 +1,248 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { CheckCircle2, Package, ArrowRight, ShoppingBag, MapPin, Printer } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckCircle2, Package, ShoppingBag, ArrowRight, Truck } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("id");
+  const [order, setOrder] = useState<any>(null);
+  const [phase, setPhase] = useState<"burst" | "details">("burst");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setPhase("details"), 2600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!orderId) return;
+    const supabase = createClient();
+    supabase
+      .from("orders")
+      .select("*, order_items(*, products(name, product_images(image_url)))")
+      .eq("id", orderId)
+      .single()
+      .then(({ data }) => setOrder(data));
+  }, [orderId]);
 
   return (
-    <main className="max-w-4xl mx-auto px-4 sm:px-8 py-12 md:py-20 pb-24 md:pb-32 space-y-10 md:space-y-16">
-      <header className="text-center space-y-8">
-        <motion.div
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", damping: 15 }}
-          className="w-24 h-24 bg-emerald-500 rounded-full mx-auto flex items-center justify-center text-white shadow-[0_20px_40px_rgba(16,185,129,0.3)]"
-        >
-          <CheckCircle2 size={48} />
-        </motion.div>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-start pt-24 pb-16 px-4">
+      <AnimatePresence mode="wait">
+        {phase === "burst" ? (
+          /* ── BURST ANIMATION ── */
+          <motion.div
+            key="burst"
+            className="flex flex-col items-center justify-center flex-1 min-h-[60vh]"
+            exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.4 } }}
+          >
+            {/* Rings */}
+            {[1, 2, 3].map((i) => (
+              <motion.div
+                key={i}
+                className="absolute rounded-full border-2 border-[#004AAD]/20"
+                initial={{ width: 80, height: 80, opacity: 0.8 }}
+                animate={{ width: 80 + i * 120, height: 80 + i * 120, opacity: 0 }}
+                transition={{ duration: 1.6, delay: i * 0.25, ease: "easeOut" }}
+                style={{ position: "absolute" }}
+              />
+            ))}
 
-        <div className="space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.6em] text-emerald-500 italic">Order Confirmed</p>
-          <h1 className="text-5xl md:text-7xl font-serif italic tracking-tight text-brand-navy uppercase leading-none">
-            Order <span className="text-emerald-500">Placed</span>
-          </h1>
-          <p className="text-[10px] uppercase font-bold tracking-[0.3em] text-brand-navy/30 italic">Order ID: #{orderId?.slice(0, 12)}</p>
-        </div>
-      </header>
-
-      <section className="bg-white border border-brand-navy/5 p-12 md:p-16 shadow-2xl space-y-12 relative overflow-hidden group print:shadow-none print:border-none">
-        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform duration-1000">
-          <Package size={80} />
-        </div>
-
-        <div className="space-y-8">
-          <h3 className="text-xl font-serif italic text-brand-navy font-black tracking-tight uppercase border-b border-brand-navy/5 pb-6">Order Summary</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-brand-background rounded-full flex items-center justify-center text-secondary">
-                  <ShoppingBag size={18} />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-brand-navy/30">Order Status</p>
-                  <p className="text-[11px] font-bold text-brand-navy uppercase italic">Confirmed — Being prepared</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-brand-background rounded-full flex items-center justify-center text-secondary">
-                  <MapPin size={18} />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-brand-navy/30">Delivery Address</p>
-                  <p className="text-[11px] font-bold text-brand-navy uppercase italic">Address saved at checkout</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-brand-background/30 p-8 space-y-4 border border-brand-navy/5">
-              <p className="text-[9px] font-black uppercase tracking-widest text-brand-navy/20 text-center">What's Next</p>
-              <p className="text-[10px] font-bold text-brand-navy leading-relaxed italic text-center">
-                You'll receive an email with tracking details once your order is shipped from our lab.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="pt-8 border-t border-brand-navy/5 flex flex-col md:flex-row gap-6 justify-between items-center">
-          <div className="flex gap-4">
-            <button
-              onClick={() => window.print()}
-              className="print:hidden flex items-center gap-2 py-4 px-8 bg-brand-navy text-white text-[9px] font-black uppercase tracking-widest hover:bg-secondary transition-all"
+            {/* Check circle */}
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", damping: 12, stiffness: 200, delay: 0.1 }}
+              className="relative z-10 w-28 h-28 rounded-full bg-gradient-to-br from-[#004AAD] to-[#03173D] flex items-center justify-center shadow-[0_20px_60px_rgba(0,74,173,0.4)]"
             >
-              <Printer size={12} />
-              Print Receipt
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[9px] font-black uppercase tracking-widest text-brand-navy/30 italic">Order Received</span>
-          </div>
-        </div>
-      </section>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", damping: 10, delay: 0.35 }}
+              >
+                <CheckCircle2 size={52} className="text-white" />
+              </motion.div>
+            </motion.div>
 
-      <footer className="print:hidden flex flex-col md:flex-row justify-center gap-8 md:gap-16 pt-12">
-        <Link
-          href="/orders"
-          className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-navy hover:text-secondary transition-all flex items-center gap-4"
-        >
-          <span>View My Orders</span>
-          <ArrowRight size={14} />
-        </Link>
-        <Link
-          href="/products"
-          className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary hover:text-brand-navy transition-all flex items-center gap-4"
-        >
-          <span>Continue Shopping</span>
-          <ShoppingBag size={14} />
-        </Link>
-      </footer>
-    </main>
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="text-center mt-10 space-y-3"
+            >
+              <p className="text-xs font-bold uppercase tracking-[0.4em] text-[#004AAD]">
+                Order Confirmed
+              </p>
+              <h1 className="text-4xl sm:text-6xl font-serif italic font-black text-[#03173D] leading-none">
+                Order Placed
+                <br />
+                <span className="text-[#004AAD]">Successfully!</span>
+              </h1>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.9 }}
+                className="text-[#666666] text-sm mt-2"
+              >
+                Preparing your order details…
+              </motion.p>
+            </motion.div>
+
+            {/* Floating particles */}
+            {[...Array(8)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-2 h-2 rounded-full bg-[#004AAD]"
+                initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                animate={{
+                  x: (Math.cos((i / 8) * Math.PI * 2) * 140),
+                  y: (Math.sin((i / 8) * Math.PI * 2) * 140),
+                  opacity: 0,
+                  scale: 0,
+                }}
+                transition={{ duration: 1.2, delay: 0.2 + i * 0.05, ease: "easeOut" }}
+                style={{ position: "absolute" }}
+              />
+            ))}
+          </motion.div>
+        ) : (
+          /* ── ORDER DETAILS ── */
+          <motion.div
+            key="details"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full max-w-2xl space-y-6"
+          >
+            {/* Header */}
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#004AAD] to-[#03173D] flex items-center justify-center mx-auto shadow-[0_10px_30px_rgba(0,74,173,0.3)]">
+                <CheckCircle2 size={30} className="text-white" />
+              </div>
+              <p className="text-xs font-bold uppercase tracking-[0.4em] text-[#004AAD] mt-4">
+                Order Confirmed
+              </p>
+              <h1 className="text-3xl sm:text-4xl font-serif italic text-[#03173D]">
+                Order Placed Successfully!
+              </h1>
+              {orderId && (
+                <p className="text-[#999999] text-xs font-mono">
+                  #{orderId.slice(0, 12).toUpperCase()}
+                </p>
+              )}
+            </div>
+
+            {/* Order items */}
+            {order?.order_items?.length > 0 && (
+              <div className="bg-white rounded-2xl border border-[#ECECEC] shadow-[0_8px_24px_rgba(0,0,0,0.06)] overflow-hidden">
+                <div className="px-6 py-4 border-b border-[#ECECEC] flex items-center gap-2">
+                  <Package size={16} className="text-[#004AAD]" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#111111]">
+                    Items Ordered
+                  </span>
+                </div>
+                <div className="divide-y divide-[#F0F0F0]">
+                  {order.order_items.map((item: any) => (
+                    <div key={item.id} className="flex items-center gap-4 px-6 py-4">
+                      <div className="w-14 h-14 bg-[#F8F9FC] rounded-xl border border-[#ECECEC] overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        {item.products?.product_images?.[0]?.image_url ? (
+                          <img
+                            src={item.products.product_images[0].image_url}
+                            alt={item.products?.name}
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <ShoppingBag size={20} className="text-[#CCCCCC]" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-[#111111] text-sm truncate">
+                          {item.products?.name || "Product"}
+                        </p>
+                        <p className="text-[#999999] text-xs">Qty: {item.quantity}</p>
+                      </div>
+                      <p className="font-bold text-[#111111] text-sm flex-shrink-0">
+                        ₹{(item.price * item.quantity).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-6 py-4 bg-[#F8F9FC] flex justify-between items-center border-t border-[#ECECEC]">
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#666666]">
+                    Total Paid
+                  </span>
+                  <span className="text-lg font-bold text-[#03173D]">
+                    ₹{(order.total_price || 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Status info */}
+            <div className="bg-gradient-to-br from-[#03173D] to-[#004AAD] rounded-2xl p-6 text-white space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
+                  <Truck size={18} className="text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">What happens next?</p>
+                  <p className="text-white/70 text-xs">Your order is now being processed</p>
+                </div>
+              </div>
+              <div className="space-y-2.5 pl-2">
+                {[
+                  "Our team will confirm and prepare your frame",
+                  "Lenses will be custom-manufactured for your prescription",
+                  "Quality check — then shipped to your address",
+                  "You'll get email updates at every step",
+                ].map((step, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <div className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-[10px] font-bold">{i + 1}</span>
+                    </div>
+                    <p className="text-white/80 text-xs leading-relaxed">{step}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/orders"
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-[#03173D] text-white rounded-full font-semibold text-sm hover:bg-[#004AAD] transition-colors"
+              >
+                <Package size={16} />
+                View My Orders
+              </Link>
+              <Link
+                href="/products"
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 border border-[#ECECEC] text-[#111111] rounded-full font-semibold text-sm hover:border-[#004AAD] hover:text-[#004AAD] transition-colors"
+              >
+                Continue Shopping
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
 export default function OrderSuccessPage() {
   return (
-    <div className="bg-surface text-brand-navy min-h-screen pt-24 font-sans">
-      <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-brand-navy/40 text-sm">Loading your order...</div>}>
-        <SuccessContent />
-      </Suspense>
-    </div>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="w-10 h-10 border-2 border-[#03173D] border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <SuccessContent />
+    </Suspense>
   );
 }
