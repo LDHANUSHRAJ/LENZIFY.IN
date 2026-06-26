@@ -51,8 +51,13 @@ export async function sendContactMessage(data: {
     </div>
   `;
 
+  if (!process.env.RESEND_API_KEY) {
+    console.error("[CONTACT] RESEND_API_KEY is not set");
+    return { error: "DEBUG: RESEND_API_KEY missing from environment." };
+  }
+
   try {
-    const { error } = await resend.emails.send({
+    const { data: sent, error } = await resend.emails.send({
       from: "Lenzify Contact <onboarding@resend.dev>",
       to: "lenzify.in@gmail.com",
       replyTo: data.email,
@@ -61,13 +66,14 @@ export async function sendContactMessage(data: {
     });
 
     if (error) {
-      console.error("[CONTACT] Resend error:", error);
-      return { error: "Failed to send message. Please try again or call us directly." };
+      console.error("[CONTACT] Resend error:", JSON.stringify(error));
+      return { error: `DEBUG: ${error.message || JSON.stringify(error)}` };
     }
 
+    console.log("[CONTACT] Sent OK, id:", sent?.id);
     return { success: true };
   } catch (err: any) {
     console.error("[CONTACT] Unexpected error:", err.message);
-    return { error: "Failed to send message. Please try again or call us directly." };
+    return { error: `DEBUG: ${err.message}` };
   }
 }
