@@ -12,7 +12,6 @@ import { validateCheckoutAddress, sanitizeErrorMessage } from "@/lib/validation"
 import { applyCoupon, incrementCouponUsage } from "@/lib/db/coupon_actions";
 import toast from "react-hot-toast";
 import {
-  Package,
   ChevronRight,
   MapPin,
   FileText,
@@ -41,7 +40,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [orderProcessing, setOrderProcessing] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState<"upi" | "cod">("upi");
+  const [paymentMethod] = useState<"upi">("upi");
 
   const [addressData, setAddressData] = useState({
     name: "",
@@ -159,43 +158,7 @@ export default function CheckoutPage() {
     const tax = discountedSubtotal * 0.18;
     const totalAmount = discountedSubtotal + tax;
 
-    // CASE 1: Cash on Delivery
-    if (paymentMethod === "cod") {
-      try {
-        const orderRes = await placeOrder({
-          items: cartItems.map(item => ({
-            id: item.product_id,
-            quantity: item.quantity,
-            price: item.price,
-            lens_id: item.lens_id,
-            prescription_json: item.prescription_json || (prescription.left_eye ? {
-              od_sph: prescription.right_eye,
-              os_sph: prescription.left_eye,
-              pd: prescription.pd
-            } : null)
-          })),
-          total_price: totalAmount,
-          address: addressData,
-          prescription: (prescription.left_eye || prescription.file_url) ? prescription : undefined,
-          payment: { id: `cod_${Date.now()}`, method: "cod" }
-        });
-
-        if (orderRes.success) {
-          if (couponId) await incrementCouponUsage(couponId);
-          router.push(`/orders/success?id=${orderRes.order_id}`);
-        } else {
-          toast.error(sanitizeErrorMessage(orderRes.error || ""));
-        }
-      } catch (e) {
-        console.error("COD Error:", e);
-        toast.error("Failed to place your order. Please try again.");
-      } finally {
-        setOrderProcessing(false);
-      }
-      return;
-    }
-
-    // CASE 2: UPI / Razorpay Flow
+    // UPI / Razorpay Flow
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -607,26 +570,6 @@ export default function CheckoutPage() {
                         <p className="text-[#666666] text-xs mt-0.5">Instant payment via Razorpay</p>
                       </button>
 
-                      <button
-                        onClick={() => setPaymentMethod("cod")}
-                        className={cn(
-                          "p-5 border-2 rounded-2xl text-left transition-all",
-                          paymentMethod === "cod"
-                            ? "border-[#03173D] bg-[#F0F4FF]"
-                            : "border-[#ECECEC] hover:border-[#E8EAF2] bg-white"
-                        )}
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <Package size={22} className={paymentMethod === "cod" ? "text-[#03173D]" : "text-[#666666]"} />
-                          {paymentMethod === "cod" && (
-                            <div className="w-5 h-5 rounded-full bg-[#03173D] flex items-center justify-center">
-                              <CheckCircle2 size={12} className="text-white" />
-                            </div>
-                          )}
-                        </div>
-                        <p className="font-semibold text-[#111111] text-sm">Cash on Delivery</p>
-                        <p className="text-[#666666] text-xs mt-0.5">Pay when your order arrives</p>
-                      </button>
                     </div>
 
                     <p className="text-[#666666] text-xs leading-relaxed">
@@ -647,11 +590,7 @@ export default function CheckoutPage() {
                       onClick={handlePayment}
                       className="flex items-center justify-center gap-2 bg-[#03173D] text-white rounded-full px-8 py-3 font-semibold hover:bg-[#004AAD] transition-all flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {orderProcessing
-                        ? "Processing..."
-                        : paymentMethod === "upi"
-                        ? "Pay Now"
-                        : "Place Order (COD)"}
+                      {orderProcessing ? "Processing..." : "Pay Now"}
                       {!orderProcessing && <ArrowRight size={16} />}
                     </button>
                   </div>
