@@ -102,12 +102,12 @@ export default function AdminCategoriesPage() {
                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <button 
-                           onClick={async () => { await toggleCategoryStatus(category.id, category.is_active); fetchCategories(); }}
+                           onClick={async () => { await toggleCategoryStatus(category.id, category.is_enabled); fetchCategories(); }}
                            className={cn("flex items-center gap-2 px-3 py-1 border transition-all text-[9px] font-bold uppercase tracking-[0.2em] italic", 
-                             category.is_active ? "border-secondary/20 bg-secondary/5 text-secondary hover:bg-red-50 hover:text-red-500" : "border-brand-navy/20 text-brand-navy/30 hover:bg-emerald-50 hover:text-emerald-600"
+                             category.is_enabled ? "border-secondary/20 bg-secondary/5 text-secondary hover:bg-red-50 hover:text-red-500" : "border-brand-navy/20 text-brand-navy/30 hover:bg-emerald-50 hover:text-emerald-600"
                            )}
                         >
-                           {category.is_active ? <><CheckCircle2 size={12} /> Operational</> : <><XCircle size={12} /> Deactivated</>}
+                           {category.is_enabled ? <><CheckCircle2 size={12} /> Operational</> : <><XCircle size={12} /> Deactivated</>}
                         </button>
                     </div>
                     <Link href={`/category/${category.slug}`} target="_blank" className="text-[8px] font-bold uppercase tracking-widest text-brand-navy/20 hover:text-secondary transition-colors italic border-b border-transparent hover:border-secondary/20">Access Public Node</Link>

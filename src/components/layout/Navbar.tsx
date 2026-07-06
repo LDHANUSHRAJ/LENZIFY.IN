@@ -180,7 +180,7 @@ export default function Navbar() {
         .from("categories")
         .select("name, slug")
         .eq("type", "brand")
-        .eq("is_active", true)
+        .eq("is_enabled", true)
         .order("name", { ascending: true });
 
       if (data && data.length > 0) {

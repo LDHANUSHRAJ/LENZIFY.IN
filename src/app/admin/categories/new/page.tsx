@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function NewCategoryPage() {
   const supabase = await createClient();
-  const { data: categories } = await supabase.from("categories").select("id, name").eq("is_active", true);
+  const { data: categories } = await supabase.from("categories").select("id, name").eq("is_enabled", true);
 
   return (
     <div className="space-y-12">
@@ -118,7 +118,7 @@ export default async function NewCategoryPage() {
              <div className="space-y-4">
                 <label className="flex items-center justify-between p-4 border border-white/5 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group">
                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">Node Active</span>
-                   <input type="checkbox" name="is_active" value="true" defaultChecked className="w-4 h-4 accent-secondary" />
+                   <input type="checkbox" name="is_enabled" value="true" defaultChecked className="w-4 h-4 accent-secondary" />
                 </label>
                 <label className="flex items-center justify-between p-4 border border-white/5 bg-white/5 hover:bg-white/10 transition-all cursor-pointer group">
                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">Featured Designation</span>

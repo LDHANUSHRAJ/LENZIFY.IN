@@ -12,7 +12,7 @@ export async function createCategory(formData: FormData) {
   const image_url = formData.get("image_url") as string;
   const type = formData.get("type") as string || "product";
   const is_featured = formData.get("is_featured") === "true";
-  const is_active = formData.get("is_active") === "true";
+  const is_enabled = formData.get("is_enabled") === "true";
   const parent_id_val = formData.get("parent_id") as string;
   const parent_id = parent_id_val ? parseInt(parent_id_val) : null;
   const sort_order = parseInt(formData.get("sort_order") as string || "0");
@@ -23,7 +23,7 @@ export async function createCategory(formData: FormData) {
     image_url,
     type,
     is_featured,
-    is_active,
+    is_enabled,
     parent_id,
     sort_order
   });
@@ -49,7 +49,7 @@ export async function updateCategory(id: number, formData: FormData) {
     image_url: formData.get("image_url") as string,
     type: formData.get("type") as string || "product",
     is_featured: formData.get("is_featured") === "true",
-    is_active: formData.get("is_active") === "true",
+    is_enabled: formData.get("is_enabled") === "true",
     parent_id: parent_id_val ? parseInt(parent_id_val) : null,
     sort_order: parseInt(formData.get("sort_order") as string || "0")
   };
@@ -81,7 +81,7 @@ export async function toggleCategoryStatus(id: number, currentStatus: boolean) {
   const supabase = await createClient();
   const { error } = await supabase
     .from("categories")
-    .update({ is_active: !currentStatus })
+    .update({ is_enabled: !currentStatus })
     .eq("id", id);
     
   if (error) {
