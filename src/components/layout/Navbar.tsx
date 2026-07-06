@@ -50,6 +50,7 @@ export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState<{ id: string; name: string }[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { user } = useAuth();
@@ -235,6 +236,24 @@ export default function Navbar() {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setSearchSuggestions([]);
+      return;
+    }
+    const handle = setTimeout(async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("id, name")
+        .eq("is_enabled", true)
+        .ilike("name", `%${q}%`)
+        .limit(5);
+      setSearchSuggestions(data || []);
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [searchQuery, supabase]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -242,8 +261,17 @@ export default function Navbar() {
       setIsSearchOpen(false);
       setIsMobileMenuOpen(false);
       setSearchQuery("");
+      setSearchSuggestions([]);
       setActiveMenu(null);
     }
+  };
+
+  const goToSuggestion = (product: { id: string; name: string }) => {
+    router.push(`/product/${product.id}`);
+    setIsSearchOpen(false);
+    setIsMobileMenuOpen(false);
+    setSearchQuery("");
+    setSearchSuggestions([]);
   };
 
   const toggleMenu = (menu: string) => {
@@ -424,43 +452,60 @@ export default function Navbar() {
         {/* Right Side Actions */}
         <div className="flex items-center gap-2 sm:gap-6">
           {/* Search */}
-          <div
-            className={cn(
-              "hidden md:flex items-center transition-all duration-500",
-              isSearchOpen
-                ? isWhiteMode
-                  ? "w-48 border-b border-[#E8EAF2]"
-                  : "w-48 border-b border-white/30"
-                : "w-8 border-b border-transparent"
-            )}
-          >
-            <button
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
+          <div className="hidden md:block relative">
+            <div
               className={cn(
-                "transition-colors p-1 flex items-center",
-                isSearchOpen ? "text-[#004AAD]" : iconColor
+                "flex items-center transition-all duration-500",
+                isSearchOpen
+                  ? isWhiteMode
+                    ? "w-48 border-b border-[#E8EAF2]"
+                    : "w-48 border-b border-white/30"
+                  : "w-8 border-b border-transparent"
               )}
-              suppressHydrationWarning
             >
-              <span className="material-symbols-outlined text-2xl">search</span>
-            </button>
-            <form
-              onSubmit={handleSearch}
-              className={cn("flex-grow", !isSearchOpen && "hidden")}
-            >
-              <input
-                type="text"
-                placeholder="Product Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+              <button
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
                 className={cn(
-                  "bg-transparent border-none focus:ring-0 text-[10px] uppercase font-bold tracking-widest w-full px-2",
-                  isWhiteMode
-                    ? "text-[#111111] placeholder:text-[#999999]"
-                    : "text-white placeholder:text-white/30"
+                  "transition-colors p-1 flex items-center",
+                  isSearchOpen ? "text-[#004AAD]" : iconColor
                 )}
-              />
-            </form>
+                suppressHydrationWarning
+              >
+                <span className="material-symbols-outlined text-2xl">search</span>
+              </button>
+              <form
+                onSubmit={handleSearch}
+                className={cn("flex-grow", !isSearchOpen && "hidden")}
+              >
+                <input
+                  type="text"
+                  placeholder="Product Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={cn(
+                    "bg-transparent border-none focus:ring-0 text-[10px] uppercase font-bold tracking-widest w-full px-2",
+                    isWhiteMode
+                      ? "text-[#111111] placeholder:text-[#999999]"
+                      : "text-white placeholder:text-white/30"
+                  )}
+                />
+              </form>
+            </div>
+
+            {isSearchOpen && searchSuggestions.length > 0 && (
+              <div className="absolute right-0 top-full mt-3 w-72 bg-white rounded-2xl border border-[#ECEFF5] shadow-[0_20px_50px_rgba(0,0,0,0.12)] overflow-hidden z-50">
+                {searchSuggestions.map((product) => (
+                  <button
+                    key={product.id}
+                    onClick={() => goToSuggestion(product)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-medium text-[#333333] hover:bg-[#F8F9FC] transition-colors border-b border-[#F1F2F6] last:border-b-0"
+                  >
+                    <span className="material-symbols-outlined text-base text-[#999999]">search</span>
+                    <span className="truncate">{product.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Notifications */}
@@ -765,6 +810,20 @@ export default function Navbar() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </form>
+                {searchSuggestions.length > 0 && (
+                  <div className="mt-3 bg-[#F8F9FC] rounded-2xl border border-[#ECEFF5] overflow-hidden">
+                    {searchSuggestions.map((product) => (
+                      <button
+                        key={product.id}
+                        onClick={() => goToSuggestion(product)}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-medium text-[#333333] hover:bg-white transition-colors border-b border-[#ECEFF5] last:border-b-0"
+                      >
+                        <span className="material-symbols-outlined text-base text-[#999999]">search</span>
+                        <span className="truncate">{product.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Mobile Links */}
