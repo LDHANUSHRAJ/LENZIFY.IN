@@ -14,6 +14,8 @@ export default async function SettingsPage() {
       email={user.email ?? ""}
       currentName={user.user_metadata?.name ?? ""}
       currentPhone={user.user_metadata?.phone ?? ""}
+      notifyOrderUpdates={user.user_metadata?.notify_order_updates ?? true}
+      notifyOffers={user.user_metadata?.notify_offers ?? true}
     />
   );
 }

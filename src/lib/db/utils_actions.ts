@@ -41,36 +41,3 @@ export async function checkAdminAccess(): Promise<{
 
   return { isAdmin: false };
 }
-
-/**
- * Subscribe to newsletter
- */
-export async function subscribeNewsletter(email: string) {
-  if (!email || !email.includes("@")) {
-    return { error: "Please enter a valid email address." };
-  }
-
-  const supabase = await createClient();
-
-  // Check if already subscribed
-  const { data: existing } = await supabase
-    .from("store_settings")
-    .select("id")
-    .eq("key", `newsletter_${email}`)
-    .maybeSingle();
-
-  if (existing) {
-    return { error: "This email is already subscribed." };
-  }
-
-  const { error } = await supabase.from("store_settings").insert({
-    key: `newsletter_${email}`,
-    value: email,
-  });
-
-  if (error) {
-    return { error: "Failed to subscribe. Please try again." };
-  }
-
-  return { success: true };
-}

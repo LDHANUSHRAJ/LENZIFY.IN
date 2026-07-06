@@ -6,6 +6,7 @@ import {
 import Link from "next/link";
 import { updateOrderStatus } from "@/lib/db/order_actions";
 import { cn } from "@/lib/utils";
+import InvoiceDownloadButton from "@/components/orders/InvoiceDownloadButton";
 
 const ORDER_STATUSES = [
   { group: "Processing", values: ["pending","confirmed","frame_reserved","frame_preparing","lens_selected","lens_manufacturing","lens_fitting","quality_check","packed","waiting_shipment"] },
@@ -133,6 +134,21 @@ export default async function OrderDetailPage({ params, searchParams }: { params
           <span className={cn("text-xs font-semibold capitalize px-3 py-1.5 rounded-full border", PAYMENT_STYLES[order.payment_status] ?? "bg-gray-50 text-gray-600 border-gray-200")}>
             {order.payment_status}
           </span>
+          {order.order_items?.length > 0 && (
+            <InvoiceDownloadButton
+              order={{
+                id: order.id,
+                created_at: order.created_at,
+                total_price: order.total_price,
+                payment_method: order.payment_method,
+                payment_status: order.payment_status,
+                order_items: order.order_items,
+                addresses: addr,
+              }}
+              customer={user}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#ECEFF5] text-[#666666] text-xs font-semibold hover:border-[#004AAD] hover:text-[#004AAD] transition-colors"
+            />
+          )}
         </div>
       </div>
 

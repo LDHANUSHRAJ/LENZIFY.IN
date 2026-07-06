@@ -68,6 +68,17 @@ export async function placeOrder(data: {
   const { error: itemsError } = await adminSupabase.from("order_items").insert(orderItems);
   if (itemsError) return { error: "Item batch insert failure: " + itemsError.message };
 
+  // Admin-facing notification: new order placed
+  try {
+    await adminSupabase.from("notifications").insert({
+      user_id: null,
+      title: "New Order",
+      message: `New order #${order.id.slice(0, 8).toUpperCase()} placed for ₹${data.total_price.toLocaleString("en-IN")}.`,
+      type: "New Order",
+      metadata: { order_id: order.id },
+    });
+  } catch {}
+
   // 3b. Decrement stock. If payment is already received (razorpay), never
   // roll back the order — log the issue and let admin handle it manually.
   const paymentAlreadyReceived = data.payment.method === "razorpay";
@@ -84,6 +95,30 @@ export async function placeOrder(data: {
       }
       // Payment already taken — keep the order, flag it for admin review
       console.error(`[ORDER] Stock issue for product ${item.id} on paid order ${order.id}. Manual review needed.`);
+    } else {
+      // Admin-facing notification: low stock crossed (avoid spamming — only fire once per dip)
+      try {
+        const { data: prod } = await adminSupabase.from("products").select("name, stock").eq("id", item.id).single();
+        if (prod && prod.stock <= 5) {
+          const { data: existingAlert } = await adminSupabase
+            .from("notifications")
+            .select("id")
+            .is("user_id", null)
+            .eq("type", "Low Stock")
+            .eq("read", false)
+            .contains("metadata", { product_id: item.id })
+            .limit(1);
+          if (!existingAlert || existingAlert.length === 0) {
+            await adminSupabase.from("notifications").insert({
+              user_id: null,
+              title: "Low Stock",
+              message: `${prod.name} is running low (${prod.stock} left).`,
+              type: "Low Stock",
+              metadata: { product_id: item.id },
+            });
+          }
+        }
+      } catch {}
     }
   }
 
@@ -184,10 +219,12 @@ export async function updateOrderStatus(
   // Fetch customer email from auth
   let customerEmail: string | null = null;
   let customerName = "Customer";
+  let notifyOrderUpdates = true;
   try {
     const { data: userData } = await adminSupabase.auth.admin.getUserById(order.user_id);
     customerEmail = userData?.user?.email ?? null;
     customerName = userData?.user?.user_metadata?.full_name || userData?.user?.email?.split("@")[0] || "Customer";
+    notifyOrderUpdates = userData?.user?.user_metadata?.notify_order_updates ?? true;
   } catch {}
 
   const oldStatus = order.status;
@@ -221,16 +258,18 @@ export async function updateOrderStatus(
     });
   } catch {}
 
-  // In-app notification
-  try {
-    await adminSupabase.from("notifications").insert({
-      user_id: order.user_id,
-      title: `Order Update`,
-      message: `Your order #${orderId.slice(0, 8).toUpperCase()} is now: ${status.replace(/_/g, " ")}.`,
-      type: "order_update",
-      metadata: { order_id: orderId, status },
-    });
-  } catch {}
+  // In-app notification (respect customer's notification preference)
+  if (notifyOrderUpdates) {
+    try {
+      await adminSupabase.from("notifications").insert({
+        user_id: order.user_id,
+        title: `Order Update`,
+        message: `Your order #${orderId.slice(0, 8).toUpperCase()} is now: ${status.replace(/_/g, " ")}.`,
+        type: "order_update",
+        metadata: { order_id: orderId, status },
+      });
+    } catch {}
+  }
 
   // Email notification via Resend (fire-and-forget)
   if (customerEmail) {

@@ -260,3 +260,11 @@ export async function markNotificationRead(id: number) {
   revalidatePath("/admin/notifications");
   return { success: true };
 }
+
+export async function deleteNotification(id: number) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("notifications").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/notifications");
+  return { success: true };
+}

@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { rateLimitAction } from "@/lib/rateLimit";
 import { revalidatePath } from "next/cache";
 
@@ -30,6 +30,17 @@ export async function submitReview(productId: string, rating: number, review: st
     console.error("[REVIEW] Submit error:", error);
     return { error: "Failed to submit review. Please try again." };
   }
+
+  try {
+    const adminSupabase = await createAdminClient();
+    await adminSupabase.from("notifications").insert({
+      user_id: null,
+      title: "New Review",
+      message: `A new ${rating}-star review was submitted and is awaiting approval.`,
+      type: "New Review",
+      metadata: { product_id: productId },
+    });
+  } catch {}
 
   revalidatePath(`/product/${productId}`);
   return { success: true };

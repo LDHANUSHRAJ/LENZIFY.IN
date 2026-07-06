@@ -11,7 +11,7 @@ import {
   Trash2,
   Filter
 } from "lucide-react";
-import { markNotificationRead } from "@/lib/db/admin_actions";
+import { markNotificationRead, deleteNotification } from "@/lib/db/admin_actions";
 import { cn } from "@/lib/utils";
 
 export default async function AdminNotificationsPage() {
@@ -22,6 +22,7 @@ export default async function AdminNotificationsPage() {
   const { data: notifications } = await supabase
     .from("notifications")
     .select("*")
+    .is("user_id", null)
     .order("created_at", { ascending: false });
 
   const getIcon = (type: string) => {
@@ -83,9 +84,14 @@ export default async function AdminNotificationsPage() {
                         </span>
                       )}
                       
-                      <button className="text-brand-navy/10 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100">
-                         <Trash2 size={14} />
-                      </button>
+                      <form action={async () => {
+                          "use server";
+                          await deleteNotification(notif.id);
+                      }}>
+                        <button type="submit" className="text-brand-navy/10 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100">
+                           <Trash2 size={14} />
+                        </button>
+                      </form>
                    </div>
                 </div>
              </div>

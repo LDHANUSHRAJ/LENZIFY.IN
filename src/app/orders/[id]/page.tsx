@@ -1,12 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import {
   Package, Truck, CheckCircle2, ChevronLeft, AlertCircle,
-  MapPin, CreditCard, Clock, Download, RotateCcw, X, Calendar,
+  MapPin, CreditCard, Clock, RotateCcw, X, Calendar,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { cancelOrder, requestReturn } from "@/lib/db/order_actions";
 import { redirect } from "next/navigation";
+import InvoiceDownloadButton from "@/components/orders/InvoiceDownloadButton";
 
 /* ─── Full tracking pipeline ─────────────────────────── */
 const PIPELINE = [
@@ -430,6 +431,26 @@ export default async function OrderTrackingPage({ params }: { params: Promise<{ 
                 <Clock size={14} />
                 Return Requested — We'll contact you soon
               </div>
+            )}
+
+            {/* Invoice download */}
+            {!isReplacement && order?.order_items?.length > 0 && (
+              <InvoiceDownloadButton
+                order={{
+                  id: order.id,
+                  created_at: order.created_at,
+                  total_price: order.total_price,
+                  payment_method: order.payment_method,
+                  payment_status: order.payment_status,
+                  order_items: order.order_items,
+                  addresses: addr,
+                }}
+                customer={{
+                  name: order.users?.name || addr?.name || "Customer",
+                  email: order.users?.email || "",
+                  phone: order.users?.phone || addr?.phone,
+                }}
+              />
             )}
 
             {/* Contact support */}

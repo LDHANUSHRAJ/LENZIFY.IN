@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import ProductCard from "@/components/store/ProductCard";
 import { createClient } from "@/lib/supabase/client";
-import { ChevronDown, SlidersHorizontal, Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +18,6 @@ export default function CategoryPageTemplate({ category, title, description }: C
     const [loading, setLoading] = useState(true);
     const [sortBy, setSortBy] = useState("featured");
     const [searchQuery, setSearchQuery] = useState("");
-    const [isFilterOpen, setIsFilterOpen] = useState(false);
 
     const supabase = createClient();
 
@@ -107,14 +106,6 @@ export default function CategoryPageTemplate({ category, title, description }: C
                 <div className="max-w-screen-2xl mx-auto px-8 md:px-12">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 py-6">
                         <div className="flex flex-wrap items-center gap-4">
-                            <button
-                                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                                className="flex items-center gap-3 px-6 py-3 bg-[#03173D] text-white text-xs font-semibold uppercase tracking-widest rounded-full hover:bg-gradient-to-r hover:from-[#03173D] hover:to-[#004AAD] transition-all duration-300"
-                            >
-                                <SlidersHorizontal size={14} />
-                                Filters
-                            </button>
-
                             <div className="relative w-full md:w-80">
                                 <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#666666]" />
                                 <input
@@ -147,27 +138,6 @@ export default function CategoryPageTemplate({ category, title, description }: C
                         </div>
                     </div>
 
-                    {/* Filter Panel */}
-                    <AnimatePresence>
-                        {isFilterOpen && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.3 }}
-                                className="overflow-hidden"
-                            >
-                                <div className="bg-white border border-[#E8EAF2] rounded-2xl shadow-xl p-8 mb-4">
-                                    <p className="text-xs font-semibold uppercase tracking-widest text-[#004AAD] mb-4">
-                                        Filter Options
-                                    </p>
-                                    <p className="text-[#666666] text-sm">
-                                        Additional filters coming soon.
-                                    </p>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
                 </div>
             </section>
 

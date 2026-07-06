@@ -12,13 +12,30 @@ interface Props {
   email: string;
   currentName: string;
   currentPhone: string;
+  notifyOrderUpdates: boolean;
+  notifyOffers: boolean;
 }
 
-export default function SettingsClient({ userId, email, currentName, currentPhone }: Props) {
+export default function SettingsClient({ userId, email, currentName, currentPhone, notifyOrderUpdates, notifyOffers }: Props) {
   const [name, setName] = useState(currentName);
   const [phone, setPhone] = useState(currentPhone);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [orderUpdates, setOrderUpdates] = useState(notifyOrderUpdates);
+  const [offers, setOffers] = useState(notifyOffers);
+
+  const toggleNotifPref = async (key: "notify_order_updates" | "notify_offers", value: boolean) => {
+    if (key === "notify_order_updates") setOrderUpdates(value);
+    else setOffers(value);
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ data: { [key]: value } });
+    if (error) {
+      toast.error("Failed to update preference.");
+      if (key === "notify_order_updates") setOrderUpdates(!value);
+      else setOffers(!value);
+    }
+  };
 
   const navItems = [
     { href: "/profile", label: "Profile" },
@@ -155,23 +172,29 @@ export default function SettingsClient({ userId, email, currentName, currentPhon
 
               <div className="space-y-4">
                 {[
-                  { label: "Order Updates", desc: "Shipping, delivery, and status changes", checked: true },
-                  { label: "Offers & Promotions", desc: "Exclusive deals and discount codes", checked: true },
-                ].map(({ label, desc, checked }) => (
+                  { key: "notify_order_updates" as const, label: "Order Updates", desc: "Shipping, delivery, and status changes", checked: orderUpdates },
+                  { key: "notify_offers" as const, label: "Offers & Promotions", desc: "Exclusive deals and discount codes", checked: offers },
+                ].map(({ key, label, desc, checked }) => (
                   <div key={label} className="flex items-center justify-between p-5 bg-[#F8F9FC] rounded-2xl border border-[#ECECEC]">
                     <div>
                       <p className="font-semibold text-[#111111] text-sm">{label}</p>
                       <p className="text-[#666666] text-xs mt-0.5">{desc}</p>
                     </div>
-                    <div className={cn(
-                      "w-10 h-6 rounded-full relative cursor-default transition-colors",
-                      checked ? "bg-[#004AAD]" : "bg-[#CCCCCC]"
-                    )}>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={checked}
+                      onClick={() => toggleNotifPref(key, !checked)}
+                      className={cn(
+                        "w-10 h-6 rounded-full relative transition-colors cursor-pointer",
+                        checked ? "bg-[#004AAD]" : "bg-[#CCCCCC]"
+                      )}
+                    >
                       <span className={cn(
                         "absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all",
                         checked ? "left-5" : "left-1"
                       )} />
-                    </div>
+                    </button>
                   </div>
                 ))}
               </div>

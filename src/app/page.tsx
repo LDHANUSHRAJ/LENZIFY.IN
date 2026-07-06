@@ -36,14 +36,17 @@ const getCachedHomeData = unstable_cache(
 
     
     // Run queries in parallel
-    const [configRes, featuredRes, trendingRes, newArrivalsRes, categoriesRes, brandsRes, collectionsRes] = await Promise.all([
+    const [configRes, featuredRes, trendingRes, newArrivalsRes, categoriesRes, brandsRes, collectionsRes, testimonialsRes, customerCountRes, productCountRes] = await Promise.all([
       supabase.from("homepage_config").select("*").eq("is_active", true).order("sort_order", { ascending: true }),
       supabase.from("products").select("*, product_images(image_url, is_primary)").eq("is_enabled", true).eq("is_featured", true).order('created_at', { ascending: false }).limit(4),
       supabase.from("products").select("*, product_images(image_url, is_primary)").eq("is_enabled", true).eq("is_trending", true).order('created_at', { ascending: false }).limit(4),
       supabase.from("products").select("*, product_images(image_url, is_primary)").eq("is_enabled", true).eq("is_new_arrival", true).order('created_at', { ascending: false }).limit(4),
       supabase.from("categories").select("*").order("sort_order", { ascending: true }),
       supabase.from("brands").select("*").eq("is_featured", true).limit(10),
-      supabase.from("collections").select("*").limit(10)
+      supabase.from("collections").select("*").limit(10),
+      supabase.from("reviews").select("rating, review, users(name), products(name)").eq("status", "approved").order("created_at", { ascending: false }).limit(6),
+      supabase.from("users").select("*", { count: "exact", head: true }),
+      supabase.from("products").select("*", { count: "exact", head: true }).eq("is_enabled", true),
     ]);
 
     const defaultCollections = [
@@ -59,7 +62,12 @@ const getCachedHomeData = unstable_cache(
       newArrivals: newArrivalsRes.data || [],
       categories: categoriesRes.data || [],
       brands: brandsRes.data || [],
-      collections: (collectionsRes.data && collectionsRes.data.length > 0) ? collectionsRes.data : defaultCollections
+      collections: (collectionsRes.data && collectionsRes.data.length > 0) ? collectionsRes.data : defaultCollections,
+      testimonials: testimonialsRes.data || [],
+      stats: {
+        customerCount: customerCountRes.count || 0,
+        productCount: productCountRes.count || 0,
+      },
     };
   },
   ['home-data'],
@@ -67,7 +75,7 @@ const getCachedHomeData = unstable_cache(
 );
 
 export default async function Home() {
-  const { config, featuredProducts, trendingProducts, newArrivals, categories, brands, collections } = await getCachedHomeData();
+  const { config, featuredProducts, trendingProducts, newArrivals, categories, brands, collections, testimonials, stats } = await getCachedHomeData();
 
   // Only show display-worthy categories — exclude internal collection/display tags
   const dynamicCategories = categories
@@ -95,15 +103,27 @@ export default async function Home() {
     { id: "default-brands", section_key: "brand_section", content: { title: "Premium Brands", subtitle: "Top tier craftsmanship.", items: brands } },
   ];
 
-  // Always replace categories items with fresh DB data (or static fallback).
-  // Prevents stale CMS-saved items from duplicating with dynamicCategories.
+  // Always replace categories/collections/brands items with fresh DB data.
+  // Prevents stale or missing CMS-saved items from hiding live sections.
   initialSections = initialSections.map(sec => {
     if (sec.section_key === 'categories') {
       const items = dynamicCategories.length > 0 ? dynamicCategories : CATEGORY_CARDS;
       return { ...sec, content: { ...sec.content, items } };
     }
+    if (sec.section_key === 'collections_gallery') {
+      return { ...sec, content: { ...sec.content, items: collections } };
+    }
+    if (sec.section_key === 'brand_section') {
+      return { ...sec, content: { ...sec.content, items: brands } };
+    }
     return sec;
   });
+  if (!initialSections.some(sec => sec.section_key === 'collections_gallery')) {
+    initialSections.push({ id: "default-collections", section_key: "collections_gallery", content: { title: "Editor's Collections", subtitle: "Curated aesthetic paths.", items: collections } });
+  }
+  if (!initialSections.some(sec => sec.section_key === 'brand_section')) {
+    initialSections.push({ id: "default-brands", section_key: "brand_section", content: { title: "Premium Brands", subtitle: "Top tier craftsmanship.", items: brands } });
+  }
 
   const initialProducts = {
     featured: featuredProducts,
@@ -111,5 +131,5 @@ export default async function Home() {
     new_arrivals: newArrivals
   };
 
-  return <HomeClient initialSections={initialSections} initialProducts={initialProducts} />;
+  return <HomeClient initialSections={initialSections} initialProducts={initialProducts} testimonials={testimonials} stats={stats} />;
 }

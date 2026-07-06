@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Instagram, Facebook, Mail } from "lucide-react";
 import { useState } from "react";
-import { subscribeNewsletter } from "@/lib/db/utils_actions";
+import { subscribeNewsletter } from "@/lib/db/newsletter_actions";
 import toast from "react-hot-toast";
 
 export default function Footer() {

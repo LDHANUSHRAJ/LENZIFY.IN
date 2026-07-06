@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import ProductCard from "@/components/store/ProductCard";
@@ -134,8 +134,28 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
 
   const supabase = createClient();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const routerSearch = searchParams.get("q")?.toLowerCase() || "";
+  const [searchInput, setSearchInput] = useState(searchParams.get("q") || "");
+
+  useEffect(() => {
+    setSearchInput(searchParams.get("q") || "");
+  }, [searchParams]);
+
+  useEffect(() => {
+    const trimmed = searchInput.trim();
+    if (trimmed === (searchParams.get("q") || "")) return;
+    const handle = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (trimmed) params.set("q", trimmed);
+      else params.delete("q");
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }, 400);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
   const searchGender = searchParams.get("gender") || "";
   const searchType = searchParams.get("type") || "";
   const searchLensType = searchParams.get("lens_type") || "";
@@ -182,6 +202,7 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
             )
             .eq("is_enabled", true),
           supabase.from("categories").select("*"),
+          supabase.from("order_items").select("product_id"),
         ];
 
         if (searchType === "lens" || selectedTypes.includes("lens")) {
@@ -190,10 +211,18 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
           );
         }
 
-        const [productsRes, catRes, lensesRes] = await Promise.all(promises);
+        const [productsRes, catRes, orderItemsRes, lensesRes] = await Promise.all(promises);
 
         if (productsRes?.error) throw productsRes.error;
-        if (productsRes?.data) setProducts(productsRes.data);
+        if (productsRes?.data) {
+          const orderCounts: Record<string, number> = {};
+          for (const row of orderItemsRes?.data || []) {
+            orderCounts[row.product_id] = (orderCounts[row.product_id] || 0) + 1;
+          }
+          setProducts(
+            productsRes.data.map((p: any) => ({ ...p, _orderCount: orderCounts[p.id] || 0 }))
+          );
+        }
         if (catRes?.data) setCategories(catRes.data);
         if (lensesRes?.data) setLenses(lensesRes.data);
       } catch (err: any) {
@@ -481,6 +510,8 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
+    } else if (viewMode === "popularity") {
+      result.sort((a, b) => (b._orderCount || 0) - (a._orderCount || 0));
     }
 
     return result;
@@ -751,9 +782,9 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
           <input
             type="text"
             placeholder="Search eyewear..."
-            defaultValue={routerSearch}
-            readOnly
-            className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-full px-4 py-2.5 text-sm w-36 sm:w-56 text-[#111111] focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 outline-none cursor-default"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="bg-[#F8F9FC] border border-[#E8EAF2] rounded-full px-4 py-2.5 text-sm w-36 sm:w-56 text-[#111111] focus:border-[#004AAD] focus:ring-2 focus:ring-[#004AAD]/10 outline-none"
           />
 
           {/* Spacer */}

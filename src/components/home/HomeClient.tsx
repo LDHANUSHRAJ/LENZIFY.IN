@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import toast from "react-hot-toast";
 import ProductCard from "@/components/store/ProductCard";
 import HomeCarousel from "./HomeCarousel";
 import {
@@ -23,6 +24,11 @@ interface HomeClientProps {
     trending: any[];
     new_arrivals: any[];
   };
+  stats?: {
+    customerCount: number;
+    productCount: number;
+  };
+  testimonials?: any[];
 }
 
 // ─── Top Categories Strip ─────────────────────────────────────────────────────
@@ -77,33 +83,15 @@ function TopCategoriesStrip() {
 }
 
 // ─── Collection Showcase ───────────────────────────────────────────────────────
-function CollectionShowcase() {
-  const collections = [
-    {
-      name: "Optical Frames",
-      desc: "Minimal precision engineering",
-      href: "/products?type=Eyeglasses",
-      image: "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?q=80&w=800&auto=format&fit=crop",
-    },
-    {
-      name: "Sunglasses",
-      desc: "Luxury fashion collection",
-      href: "/products?type=Sunglasses",
-      image: "https://images.unsplash.com/photo-1577803645773-f96470509666?q=80&w=800&auto=format&fit=crop",
-    },
-    {
-      name: "Contact Lenses",
-      desc: "Daily and monthly comfort",
-      href: "/products?type=Contact Lenses",
-      image: "/images/contact-lenses-hero.jpg",
-    },
-    {
-      name: "Smart Glasses",
-      desc: "Future-ready wearable tech",
-      href: "/products?type=Smart Glasses",
-      image: "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?q=80&w=800&auto=format&fit=crop",
-    },
-  ];
+function CollectionShowcase({ items }: { items?: any[] }) {
+  const collections = (items && items.length > 0 ? items : []).map((c: any) => ({
+    name: c.name,
+    desc: c.description || c.type || "Curated collection",
+    href: `/products?collection=${encodeURIComponent(c.name)}`,
+    image: c.banner_url || "/images/editorial/hero_woman_reading.png",
+  }));
+
+  if (collections.length === 0) return null;
 
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6 bg-white">
@@ -267,8 +255,10 @@ function ProductRow({
 }
 
 // ─── Premium Brand Banner ──────────────────────────────────────────────────────
-function PremiumBrandBanner() {
-  const premiumBrands = ["Ray-Ban", "ZEISS", "Essilor", "Oakley", "Vogue", "Carrera"];
+function PremiumBrandBanner({ brands }: { brands?: any[] }) {
+  const premiumBrands = (brands || []).map((b: any) => b.name).filter(Boolean);
+
+  if (premiumBrands.length === 0) return null;
 
   return (
     <section
@@ -336,19 +326,10 @@ function PremiumBrandBanner() {
 }
 
 // ─── Brands Marquee ────────────────────────────────────────────────────────────
-function BrandsMarquee() {
-  const brands = [
-    "Ray-Ban",
-    "ZEISS",
-    "Essilor",
-    "Kodak",
-    "Bausch & Lomb",
-    "Johnson & Johnson",
-    "Oakley",
-    "Vogue",
-    "Carrera",
-    "Fastrack",
-  ];
+function BrandsMarquee({ items }: { items?: any[] }) {
+  const brands = (items || []).map((b: any) => b.name).filter(Boolean);
+
+  if (brands.length === 0) return null;
 
   return (
     <section className="py-16 border-y border-[#E8EAF2] bg-[#F8F9FC] overflow-hidden">
@@ -382,10 +363,11 @@ function BrandsMarquee() {
 }
 
 // ─── Why Lenzify ──────────────────────────────────────────────────────────────
-function WhyLenzify() {
+function WhyLenzify({ stats: liveStats }: { stats?: { customerCount: number; productCount: number } }) {
+  const fmt = (n: number) => (n >= 1000 ? `${Math.floor(n / 1000)}k+` : n > 0 ? `${n}+` : "New");
   const stats = [
-    { icon: Star, number: "1000+", label: "Happy Customers" },
-    { icon: Eye, number: "500+", label: "Frames Available" },
+    { icon: Star, number: fmt(liveStats?.customerCount || 0), label: "Happy Customers" },
+    { icon: Eye, number: fmt(liveStats?.productCount || 0), label: "Frames Available" },
     { icon: Truck, number: "24 Hr", label: "Delivery" },
     { icon: CheckCircle, number: "Free", label: "Eye Test" },
   ];
@@ -467,36 +449,16 @@ function WhyLenzify() {
 
 
 // ─── Testimonials ──────────────────────────────────────────────────────────────
-function Testimonials() {
+function Testimonials({ items }: { items?: any[] }) {
   const [active, setActive] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
-  const reviews = [
-    {
-      name: "Priya Sharma",
-      location: "Mumbai",
-      text: "Lenzify completely changed how I shop for glasses. The quality of the lenses is outstanding — exactly what I was looking for at a great price.",
-      rating: 5,
-      avatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop",
-    },
-    {
-      name: "Rahul Verma",
-      location: "Bangalore",
-      text: "Ordered ZEISS blue-cut lenses and they arrived in 24 hours. Quality is incredible, and the free eye test service at home was a game changer.",
-      rating: 5,
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop",
-    },
-    {
-      name: "Anjali Nair",
-      location: "Chennai",
-      text: "The Try-at-Home service brought 150+ frames to my door. Bought two pairs and the optometrist was so professional. 10/10 experience.",
-      rating: 5,
-      avatar:
-        "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=200&auto=format&fit=crop",
-    },
-  ];
+  const reviews = (items || []).map((r: any) => ({
+    name: r.users?.name || "Verified Customer",
+    location: r.products?.name || "",
+    text: r.review,
+    rating: r.rating || 5,
+  }));
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -512,6 +474,8 @@ function Testimonials() {
 
   const prev = () => setActive((p) => (p - 1 + reviews.length) % reviews.length);
   const next = () => setActive((p) => (p + 1) % reviews.length);
+
+  if (reviews.length === 0) return null;
 
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6 bg-[#F8F9FC]">
@@ -585,20 +549,14 @@ function Testimonials() {
                         &ldquo;{r.text}&rdquo;
                       </p>
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full overflow-hidden relative border border-[#ECECEC] shrink-0">
-                          <Image
-                            src={r.avatar}
-                            alt={r.name}
-                            fill
-                            unoptimized
-                            className="object-cover"
-                          />
+                        <div className="w-8 h-8 rounded-full bg-[#004AAD] flex items-center justify-center shrink-0">
+                          <span className="text-[10px] font-bold text-white">{r.name[0]?.toUpperCase()}</span>
                         </div>
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-widest text-[#111111]">
                             {r.name}
                           </p>
-                          <p className="text-[9px] text-[#999999] font-bold uppercase tracking-widest">
+                          <p className="text-[9px] text-[#999999] font-bold uppercase tracking-widest line-clamp-1">
                             {r.location}
                           </p>
                         </div>
@@ -668,14 +626,14 @@ function Testimonials() {
                 &ldquo;{r.text}&rdquo;
               </p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden relative border border-[#ECECEC]">
-                  <Image src={r.avatar} alt={r.name} fill unoptimized className="object-cover" />
+                <div className="w-10 h-10 rounded-full bg-[#004AAD] flex items-center justify-center">
+                  <span className="text-xs font-bold text-white">{r.name[0]?.toUpperCase()}</span>
                 </div>
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-widest text-[#111111]">
                     {r.name}
                   </p>
-                  <p className="text-[9px] text-[#999999] font-bold uppercase tracking-widest">
+                  <p className="text-[9px] text-[#999999] font-bold uppercase tracking-widest line-clamp-1">
                     {r.location}
                   </p>
                 </div>
@@ -742,6 +700,22 @@ function TrustBadges() {
 // ─── Newsletter ────────────────────────────────────────────────────────────────
 function NewsletterSection() {
   const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubscribe = async () => {
+    if (!email.trim() || submitting) return;
+    setSubmitting(true);
+    const { subscribeNewsletter } = await import("@/lib/db/newsletter_actions");
+    const res = await subscribeNewsletter(email.trim());
+    setSubmitting(false);
+    if (res?.error) {
+      toast.error(res.error);
+    } else {
+      toast.success("Subscribed! Watch your inbox for exclusive offers.");
+      setEmail("");
+    }
+  };
+
   return (
     <section
       className="py-12 md:py-20 px-4 sm:px-6 relative overflow-hidden"
@@ -780,9 +754,11 @@ function NewsletterSection() {
           />
           <button
             suppressHydrationWarning
-            className="px-8 py-4 rounded-full text-sm font-semibold bg-white text-[#03173D] hover:bg-white/90 transition-all hover:scale-105 shadow-[0_8px_24px_rgba(0,0,0,0.2)] whitespace-nowrap"
+            onClick={handleSubscribe}
+            disabled={submitting}
+            className="px-8 py-4 rounded-full text-sm font-semibold bg-white text-[#03173D] hover:bg-white/90 transition-all hover:scale-105 shadow-[0_8px_24px_rgba(0,0,0,0.2)] whitespace-nowrap disabled:opacity-60"
           >
-            Subscribe
+            {submitting ? "Subscribing..." : "Subscribe"}
           </button>
         </div>
       </motion.div>
@@ -823,7 +799,7 @@ function ReplaceLensesCTA() {
 }
 
 // ─── Main Export ───────────────────────────────────────────────────────────────
-export default function HomeClient({ initialSections, initialProducts }: HomeClientProps) {
+export default function HomeClient({ initialSections, initialProducts, stats, testimonials }: HomeClientProps) {
   const [sections, setSections] = useState(initialSections);
   const supabase = createClient();
 
@@ -850,6 +826,8 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
 
   const featuredSection = sections.find((s) => s.section_key === "featured_products");
   const trendingSection = sections.find((s) => s.section_key === "trending_products");
+  const collectionsSection = sections.find((s) => s.section_key === "collections_gallery");
+  const brandsSection = sections.find((s) => s.section_key === "brand_section");
 
   return (
     <div className="bg-white">
@@ -860,7 +838,7 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
       <TopCategoriesStrip />
 
       {/* 3. Featured Collections — white, large cards */}
-      <CollectionShowcase />
+      <CollectionShowcase items={collectionsSection?.content?.items} />
 
       {/* 4. Featured Products — white */}
       {featuredSection && (
@@ -892,7 +870,7 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
       />
 
       {/* 7. Premium Brand Banner — dark navy gradient */}
-      <PremiumBrandBanner />
+      <PremiumBrandBanner brands={brandsSection?.content?.items} />
 
       {/* 8. Best Sellers — white */}
       <ProductRow
@@ -902,13 +880,13 @@ export default function HomeClient({ initialSections, initialProducts }: HomeCli
       />
 
       {/* 9. Brand Marquee — gray */}
-      <BrandsMarquee />
+      <BrandsMarquee items={brandsSection?.content?.items} />
 
       {/* 10. Why LENZIFY / Trust Section — white */}
-      <WhyLenzify />
+      <WhyLenzify stats={stats} />
 
       {/* 11. Testimonials — gray */}
-      <Testimonials />
+      <Testimonials items={testimonials} />
 
       {/* Trust Badges — white */}
       <TrustBadges />

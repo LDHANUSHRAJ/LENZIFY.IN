@@ -74,6 +74,17 @@ export async function signup(formData: FormData) {
     return { error: createError.message }
   }
 
+  // Admin-facing notification: new customer signed up
+  try {
+    await adminClient.from('notifications').insert({
+      user_id: null,
+      title: 'New Customer',
+      message: `${data.name} (${data.email}) just created an account.`,
+      type: 'New Customer',
+      metadata: { user_id: userData?.user?.id },
+    })
+  } catch {}
+
   // 2. Immediate Login
   const { error: loginError } = await supabase.auth.signInWithPassword({
     email: data.email,
