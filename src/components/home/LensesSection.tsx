@@ -13,7 +13,7 @@ const LENS_TYPES = [
     id: "5e46d84e-fc97-4ee1-b8b6-b801397ae7b5"
   },
   {
-    name: "Progressive (No-line bifocal)",
+    name: "Progressive",
     price: "Starts at ₹2,499",
     image: "/images/homepage/banner_lenses_1777728807886.png",
     id: "de87ead3-c3f3-48ac-9b4d-a779b9d17cad"
