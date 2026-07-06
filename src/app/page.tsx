@@ -50,10 +50,10 @@ const getCachedHomeData = unstable_cache(
     ]);
 
     const defaultCollections = [
-      { id: 'col1', name: 'Under ₹699', type: 'BUDGET PICKS', banner_url: '/images/editorial/hero_man.png', href: '/products?max_price=699' },
-      { id: 'col2', name: 'Under ₹999', type: 'EVERYDAY ESSENTIALS', banner_url: '/images/editorial/hero_woman_reading.png', href: '/products?max_price=999' },
-      { id: 'col3', name: 'Under ₹1499', type: 'MOST POPULAR', banner_url: '/images/editorial/lifestyle_laughing.png', href: '/products?max_price=1499' },
-      { id: 'col4', name: 'Under ₹1999', type: 'PREMIUM VALUE', banner_url: '/images/editorial/featured_woman.png', href: '/products?max_price=1999' },
+      { id: 'col1', name: 'Under ₹699', type: 'BUDGET PICKS', banner_url: '/images/collections/budget_picks.jpg', href: '/products?max_price=699' },
+      { id: 'col2', name: 'Under ₹999', type: 'EVERYDAY ESSENTIALS', banner_url: '/images/collections/everyday_essentials.jpg', href: '/products?max_price=999' },
+      { id: 'col3', name: 'Under ₹1499', type: 'MOST POPULAR', banner_url: '/images/collections/most_popular.jpg', href: '/products?max_price=1499' },
+      { id: 'col4', name: 'Under ₹1999', type: 'PREMIUM VALUE', banner_url: '/images/collections/premium_value.jpg', href: '/products?max_price=1999' },
     ];
 
     return {
