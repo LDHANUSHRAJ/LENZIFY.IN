@@ -20,9 +20,13 @@ const FRAMES = [
   { src: "/images/hero/hero5.jpg", label: "Classic Frame" },
   { src: "/images/hero/hero7.jpg", label: "Street Style" },
   { src: "/images/hero/hero2.jpg", label: "Modern Lifestyle" },
+  { src: "/images/hero/hero9.jpg", label: "Everyday Confidence" },
+  { src: "/images/hero/hero10.jpg", label: "Campus Crew" },
+  { src: "/images/hero/hero11.jpg", label: "Sharp Focus" },
+  { src: "/images/hero/hero12.jpg", label: "Sunlit Cool" },
 ];
 
-const N = FRAMES.length; // 6
+const N = FRAMES.length; // 10
 
 // ─── Desktop stack / fan positions ────────────────────────────────────────────
 const STACK_DESKTOP = [
