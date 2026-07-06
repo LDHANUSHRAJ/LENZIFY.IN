@@ -50,9 +50,10 @@ const getCachedHomeData = unstable_cache(
     ]);
 
     const defaultCollections = [
-      { id: 'col1', name: 'Vanguard Series', type: 'PREMIUM', banner_url: '/images/editorial/lifestyle_woman_sunglasses.png' },
-      { id: 'col2', name: 'Essence Collection', type: 'MINIMALIST', banner_url: '/images/editorial/hero_woman_reading.png' },
-      { id: 'col3', name: 'Horizon Line', type: 'TRENDING', banner_url: '/images/editorial/lifestyle_laughing.png' }
+      { id: 'col1', name: 'Under ₹699', type: 'BUDGET PICKS', banner_url: '/images/editorial/hero_man.png', href: '/products?max_price=699' },
+      { id: 'col2', name: 'Under ₹999', type: 'EVERYDAY ESSENTIALS', banner_url: '/images/editorial/hero_woman_reading.png', href: '/products?max_price=999' },
+      { id: 'col3', name: 'Under ₹1499', type: 'MOST POPULAR', banner_url: '/images/editorial/lifestyle_laughing.png', href: '/products?max_price=1499' },
+      { id: 'col4', name: 'Under ₹1999', type: 'PREMIUM VALUE', banner_url: '/images/editorial/featured_woman.png', href: '/products?max_price=1999' },
     ];
 
     return {

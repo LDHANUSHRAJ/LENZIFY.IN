@@ -87,7 +87,7 @@ function CollectionShowcase({ items }: { items?: any[] }) {
   const collections = (items && items.length > 0 ? items : []).map((c: any) => ({
     name: c.name,
     desc: c.description || c.type || "Curated collection",
-    href: `/products?collection=${encodeURIComponent(c.name)}`,
+    href: c.href || `/products?collection=${encodeURIComponent(c.name)}`,
     image: c.banner_url || "/images/editorial/hero_woman_reading.png",
   }));
 

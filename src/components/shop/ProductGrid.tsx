@@ -161,12 +161,16 @@ export default function ProductGrid({ initialCategory, initialGender }: ProductG
   const searchLensType = searchParams.get("lens_type") || "";
   const searchCollection = searchParams.get("collection") || "";
   const searchBrand = searchParams.get("brand") || "";
+  const searchMaxPrice = searchParams.get("max_price");
 
   // ---- ui state ----
   const [viewMode, setViewMode] = useState<SortMode>("newest");
   const [gridMode, setGridMode] = useState<GridMode>("4col");
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 25000 });
+  const [priceRange, setPriceRange] = useState({
+    min: 0,
+    max: searchMaxPrice ? parseInt(searchMaxPrice, 10) : 25000,
+  });
 
   // ---- filter state ----
   const [selectedGenders, setSelectedGenders] = useState<string[]>(
