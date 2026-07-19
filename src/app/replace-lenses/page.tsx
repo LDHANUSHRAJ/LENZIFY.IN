@@ -130,7 +130,7 @@ function ReplaceLensesContent() {
       const coating = coatings.find(c => c.id === id);
       return acc + (coating ? Number(coating.price) : 0);
     }, 0);
-    const extraLogisticsFee = formData.is_delivery_different ? 50 : 0;
+    const extraLogisticsFee = formData.is_delivery_different ? pickupFee : 0;
     return lensPrice + coatingsPrice + pickupFee + deliveryFee + extraLogisticsFee;
   };
 
@@ -707,7 +707,7 @@ function ReplaceLensesContent() {
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="bg-[#F8F9FC] border border-[#004AAD]/20 rounded-2xl p-8 space-y-5">
                         <div className="flex items-center gap-3 p-4 bg-[#004AAD]/5 rounded-xl mb-4">
                           <Info size={16} className="text-[#004AAD]" />
-                          <p className="text-xs font-semibold text-[#666666]">Custom delivery routing incurs an additional ₹50 fee</p>
+                          <p className="text-xs font-semibold text-[#666666]">Custom delivery routing incurs an additional ₹{pickupFee} fee</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                           <div className="space-y-2">
@@ -812,7 +812,7 @@ function ReplaceLensesContent() {
                           <Truck size={14} className="text-[#004AAD]" />
                           <span className="text-sm text-[#111111] font-medium">Pickup & Delivery</span>
                         </div>
-                        <span className="text-sm font-serif italic text-[#111111]">₹{pickupFee + deliveryFee}</span>
+                        <span className="text-sm font-serif italic text-[#111111]">₹{pickupFee + deliveryFee + (formData.is_delivery_different ? pickupFee : 0)}</span>
                       </div>
                     </div>
                   </div>
@@ -903,7 +903,7 @@ function ReplaceLensesContent() {
                   </div>
                   <div className="flex justify-between text-sm text-[#666666]">
                     <span>Pickup & Delivery</span>
-                    <span>₹{pickupFee + deliveryFee + (formData.is_delivery_different ? 50 : 0)}</span>
+                    <span>₹{pickupFee + deliveryFee + (formData.is_delivery_different ? pickupFee : 0)}</span>
                   </div>
                 </div>
 

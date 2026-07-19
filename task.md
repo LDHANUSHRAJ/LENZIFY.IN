@@ -16,4 +16,4 @@
   - `[x]` Build `/product/[id]/page.tsx` Layout
   - `[x]` Gallery, Dynamic Selectors
   - `[x]` Wishlist & Cart logic integration
-  - `[ ]` Sorting and Pagination Integration
+  - `[x]` Sorting and Pagination Integration
