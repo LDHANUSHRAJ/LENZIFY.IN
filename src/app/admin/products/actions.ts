@@ -136,7 +136,7 @@ export async function createProduct(formData: FormData) {
         return [];
       }
     })()
-  }).select("id, slug").single();
+  }).select("id").single();
 
   if (productError) {
     console.error("Error creating product:", productError);
@@ -184,7 +184,7 @@ export async function createProduct(formData: FormData) {
   revalidatePath("/products");
   revalidatePath("/");
   revalidatePath(`/product/${product.id}`);
-  revalidatePath(`/product/${product.slug}`);
+  if ((product as any)?.slug) revalidatePath(`/product/${(product as any).slug}`);
   redirect("/admin/products?success=true");
 }
 
