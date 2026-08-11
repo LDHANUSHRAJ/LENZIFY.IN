@@ -162,36 +162,121 @@ export async function getDashboardStats() {
 
   const last7DaysDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
+  // Wrap queries individually to prevent missing tables/columns from crashing the dashboard
+  const fetchSalesData = async () => {
+    try {
+      const { data, error } = await supabase.from("orders").select("total_price").eq("payment_status", "paid");
+      if (error) throw error;
+      return data || [];
+    } catch (e) {
+      console.error("Error fetching sales data:", e);
+      return [];
+    }
+  };
+
+  const fetchTotalOrders = async () => {
+    try {
+      const { count, error } = await supabase.from("orders").select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count || 0;
+    } catch (e) {
+      console.error("Error fetching total orders:", e);
+      return 0;
+    }
+  };
+
+  const fetchTotalCustomers = async () => {
+    try {
+      const { count, error } = await supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "customer");
+      if (error) throw error;
+      return count || 0;
+    } catch (e) {
+      console.error("Error fetching total customers:", e);
+      return 0;
+    }
+  };
+
+  const fetchLowStock = async () => {
+    try {
+      const { data, count, error } = await supabase.from("products").select("id, name, stock, brand", { count: "exact" }).lte("stock", 5).limit(5);
+      if (error) throw error;
+      return { data: data || [], count: count || 0 };
+    } catch (e) {
+      console.error("Error fetching low stock:", e);
+      return { data: [], count: 0 };
+    }
+  };
+
+  const fetchCartUsers = async () => {
+    try {
+      const { data, error } = await supabase.from("cart").select("user_id");
+      if (error) throw error;
+      return data || [];
+    } catch (e) {
+      console.error("Error fetching cart users:", e);
+      return [];
+    }
+  };
+
+  const fetchRecentOrders = async () => {
+    try {
+      const { data, error } = await supabase.from("orders").select("*, users(name)").order("created_at", { ascending: false }).limit(5);
+      if (error) throw error;
+      return data || [];
+    } catch (e) {
+      console.error("Error fetching recent orders:", e);
+      return [];
+    }
+  };
+
+  const fetchTopSellingData = async () => {
+    try {
+      const { data, error } = await supabase.from("order_items").select("product_id, quantity, products(name, brand)").limit(10);
+      if (error) throw error;
+      return data || [];
+    } catch (e) {
+      console.error("Error fetching top selling data:", e);
+      return [];
+    }
+  };
+
+  const fetchTrendOrders = async () => {
+    try {
+      const { data, error } = await supabase.from("orders").select("created_at, total_price, payment_status").gte("created_at", last7DaysDate);
+      if (error) throw error;
+      return data || [];
+    } catch (e) {
+      console.error("Error fetching trend orders:", e);
+      return [];
+    }
+  };
+
   const [
-    salesDataRes,
-    totalOrdersRes,
-    totalCustomersRes,
-    lowStockRes,
-    cartUsersRes,
-    recentOrdersRes,
-    topSellingDataRes,
-    trendOrdersRes
+    salesData,
+    totalOrders,
+    totalCustomers,
+    lowStock,
+    cartUsers,
+    recentOrders,
+    topSellingData,
+    trendOrders
   ] = await Promise.all([
-    supabase.from("orders").select("total_price").eq("payment_status", "paid"),
-    supabase.from("orders").select("*", { count: "exact", head: true }),
-    supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "customer"),
-    supabase.from("products").select("id, name, stock, brand", { count: "exact" }).lte("stock", 5).limit(5),
-    supabase.from("cart").select("user_id"),
-    supabase.from("orders").select("*, users(name)").order("created_at", { ascending: false }).limit(5),
-    supabase.from("order_items").select("product_id, quantity, products(name, brand)").limit(10),
-    supabase.from("orders").select("created_at, total_price, payment_status").gte("created_at", last7DaysDate)
+    fetchSalesData(),
+    fetchTotalOrders(),
+    fetchTotalCustomers(),
+    fetchLowStock(),
+    fetchCartUsers(),
+    fetchRecentOrders(),
+    fetchTopSellingData(),
+    fetchTrendOrders()
   ]);
 
-  const totalSales = salesDataRes.data?.reduce((acc, curr) => acc + Number(curr.total_price), 0) || 0;
-  const totalOrders = totalOrdersRes.count || 0;
-  const totalCustomers = totalCustomersRes.count || 0;
+  const totalSales = salesData.reduce((acc, curr) => acc + Number(curr.total_price), 0) || 0;
   
-  const lowStockProducts = lowStockRes.data || [];
-  const lowStockCount = lowStockRes.count || 0;
+  const lowStockProducts = lowStock.data;
+  const lowStockCount = lowStock.count;
   
-  const uniqueCartUsers = new Set(cartUsersRes.data?.map(c => c.user_id)).size;
-  const recentOrders = recentOrdersRes.data || [];
-  const topSellingData = topSellingDataRes.data;
+  const uniqueCartUsers = new Set(cartUsers.map(c => c.user_id)).size;
 
   interface ProductSale {
     name: string;
@@ -200,7 +285,7 @@ export async function getDashboardStats() {
   }
   
   const productSales: Record<string, ProductSale> = {};
-  topSellingData?.forEach(item => {
+  topSellingData.forEach(item => {
     const id = item.product_id;
     if (!productSales[id]) {
       productSales[id] = { 
@@ -224,7 +309,7 @@ export async function getDashboardStats() {
   }).reverse();
 
   const chartData = last7Days.map(date => {
-    const dayOrders = trendOrdersRes.data?.filter(o => o.created_at.startsWith(date)) || [];
+    const dayOrders = trendOrders.filter(o => o.created_at?.startsWith(date)) || [];
     const revenue = dayOrders
       .filter(o => o.payment_status === 'paid')
       .reduce((acc, curr) => acc + Number(curr.total_price), 0);
