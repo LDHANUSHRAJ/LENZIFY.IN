@@ -326,6 +326,18 @@ export default async function OrderDetailPage({ params, searchParams }: { params
                             : `L: ${item.power_left || "PL"} | R: ${item.power_right || "PL"}`}
                         </p>
                       </div>
+                       {item.selected_color && (
+                        <div>
+                          <p className="text-[10px] text-[#AAAAAA]">Color</p>
+                          <p className="text-xs text-[#333333]">{item.selected_color}</p>
+                        </div>
+                      )}
+                      {item.selected_size && (
+                        <div>
+                          <p className="text-[10px] text-[#AAAAAA]">Size</p>
+                          <p className="text-xs text-[#333333]">{item.selected_size}</p>
+                        </div>
+                      )}
                       <div>
                         <p className="text-[10px] text-[#AAAAAA]">Qty</p>
                         <p className="text-xs text-[#333333]">{item.quantity}</p>

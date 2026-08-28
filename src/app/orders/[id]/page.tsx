@@ -300,7 +300,11 @@ export default async function OrderTrackingPage({ params }: { params: Promise<{ 
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-[#111111] truncate text-sm">{item.products?.name}</p>
-                    <p className="text-[#666666] text-xs mt-0.5">{item.products?.brand} · Qty: {item.quantity}</p>
+                    <p className="text-[#666666] text-xs mt-0.5">
+                      {item.products?.brand} · Qty: {item.quantity}
+                      {item.selected_color && ` · Color: ${item.selected_color}`}
+                      {item.selected_size && ` · Size: ${item.selected_size}`}
+                    </p>
                   </div>
                   <p className="font-semibold text-[#111111] text-sm flex-shrink-0">₹{Number(item.price || 0).toLocaleString("en-IN")}</p>
                 </div>

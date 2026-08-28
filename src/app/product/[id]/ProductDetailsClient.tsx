@@ -44,8 +44,52 @@ export default function ProductDetailsClient({
   const [isInWish, setIsInWish] = useState(isInWishlist);
 
   const [activeTab, setActiveTab] = useState<"description" | "specs" | "reviews">("description");
-  const [selectedColor, setSelectedColor] = useState<string>(product.colors?.[0] || "");
-  const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] || "");
+  const parsedColors = useMemo(() => {
+    if (!product.colors) return [];
+    return product.colors.map((colorItem: any) => {
+      if (typeof colorItem === 'string') {
+        try {
+          return JSON.parse(colorItem);
+        } catch {
+          console.warn("Legacy plain text color variant detected:", colorItem);
+          return { name: colorItem, hex: colorItem, image: null };
+        }
+      }
+      return colorItem;
+    });
+  }, [product.colors]);
+
+  const parsedSizes = useMemo(() => {
+    if (!product.sizes) return [];
+    return product.sizes.map((sizeItem: any) => {
+      if (typeof sizeItem === 'string') {
+        try {
+          return JSON.parse(sizeItem);
+        } catch {
+          console.warn("Legacy plain text size variant detected:", sizeItem);
+          return { label: sizeItem, inStock: true, stockQty: null };
+        }
+      }
+      return sizeItem;
+    });
+  }, [product.sizes]);
+
+  const [selectedColor, setSelectedColor] = useState<string>(parsedColors[0]?.name || "");
+  const [selectedSize, setSelectedSize] = useState<string>(() => {
+    const firstInStock = parsedSizes.find((s: any) => s.inStock);
+    return firstInStock ? firstInStock.label : (parsedSizes[0]?.label || "");
+  });
+
+  // Select the first available in-stock size on mount/updates
+  useEffect(() => {
+    const activeSizeObj = parsedSizes.find((s: any) => s.label === selectedSize);
+    if (activeSizeObj && !activeSizeObj.inStock) {
+      const firstInStock = parsedSizes.find((s: any) => s.inStock);
+      if (firstInStock) {
+        setSelectedSize(firstInStock.label);
+      }
+    }
+  }, [parsedSizes, selectedSize]);
   const [viewMode, setViewMode] = useState<"static" | "360">("static");
   const [showLensFlow, setShowLensFlow] = useState(false);
 
@@ -351,27 +395,32 @@ export default function ProductDetailsClient({
             <div className="border-t border-[#E8EAF2]" />
 
             {/* Color selector */}
-            {product.colors && product.colors.length > 0 && (
+            {parsedColors.length > 0 && (
               <div className="space-y-3">
                 <p className="text-sm font-medium text-[#111111]">
                   Color — <span className="font-semibold">{selectedColor}</span>
                 </p>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {product.colors.map((color: string) => (
+                  {parsedColors.map((color: any) => (
                     <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
+                      key={color.name}
+                      onClick={() => {
+                        setSelectedColor(color.name);
+                        if (color.image) {
+                          setMainImageSrc(color.image);
+                          setViewMode("static");
+                        }
+                      }}
                       suppressHydrationWarning
-                      title={color}
+                      title={color.name}
                       className={cn(
                         "w-8 h-8 rounded-full border-2 cursor-pointer transition-all",
-                        selectedColor === color
+                        selectedColor === color.name
                           ? "border-[#03173D] ring-2 ring-[#03173D]/20"
                           : "border-transparent hover:border-[#004AAD]"
                       )}
                       style={{
-                        backgroundColor: color.startsWith("#") ? color : undefined,
-                        background: !color.startsWith("#") ? color : undefined,
+                        backgroundColor: color.hex,
                         boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.1)"
                       }}
                     />
@@ -381,25 +430,31 @@ export default function ProductDetailsClient({
             )}
 
             {/* Size selector */}
-            {product.sizes && product.sizes.length > 0 && (
+            {parsedSizes.length > 0 && (
               <div className="space-y-3">
                 <p className="text-sm font-medium text-[#111111]">Size</p>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {product.sizes.map((size: string) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      suppressHydrationWarning
-                      className={cn(
-                        "border rounded-full px-4 py-2 text-sm cursor-pointer transition-all",
-                        selectedSize === size
-                          ? "bg-[#03173D] text-white border-[#03173D]"
-                          : "border-[#E8EAF2] text-[#666666] hover:border-[#004AAD] hover:text-[#004AAD]"
-                      )}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                  {parsedSizes.map((size: any) => {
+                    const isSelected = selectedSize === size.label;
+                    return (
+                      <button
+                        key={size.label}
+                        disabled={!size.inStock}
+                        onClick={() => size.inStock && setSelectedSize(size.label)}
+                        suppressHydrationWarning
+                        className={cn(
+                          "border rounded-full px-4 py-2 text-sm cursor-pointer transition-all",
+                          isSelected
+                            ? "bg-[#03173D] text-white border-[#03173D]"
+                            : size.inStock
+                              ? "border-[#E8EAF2] text-[#666666] hover:border-[#004AAD] hover:text-[#004AAD]"
+                              : "border-[#ECECEC] text-[#CCCCCC] bg-[#F8F9FC] cursor-not-allowed line-through opacity-45"
+                        )}
+                      >
+                        {size.label} {!size.inStock && "(Out of Stock)"}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

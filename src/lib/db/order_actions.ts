@@ -62,7 +62,9 @@ export async function placeOrder(data: {
     quantity: item.quantity,
     price: item.price,
     lens_id: item.lens_id,
-    prescription_json: item.prescription_json
+    prescription_json: item.prescription_json,
+    selected_color: item.selected_color || null,
+    selected_size: item.selected_size || null
   }));
 
   const { error: itemsError } = await adminSupabase.from("order_items").insert(orderItems);

@@ -37,21 +37,18 @@ export async function addToCart(product_id: string, options: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Login required" };
 
-  // Check if item already in cart
+  // Check if identical item (same product, same lens, same color, and same size selection) already exists
   const { data: existing } = await supabase
     .from("cart")
     .select("id, quantity")
     .eq("user_id", user.id)
     .eq("product_id", product_id)
-    // If it has a prescription or specific lens, we usually don't merge quantities, but for simplicity we can just check if it's identical
-    // Actually, if they are adding different prescriptions for the same frame, we shouldn't merge them.
-    // For now, let's strictly match product, lens_id, and prescription
-    // But supabase maybeSingle throws if multiple. We will handle without merging if there's a prescription.
+    .eq("selected_color", options.color || null)
+    .eq("selected_size", options.size || null)
     .eq("lens_id", options.lens_id || null)
     .limit(1)
     .single();
 
-  // It's safer to always insert a new cart item if there's a custom prescription, or we can just ignore maybeSingle error. Let's just insert as new if prescription exists.
   if (existing && !options.prescription_json && !options.lens_config) {
     await supabase
       .from("cart")
@@ -65,7 +62,9 @@ export async function addToCart(product_id: string, options: {
       lens_id: options.lens_id || null,
       lens_config: options.lens_config || null,
       prescription_json: options.prescription_json || null,
-      price: options.price
+      price: options.price,
+      selected_color: options.color || null,
+      selected_size: options.size || null
     });
   }
 

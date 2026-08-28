@@ -1,12 +1,14 @@
 "use client";
 
-import { Search, Bell, Settings, Command, Plus, ChevronDown } from "lucide-react";
+import { Search, Bell, Settings, Command, Plus, ChevronDown, Menu, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useAdminLayout } from "@/components/providers/AdminLayoutProvider";
+import { logout } from "@/app/auth/actions";
 
 export default function TopBar() {
   const { user } = useAuth();
@@ -14,6 +16,8 @@ export default function TopBar() {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const { toggleSidebar } = useAdminLayout();
 
   useEffect(() => {
     const supabase = createClient();
@@ -47,6 +51,13 @@ export default function TopBar() {
 
   return (
     <header className="h-14 bg-white border-b border-[#ECEFF5] flex items-center gap-4 px-6 sticky top-0 z-40 flex-shrink-0">
+      {/* Mobile Menu Toggle */}
+      <button
+        onClick={toggleSidebar}
+        className="p-1 rounded-lg text-[#888888] hover:bg-[#F4F6F8] hover:text-[#111111] lg:hidden mr-1 flex-shrink-0"
+      >
+        <Menu size={20} />
+      </button>
       {/* Search */}
       <form onSubmit={handleSearch} className="flex-1 max-w-sm">
         <div
@@ -109,17 +120,52 @@ export default function TopBar() {
           <Settings size={17} />
         </Link>
 
-        {/* Profile */}
-        <div className="flex items-center gap-2 pl-3 ml-1 border-l border-[#ECEFF5] cursor-pointer group">
-          <div className="w-7 h-7 rounded-full bg-[#004AAD] flex items-center justify-center flex-shrink-0">
-            <span className="text-[10px] font-bold text-white">
-              {(user?.user_metadata?.name || user?.email || "A")[0].toUpperCase()}
+        {/* Profile Dropdown */}
+        <div className="relative pl-3 ml-1 border-l border-[#ECEFF5]">
+          <div
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="flex items-center gap-2 cursor-pointer group select-none"
+          >
+            <div className="w-7 h-7 rounded-full bg-[#004AAD] flex items-center justify-center flex-shrink-0">
+              <span className="text-[10px] font-bold text-white">
+                {(user?.user_metadata?.name || user?.email || "A")[0].toUpperCase()}
+              </span>
+            </div>
+            <span className="text-sm font-medium text-[#111111] group-hover:text-[#004AAD] transition-colors hidden md:block">
+              {user?.user_metadata?.name || "Admin"}
             </span>
+            <ChevronDown size={13} className={cn("text-[#AAAAAA] transition-transform hidden md:block", menuOpen && "rotate-180")} />
           </div>
-          <span className="text-sm font-medium text-[#111111] group-hover:text-[#004AAD] transition-colors hidden md:block">
-            {user?.user_metadata?.name || "Admin"}
-          </span>
-          <ChevronDown size={13} className="text-[#AAAAAA] hidden md:block" />
+
+          {menuOpen && (
+            <>
+              {/* Invisible backdrop to close the menu on click outside */}
+              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+              
+              <div className="absolute right-0 mt-2.5 w-60 bg-white border border-[#ECEFF5] rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 py-2 border-b border-[#ECEFF5]">
+                  <p className="text-xs font-semibold text-[#111111] truncate">
+                    {user?.user_metadata?.name || "Admin"}
+                  </p>
+                  <p className="text-[10px] text-[#AAAAAA] truncate mt-0.5">
+                    {user?.email || ""}
+                  </p>
+                </div>
+                
+                <div className="p-1.5">
+                  <form action={logout}>
+                    <button
+                      type="submit"
+                      className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-[#EF4444] hover:bg-red-50 transition-colors text-xs font-medium text-left"
+                    >
+                      <LogOut size={13} />
+                      Log out
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </header>

@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { login } from "../actions";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +48,22 @@ function LoginForm({ fallbackError, initialLoading }: { fallbackError: string | 
 
     router.push(result.redirectTo ?? redirectTo);
     router.refresh();
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError(null);
+    const supabase = createClient();
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+      },
+    });
+    if (oauthError) {
+      setError(oauthError.message);
+      setLoading(false);
+    }
   };
 
   return (
@@ -173,6 +190,7 @@ function LoginForm({ fallbackError, initialLoading }: { fallbackError: string | 
               >
                 {loading ? "Signing in..." : "Sign in"}
               </button>
+
             </form>
 
             <footer className="text-center pt-6 border-t border-[#E8EAF2]">

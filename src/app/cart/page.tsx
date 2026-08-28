@@ -30,7 +30,7 @@ export default function CartPage() {
     try {
       const cartData = await getCart();
       const mappedItems = (cartData || []).map((item: any) => ({
-        id: item.product_id,
+        id: `${item.product_id}-${item.selected_color || ""}-${item.selected_size || ""}`,
         database_id: item.id,
         product_id: item.product_id,
         name: item.products.name,
@@ -43,6 +43,8 @@ export default function CartPage() {
         lens_name: item.lenses?.name,
         lens_config: item.lens_config,
         prescription: item.prescription_json,
+        selected_color: item.selected_color,
+        selected_size: item.selected_size,
       }));
       setItems(mappedItems as any);
       setLoading(false);
@@ -209,6 +211,18 @@ export default function CartPage() {
                             <p className="text-[10px] text-[#666666] uppercase tracking-widest font-medium">Category</p>
                             <p className="text-xs text-[#111111] font-medium mt-0.5">{item.category}</p>
                           </div>
+                          {item.selected_color && (
+                            <div>
+                              <p className="text-[10px] text-[#666666] uppercase tracking-widest font-medium">Color</p>
+                              <p className="text-xs text-[#111111] font-medium mt-0.5">{item.selected_color}</p>
+                            </div>
+                          )}
+                          {item.selected_size && (
+                            <div>
+                              <p className="text-[10px] text-[#666666] uppercase tracking-widest font-medium">Size</p>
+                              <p className="text-xs text-[#111111] font-medium mt-0.5">{item.selected_size}</p>
+                            </div>
+                          )}
                           {item.lens_config && (
                             <>
                               {item.lens_config.features?.length > 0 && (

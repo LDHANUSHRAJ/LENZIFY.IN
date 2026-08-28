@@ -33,6 +33,64 @@ export default function NewProductForm({ categories, lenses }: { categories: any
     });
   };
 
+  const [colors, setColors] = useState<{ name: string; hex: string; image: string | null; imagePreview?: string | null }[]>([]);
+  const [sizes, setSizes] = useState<{ label: string; inStock: boolean; stockQty: number }[]>([]);
+  const [hasSizeVariants, setHasSizeVariants] = useState(true);
+
+  const [newColorName, setNewColorName] = useState("");
+  const [newColorHex, setNewColorHex] = useState("#000000");
+
+  const [newSizeLabel, setNewSizeLabel] = useState("");
+  const [newSizeStock, setNewSizeStock] = useState(10);
+  const [newSizeInStock, setNewSizeInStock] = useState(true);
+
+  const addColor = () => {
+    if (!newColorName.trim()) return;
+    if (colors.some(c => c.name.toLowerCase() === newColorName.trim().toLowerCase())) {
+      alert("Color name must be unique.");
+      return;
+    }
+    setColors([...colors, { name: newColorName.trim(), hex: newColorHex, image: null }]);
+    setNewColorName("");
+    setNewColorHex("#000000");
+  };
+
+  const removeColor = (index: number) => {
+    setColors(colors.filter((_, idx) => idx !== index));
+  };
+
+  const handleColorImageChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const updated = [...colors];
+        updated[index] = {
+          ...updated[index],
+          imagePreview: reader.result as string
+        };
+        setColors(updated);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const addSize = () => {
+    if (!newSizeLabel.trim()) return;
+    if (sizes.some(s => s.label.toLowerCase() === newSizeLabel.trim().toLowerCase())) {
+      alert("Size label must be unique.");
+      return;
+    }
+    setSizes([...sizes, { label: newSizeLabel.trim(), inStock: newSizeInStock, stockQty: newSizeStock }]);
+    setNewSizeLabel("");
+    setNewSizeStock(10);
+    setNewSizeInStock(true);
+  };
+
+  const removeSize = (index: number) => {
+    setSizes(sizes.filter((_, idx) => idx !== index));
+  };
+
   const genders = categories.filter(c => c.type === 'gender').map(c => c.name);
   const collections = categories.filter(c => c.type === 'collection').map(c => c.name);
   const usageTypes = categories.filter(c => c.type === 'usage').map(c => c.name);
@@ -130,15 +188,171 @@ export default function NewProductForm({ categories, lenses }: { categories: any
                    </div>
                  ))}
               </div>
-              <div className="flex gap-8">
-                  <div className="space-y-2 group flex-1">
-                     <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted transition-colors group-focus-within:text-secondary italic">Multiple Colors (Comma separated)</label>
-                     <input name="colors_list" placeholder="e.g. Gold, Black, Silver" className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all" suppressHydrationWarning />
-                  </div>
-                  <div className="space-y-2 group flex-1">
-                     <label className="text-[9px] font-bold uppercase tracking-widest text-brand-text-muted transition-colors group-focus-within:text-secondary italic">Multiple Sizes (Comma separated)</label>
-                     <input name="sizes_list" placeholder="e.g. Small, Medium" className="w-full bg-brand-background border border-brand-navy/10 px-6 py-4 text-[11px] font-medium tracking-wider outline-none focus:border-secondary transition-all" suppressHydrationWarning />
-                  </div>
+              {/* Color & Size Variant Management UI */}
+              <div className="space-y-8 pt-4 border-t border-brand-navy/10">
+                 {/* Colors Section */}
+                 <div className="space-y-4">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-navy block">Color Swatch Management (Required)</label>
+                    <div className="flex flex-wrap md:flex-nowrap gap-4 items-end bg-brand-background p-4 border border-brand-navy/10 rounded-lg">
+                       <div className="space-y-1 flex-1 min-w-[150px]">
+                          <label className="text-[8px] font-bold uppercase text-brand-text-muted">Color Name</label>
+                          <input 
+                             type="text" 
+                             value={newColorName} 
+                             onChange={(e) => setNewColorName(e.target.value)} 
+                             placeholder="e.g. Matte Black" 
+                             className="w-full bg-white border border-brand-navy/10 px-3 py-2 text-[10px] outline-none" 
+                          />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold uppercase text-brand-text-muted block">HEX Color</label>
+                          <div className="flex items-center gap-2">
+                             <input 
+                                type="color" 
+                                value={newColorHex} 
+                                onChange={(e) => setNewColorHex(e.target.value)} 
+                                className="w-8 h-8 cursor-pointer border border-brand-navy/10 p-0" 
+                             />
+                             <input 
+                                type="text" 
+                                value={newColorHex} 
+                                onChange={(e) => setNewColorHex(e.target.value)} 
+                                className="w-20 bg-white border border-brand-navy/10 px-2 py-2 text-[10px] text-center font-mono outline-none" 
+                             />
+                          </div>
+                       </div>
+                       <button 
+                          type="button" 
+                          onClick={addColor} 
+                          className="bg-brand-navy text-white text-[9px] font-bold uppercase tracking-wider px-4 py-2.5 hover:bg-secondary transition-colors cursor-pointer"
+                       >
+                          Add Color
+                       </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       {colors.map((c, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-brand-background border border-brand-navy/10 rounded-lg">
+                             <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-5 h-5 rounded-full border border-brand-navy/20 flex-shrink-0" style={{ backgroundColor: c.hex }} />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-brand-navy truncate">{c.name}</span>
+                             </div>
+                             
+                             <div className="flex items-center gap-3">
+                                {(c.imagePreview || c.image) && (
+                                   <img src={c.imagePreview || c.image || ""} className="w-8 h-8 object-contain border bg-white" />
+                                )}
+                                <label className="cursor-pointer bg-brand-navy text-white text-[8px] font-bold uppercase tracking-wider px-2 py-1.5 hover:bg-secondary">
+                                   Photo
+                                   <input 
+                                      type="file" 
+                                      name={`color_image_${index}`} 
+                                      accept="image/*" 
+                                      className="hidden" 
+                                      onChange={(e) => handleColorImageChange(index, e)} 
+                                   />
+                                </label>
+                                <button 
+                                   type="button" 
+                                   onClick={() => removeColor(index)} 
+                                   className="text-red-500 hover:text-red-700 text-[10px] font-bold cursor-pointer"
+                                >
+                                   Remove
+                                </button>
+                             </div>
+                          </div>
+                       ))}
+                    </div>
+                    {colors.length === 0 && (
+                       <p className="text-[9px] text-red-500 font-bold uppercase tracking-wider italic">At least one color is required.</p>
+                    )}
+                    <input type="hidden" name="colors" value={JSON.stringify(colors.map(c => ({ name: c.name, hex: c.hex, image: c.image })))} />
+                 </div>
+
+                 {/* Sizes Section */}
+                 <div className="space-y-4 pt-4 border-t border-brand-navy/10">
+                    <div className="flex items-center justify-between">
+                       <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-navy">Size Variant Management</label>
+                       <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-brand-text-muted">Has Size Variants</span>
+                          <input 
+                             type="checkbox" 
+                             checked={hasSizeVariants} 
+                             onChange={(e) => setHasSizeVariants(e.target.checked)} 
+                             className="w-4 h-4 accent-secondary" 
+                          />
+                       </label>
+                    </div>
+
+                    {hasSizeVariants && (
+                       <>
+                          <div className="flex flex-wrap md:flex-nowrap gap-4 items-end bg-brand-background p-4 border border-brand-navy/10 rounded-lg">
+                             <div className="space-y-1 flex-1 min-w-[120px]">
+                                <label className="text-[8px] font-bold uppercase text-brand-text-muted">Size Label (e.g. 48, S, L)</label>
+                                <input 
+                                   type="text" 
+                                   value={newSizeLabel} 
+                                   onChange={(e) => setNewSizeLabel(e.target.value)} 
+                                   placeholder="e.g. 50" 
+                                   className="w-full bg-white border border-brand-navy/10 px-3 py-2 text-[10px] outline-none" 
+                                />
+                             </div>
+                             <div className="space-y-1 flex-1 min-w-[80px]">
+                                <label className="text-[8px] font-bold uppercase text-brand-text-muted">Stock Quantity</label>
+                                <input 
+                                   type="number" 
+                                   value={newSizeStock} 
+                                   onChange={(e) => setNewSizeStock(parseInt(e.target.value) || 0)} 
+                                   className="w-full bg-white border border-brand-navy/10 px-3 py-2 text-[10px] outline-none" 
+                                />
+                             </div>
+                             <div className="space-y-1">
+                                <label className="text-[8px] font-bold uppercase text-brand-text-muted block">In Stock Status</label>
+                                <label className="flex items-center gap-2 cursor-pointer py-2">
+                                   <input 
+                                      type="checkbox" 
+                                      checked={newSizeInStock} 
+                                      onChange={(e) => setNewSizeInStock(e.target.checked)} 
+                                      className="w-4 h-4 accent-secondary" 
+                                   />
+                                   <span className="text-[9px] font-bold uppercase tracking-wider text-brand-navy">In Stock</span>
+                                </label>
+                             </div>
+                             <button 
+                                type="button" 
+                                onClick={addSize} 
+                                className="bg-brand-navy text-white text-[9px] font-bold uppercase tracking-wider px-4 py-2.5 hover:bg-secondary transition-colors cursor-pointer"
+                             >
+                                Add Size
+                             </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             {sizes.map((s, index) => (
+                                <div key={index} className="flex items-center justify-between p-3 bg-brand-background border border-brand-navy/10 rounded-lg">
+                                   <div className="flex flex-col">
+                                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-navy">{s.label}</span>
+                                      <span className="text-[8px] font-bold text-brand-text-muted uppercase tracking-wider mt-0.5">
+                                         Stock: {s.stockQty} | {s.inStock ? "In Stock" : "Out of Stock"}
+                                      </span>
+                                   </div>
+                                   <button 
+                                      type="button" 
+                                      onClick={() => removeSize(index)} 
+                                      className="text-red-500 hover:text-red-700 text-[10px] font-bold cursor-pointer"
+                                   >
+                                      Remove
+                                   </button>
+                                </div>
+                             ))}
+                          </div>
+                          {sizes.length === 0 && (
+                             <p className="text-[9px] text-red-500 font-bold uppercase tracking-wider italic">At least one size variant is required when variants are enabled.</p>
+                          )}
+                       </>
+                    )}
+                    <input type="hidden" name="sizes" value={JSON.stringify(hasSizeVariants ? sizes : [])} />
+                 </div>
               </div>
            </section>
         )}

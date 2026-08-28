@@ -57,10 +57,32 @@ export async function createProduct(formData: FormData) {
   const collection = formData.getAll("collection");
   const usage_type = formData.getAll("usage_type");
   
-  const colorsListRaw = formData.get("colors_list") as string;
-  const sizesListRaw = formData.get("sizes_list") as string;
-  const colors = colorsListRaw ? colorsListRaw.split(",").map(c => c.trim()).filter(Boolean) : [];
-  const sizes = sizesListRaw ? sizesListRaw.split(",").map(s => s.trim()).filter(Boolean) : [];
+  const colorsRaw = formData.get("colors") as string;
+  const sizesRaw = formData.get("sizes") as string;
+  let colorsList: any[] = [];
+  let sizesList: any[] = [];
+  try {
+    colorsList = colorsRaw ? JSON.parse(colorsRaw) : [];
+  } catch (e) {
+    console.error("Error parsing colors:", e);
+  }
+  try {
+    sizesList = sizesRaw ? JSON.parse(sizesRaw) : [];
+  } catch (e) {
+    console.error("Error parsing sizes:", e);
+  }
+
+  // Upload color-specific images
+  for (let i = 0; i < colorsList.length; i++) {
+    const colorFile = formData.get(`color_image_${i}`) as File;
+    if (colorFile && colorFile.size > 0) {
+      const url = await uploadToSupabase(colorFile);
+      colorsList[i].image = url;
+    }
+  }
+
+  const colors = colorsList.map(c => JSON.stringify(c));
+  const sizes = sizesList.map(s => JSON.stringify(s));
   
   // Extract Metadata
   const is_featured = formData.get("is_featured") === "true";
@@ -216,10 +238,32 @@ export async function updateProduct(id: string, formData: FormData) {
     const collection = formData.getAll("collection");
     const usage_type = formData.getAll("usage_type");
     
-    const colorsListRaw = formData.get("colors_list") as string;
-    const sizesListRaw = formData.get("sizes_list") as string;
-    const colors = colorsListRaw ? colorsListRaw.split(",").map(c => c.trim()).filter(Boolean) : [];
-    const sizes = sizesListRaw ? sizesListRaw.split(",").map(s => s.trim()).filter(Boolean) : [];
+    const colorsRaw = formData.get("colors") as string;
+    const sizesRaw = formData.get("sizes") as string;
+    let colorsList: any[] = [];
+    let sizesList: any[] = [];
+    try {
+      colorsList = colorsRaw ? JSON.parse(colorsRaw) : [];
+    } catch (e) {
+      console.error("Error parsing colors:", e);
+    }
+    try {
+      sizesList = sizesRaw ? JSON.parse(sizesRaw) : [];
+    } catch (e) {
+      console.error("Error parsing sizes:", e);
+    }
+
+    // Upload color-specific images
+    for (let i = 0; i < colorsList.length; i++) {
+      const colorFile = formData.get(`color_image_${i}`) as File;
+      if (colorFile && colorFile.size > 0) {
+        const url = await uploadToSupabase(colorFile);
+        colorsList[i].image = url;
+      }
+    }
+
+    const colors = colorsList.map(c => JSON.stringify(c));
+    const sizes = sizesList.map(s => JSON.stringify(s));
     
     // Extract Metadata
     const is_featured = formData.get("is_featured") === "true";

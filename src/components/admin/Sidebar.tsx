@@ -87,9 +87,11 @@ const NAV_GROUPS = [
 function NavItem({
   item,
   pathname,
+  onClick,
 }: {
   item: { name: string; icon: any; href: string };
   pathname: string;
+  onClick?: () => void;
 }) {
   const isActive =
     pathname === item.href ||
@@ -99,6 +101,7 @@ function NavItem({
   return (
     <Link
       href={item.href}
+      onClick={onClick}
       className={cn(
         "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-100 group",
         isActive
@@ -122,10 +125,14 @@ function NavItem({
   );
 }
 
+import { useAdminLayout } from "@/components/providers/AdminLayoutProvider";
+import { X } from "lucide-react";
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const [search, setSearch] = useState("");
+  const { sidebarOpen, setSidebarOpen } = useAdminLayout();
 
   const allItems = NAV_GROUPS.flatMap((g) => g.items);
   const filtered = search.trim()
@@ -135,23 +142,46 @@ export default function Sidebar() {
     : null;
 
   return (
-    <aside className="w-60 h-screen fixed left-0 top-0 bg-white border-r border-[#ECEFF5] hidden lg:flex flex-col z-[100]">
-      {/* Logo */}
-      <div className="h-14 px-4 flex items-center gap-3 border-b border-[#ECEFF5] flex-shrink-0">
-        <Link href="/admin/dashboard" className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-[#004AAD] flex items-center justify-center flex-shrink-0">
-            <Eye size={13} className="text-white" strokeWidth={2.5} />
-          </div>
-          <div className="leading-none">
-            <p className="font-serif italic font-bold text-[15px] text-[#111111] tracking-tight">
-              LENZIFY
-            </p>
-            <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#AAAAAA] mt-0.5">
-              Admin
-            </p>
-          </div>
-        </Link>
-      </div>
+    <>
+      {/* Backdrop for mobile */}
+      <div
+        className={cn(
+          "fixed inset-0 bg-black/40 z-[90] lg:hidden transition-opacity duration-300",
+          sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => setSidebarOpen(false)}
+      />
+
+      <aside
+        className={cn(
+          "w-60 h-screen fixed left-0 top-0 bg-white border-r border-[#ECEFF5] flex flex-col z-[100] transition-transform duration-300 ease-in-out",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
+      >
+        {/* Logo */}
+        <div className="h-14 px-4 flex items-center justify-between border-b border-[#ECEFF5] flex-shrink-0">
+          <Link href="/admin/dashboard" className="flex items-center gap-2.5" onClick={() => setSidebarOpen(false)}>
+            <div className="w-7 h-7 rounded-lg bg-[#004AAD] flex items-center justify-center flex-shrink-0">
+              <Eye size={13} className="text-white" strokeWidth={2.5} />
+            </div>
+            <div className="leading-none">
+              <p className="font-serif italic font-bold text-[15px] text-[#111111] tracking-tight">
+                LENZIFY
+              </p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#AAAAAA] mt-0.5">
+                Admin
+              </p>
+            </div>
+          </Link>
+
+          {/* Close button on mobile */}
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="p-1 rounded-lg text-[#888888] hover:bg-[#F4F6F8] hover:text-[#111111] lg:hidden"
+          >
+            <X size={18} />
+          </button>
+        </div>
 
       {/* Search */}
       <div className="px-3 py-2.5 border-b border-[#ECEFF5] flex-shrink-0">
@@ -178,7 +208,7 @@ export default function Sidebar() {
               </p>
             ) : (
               filtered.map((item) => (
-                <NavItem key={item.href} item={item} pathname={pathname} />
+                <NavItem key={item.href} item={item} pathname={pathname} onClick={() => setSidebarOpen(false)} />
               ))
             )}
           </div>
@@ -190,7 +220,7 @@ export default function Sidebar() {
               </p>
               <div className="space-y-0.5">
                 {group.items.map((item) => (
-                  <NavItem key={item.href} item={item} pathname={pathname} />
+                  <NavItem key={item.href} item={item} pathname={pathname} onClick={() => setSidebarOpen(false)} />
                 ))}
               </div>
             </div>
@@ -227,5 +257,6 @@ export default function Sidebar() {
         </form>
       </div>
     </aside>
+    </>
   );
 }

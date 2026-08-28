@@ -216,6 +216,8 @@ export default function CheckoutPage() {
                 quantity: item.quantity,
                 price: item.price,
                 lens_id: item.lens_id,
+                selected_color: item.selected_color,
+                selected_size: item.selected_size,
                 prescription_json: item.prescription_json || (prescription.left_eye ? {
                   od_sph: prescription.right_eye,
                   os_sph: prescription.left_eye,
